@@ -10,11 +10,9 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import logging
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Optimize tokenizer parallelism and threading
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 torch.set_num_threads(4)
 
@@ -43,7 +41,7 @@ def load_model():
 
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
-            torch_dtype=torch.float16 if torch.cuda.is_available() else None,  # ✅ fixed for CPU
+            torch_dtype=torch.float16 if torch.cuda.is_available() else None,  
             device_map="auto" if torch.cuda.is_available() else None
         )
 
@@ -102,12 +100,12 @@ async def chat_completions(request: ChatCompletionRequest):
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
         logger.info("Generating response...")
-        start_time = time.time()  # 🕒 start timing
+        start_time = time.time() 
 
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
-                max_new_tokens=min(request.max_tokens, 100),  # 🔽 limit for speed
+                max_new_tokens=min(request.max_tokens, 100),  
                 temperature=max(request.temperature, 0.1),
                 do_sample=True,
                 pad_token_id=tokenizer.pad_token_id,
