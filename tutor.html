@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Probability and Stats Tutor</title>
+	<link rel="stylesheet" href="style_sheet.css">
+</head>
+<body>
+	<div class="tutor-container">
+		<div class="tutor-header">
+			<h1>Probability and Stats Tutor</h1>
+			<p>Your friendly guide to probability and statistics!</p>
+			<button class="close-button" onclick="window.close()">✕ Close</button>
+		</div>
+		<div class="main-content">
+			<div class="chat-section">
+				<div class="chat-container">
+					<div class="chat-messages" id="chatMessages"></div>
+					<div class="chat-input-container">
+						<input type="text" id="chatInput" placeholder="Ask me anything about probability!">
+						<button id="sendButton">Send</button>
+					</div>
+				</div>
+			</div>
+			<div class="whiteboard-section">
+				<div class="whiteboard-header">
+					<h3>Whiteboard</h3>
+					<div class="whiteboard-controls">
+						<button id="clearButton">Clear</button>
+						<button id="drawButton">Draw</button>
+						<button id="chartButton">Figure</button>
+					</div>
+				</div>
+				<div class="whiteboard-container">
+					<canvas id="whiteboard"></canvas>
+				</div>
+			</div>
+		</div>
+		<div class="loading-indicator" id="loadingIndicator" style="display: none;">
+			<div class="spinner"></div>
+			<span>Tutor is thinking...</span>
+		</div>
+	</div>
+	
+	<script src="javascript/tutor-chat.js"></script>
+	<script src="javascript/tutor-whiteboard.js"></script>
+</body>
+</html>

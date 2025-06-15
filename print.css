@@ -1,0 +1,15 @@
+body {
+	color: black;
+}
+
+a {
+	color: black;
+}
+
+.hide_print { display: none; }
+
+b {
+	font-weight: 100;
+}
+
+.solvedprob ul ul { display:block; }

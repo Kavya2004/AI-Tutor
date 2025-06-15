@@ -1,0 +1,591 @@
+        html, body 		{ margin: 0; padding: 0; }
+		body 			{ /*background-color: #d9d0c2; */  background: url(//www.probabilitycourse.com/images/Template/newbackground.png); color: #333; font: 16px "Myriad Pro", Verdana, Geneva, Arial, sans-serif; line-height: 24px;}
+		h1				{ color: #333; left: 20px; text-align: center; }
+		a				{ color: #337810;}
+		
+
+		 p				{ margin: 0 0 18px; }  
+        .left           { float:left; text-align: left; }
+        .right          { float:right; text-align: right; }
+        .clear          { clear: both; }
+		#container		{ width: 1175px; margin: 0 auto; background-color: #f6f4f2; }
+        #printcontainer { width: 1175px; margin: 0 auto; padding: 50px;}
+		
+		
+		@media only screen 
+		and (min-device-width : 320px) 
+		and (max-device-width : 480px) {
+			#content { word-wrap: break-word; }
+			#wrapper { word-wrap: break-word; }
+			img	{ 	text-decoration:none; 
+					border:0;
+					outline:none; }
+		}
+		
+		
+		
+		/* Header */
+		#header_wrapper		{height: 119px; margin: 0; padding: 0; top:0px; }
+		
+		#header			{ background: url(//www.probabilitycourse.com/images/Template/HeaderBg.png) repeat-x; height: 119px; /*width: 1100px; */ margin: 0; padding: 0; position:relative; display: inline-block;}
+		#header p		{ color: #f2fcf7; font-size: 18px; font-weight:300; padding: 32px 0 0 48px; }
+		#header h1  	{ color: #73c3f6; font-size: 23px; font-weight:400; margin: -27px 10px 0 18px; line-height: 24px; text-align: left; }
+		/* This line needs to be fixed */
+
+		#header font	{color: #f2fcf7; font-size: 18px;}
+		
+		/*google search bar*/
+		#google_search		{width:400px; float:right; top:0px;}
+		#google_bar			{display: inline-block;  float: right;}
+		/* Header elements */
+		#bigp 	{ font-size: 52px; font-weight:300; letter-spacing: -10px; color: #73c3f6; }
+		#diceimg		{ width: 120px; height: 91px; margin: -40px 0 -20px -40px;} 
+		#robability		{ color: #73c3f6; }
+		a.nostyle		{ text-decoration: none; }
+		#logo_image		{ margin-left:20px; margin-top:7px; float:left; width: 570px;}
+		
+		
+		#wrapper		{ margin-top: 29px; background-image: url(//www.probabilitycourse.com/images/Template/container.jpg); background-repeat: repeat-x;}
+		#wrapper		{ background-image:url(//www.probabilitycourse.com/images/Template/container.jpg); background-repeat: repeat-x;}
+		/* Content Style */
+		#content		{ background-image:url(//www.probabilitycourse.com/images/Template/container.jpg); background-repeat: repeat-x;  text-align: justify;  min-height:250px; padding-right: 70px; padding-top: 14px;
+		}
+		#content p      { background-attachment: fixed;}
+        
+		
+		
+		/*#navigation_wrapper     { height: 36px; background: #014148; clear: both;  font-size: 16px;  margin-bottom: 0; top: 0; position:relative;}*/
+		
+        #navigation     { height: 36px; background: #014148; clear: both;  font-size: 16px; font-family: sans-serif; font-weight: bold; width: 1175px; margin-bottom: 0 auto; z-index:9999; margin-top: 0px;} 
+		#navigation a   { color: #f2fcf7; text-decoration:none;}
+		#navigation a:hover { COLOR: #73c3f6;  font-family: sans-serif; font-weight: bold; }
+
+		#navigation ul  { list-style: none; margin: 0 0 0 28px; padding: 5px 0 0 0; }
+		#navigation li  { display: inline; padding: 0 20px 0 0; }
+		
+        #nameuser 		{ color: #88ffff; font-family: cursive; font-size: 18px; }
+		
+        #right     { display:inline; float: right;  }
+		#right p:hover     { COLOR: #73c3f6;  font-family: sans-serif; font-weight: bold;  }
+
+        #left     { display:inline; float: left;  }
+		
+
+
+        .container     { margin: 0 auto; padding: 0px;}
+
+        .login_container     { margin: 0 auto; width: 100px; height: 25px; line-height: 25px;cursor: pointer; }
+
+        .login_container     { color: #fff;}
+
+        .login_extended     { width: 170px; height: 150px; display: none; background-color: #014148; position: absolute; color: #f2fcf7; margin-top: 5px; right: 0px; text-align:center;border-bottom-right-radius: 10% 10%; border-bottom-left-radius: 10% 10%; font-weight: bold; font-size: 15px; font-family: serif; z-index: 9999;}
+		.login_extended a	{ position: relative; bottom:5px; }
+		
+		
+		.instructor_container     { margin: 0 auto; width: 100px; height: 25px; line-height: 25px;cursor: pointer;  }
+        .instructor_extended     { width: 160px; height: 100px; display: none; background-color: #014148; position: absolute; color: #f2fcf7; margin-top: 1px; right: 594px; text-align:center;border-bottom-right-radius: 10% 10%; border-bottom-left-radius: 10% 10%; font-weight: bold; font-size: 15px; font-family: serif; }
+		.instructor_extended a	{ position: relative; margin-left: 5px; margin-right:5px; padding-top: 10px; line-height: 2%;}		
+		.instructor_extended span	{ position: relative; top: 10px; margin-bottom:5px; line-height: 25px; display: inline-block;}
+		
+		
+		
+		#menu_button{display:none;}
+		#mobile_menu {display:none;}
+		
+		#menu           {font-size: 15px; line-height: 18px; margin-top: 45px; margin-left: 20px; border: 4px outset; border-color: black #73c3f6 ; margin-bottom: 10px;}
+        #menu ul	    { cursor:pointer; list-style: none; margin:0px; padding: 0px}
+        #menu ul a      { background: #d9d0c2; color: #000; display: block; line-height: 18px; padding: 7px 5px; }
+        #menu ul ul     { display:none;}
+        #menu ul ul a   { background: #416e8b; color: #000; padding: 7px 15px; }
+        #menu ul ul ul a { background: #d9e5eb; color: #353535; padding: 7px 7px 7px 25px; }
+        #menu a:hover   { background: #014148; color: #eee; }
+        #menu .active   { font-weight:bold; }
+        
+        #menu_risk           {font-size: 15px; line-height: 18px; margin-top: 45px; margin-left: 20px; border: 4px outset; border-color: black #73c3f6 ; margin-bottom: 10px;}
+        #menu_risk ul	    { cursor:pointer; list-style: none; margin:0px; padding: 0px}
+        #menu_risk ul a      { background: #1a4e36; color: #FFF; display: block; line-height: 18px; padding: 7px 5px; }
+        #menu_risk ul ul     { display:none;}
+        #menu_risk ul ul a   { background: #f3ebdb; color: #000; padding: 7px 15px; }
+        #menu_risk ul ul ul a { background: #d9e5eb; color: #353535; padding: 7px 7px 7px 25px; }
+        #menu_risk a:hover   { background: #014148; color: #eee; }
+        #menu_risk .active   { font-weight:bold; }
+        
+        #footer			{ background: url(//www.probabilitycourse.com/images/Template/HeaderBg.png) repeat-x; /*background: #014148; border-bottom: 2px solid #999; */ clear: both; font-size: 13px;}
+		#footer a		{ color: #eee; }
+		#footer	p		{ color: #ccc; margin: 0; padding: 10px 18px 10px; }
+        
+		#sticker {
+			padding:20px;
+			margin:100px 0;
+			background:#AAA;
+			width:190px;
+			max-height: 50%;
+			
+		}
+		
+		@media only screen 
+		and (min-width : 1400px) {	
+			.stick {
+				position:fixed;
+				top:0px;
+			}
+			#menu {
+				overflow : auto;
+				max-height: 525px;
+			}
+			#menu_risk {
+				overflow : auto;
+				max-height: 525px;
+			}
+		}
+		
+
+		::-webkit-scrollbar {
+			width: 12px;
+		}
+ 
+		::-webkit-scrollbar-track {
+			-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
+			border-radius: 10px;
+		}
+ 
+		::-webkit-scrollbar-thumb {
+			border-radius: 10px;
+			-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5); 
+		}
+		
+        .thinblock       { padding: 10px 0 10px; }
+        
+        .solvedprob     { }
+        .solvedprob ul  { cursor:pointer; list-style: none; margin-bottom: 30px; padding: 0px;}
+        .solvedprob ul ul { display:none; margin-top: 30px}
+        .solvedprob ul a { /*background: #F4F4F4;*/ background: #d9e5eb; color: green; /*color: #353535;*/ padding: 7px 15px; border: 1px solid #8E8E8E}
+        
+        .extendlist           { line-height: 33px; text-decoration:underline}
+        .extendlist ul		  { cursor:pointer; list-style: none; margin:0px; padding: 0px}
+        .extendlist ul a      { padding: 7px 5px; }
+        .extendlist ul ul     { display:none;}
+        .extendlist ul ul a   { padding: 7px 40px; }
+        
+        .video          { }
+        .video ul       { cursor:pointer; list-style: none; padding: 0px}
+        .video ul ul    { display:none; margin-top: 20px; }
+       		
+		/* Content Positioning and Size */
+		#menu            { float: left; width: 250px;  }
+		#menu_risk       { float: left; width: 250px;  }
+		#content		 { float: right; width: 800px; }
+	   	#no_menu_content {width:90%; }
+        
+        .demo-container {
+        	box-sizing: border-box;
+        	width: 600px;
+        	height: 450px;
+        	padding: 20px 15px 15px 15px;
+        	margin: 15px auto 30px auto;
+        	border: 1px solid #ddd;
+        	background: #fff;
+        	background: linear-gradient(#f6f6f6 0, #fff 50px);
+        	background: -o-linear-gradient(#f6f6f6 0, #fff 50px);
+        	background: -ms-linear-gradient(#f6f6f6 0, #fff 50px);
+        	background: -moz-linear-gradient(#f6f6f6 0, #fff 50px);
+        	background: -webkit-linear-gradient(#f6f6f6 0, #fff 50px);
+        	box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        	-o-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        	-ms-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        	-moz-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        	-webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .demo-placeholder {width: 100%; height: 100%;; font-size: 14px; line-height: 1.2em; }
+        
+        #placeholder .button { position: absolute; cursor: pointer; }
+
+	    #placeholder div.button { padding: 0px; }
+
+        .legend table { border-spacing: 5px; }
+		
+        .link_button { background:none; color:#337810; border: none; cursor: pointer;}
+
+        label {display: inline-block; width: 5em; }
+		
+		/*Youtube window styles in video section  */
+		#youtube {width:640px; height:360px;}
+		
+		
+		/*Sign up form from book request page*/
+		#signup_form      { width: 600px; margin: 0 auto;  padding-bottom: 10px; }
+		fieldset {width: 550px;}
+		label {display: inline;  text-align: left; width: 250px; margin-right: 50px;}
+		
+		
+		
+		
+		
+		
+#printButton { cursor: pointer; }
+.mobile { display: none; }
+.no_mobile { display: block; }
+
+
+/* Content Boxes */
+.cbox {
+	padding: 25px;
+	margin: 30px 40px;
+	border: 2px solid black;
+}
+
+/* Centered Text */
+.centered {
+	text-align: center;
+}
+
+#floating-dice {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: #337810;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border: 3px solid #fff;
+}
+
+#floating-dice:hover {
+    transform: scale(1.1) rotate(5deg);
+    background: #2a6209;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+#floating-dice img {
+    width: 35px;
+    height: 35px;
+    filter: invert(1) brightness(2);
+    transition: transform 0.3s ease;
+}
+
+#floating-dice:hover img {
+    transform: rotate(-5deg);
+}
+@media only screen and (max-device-width: 750px) {
+    #floating-dice {
+        width: 50px;
+        height: 50px;
+        bottom: 15px;
+        right: 15px;
+    }
+    
+    #floating-dice img {
+        width: 28px;
+        height: 28px;
+    }
+}
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    background: url(//www.probabilitycourse.com/images/Template/newbackground.png);
+    font-family: "Myriad Pro", Verdana, Geneva, Arial, sans-serif;
+    color: #333;
+    height: 100vh;
+    overflow: hidden;
+}
+.tutor-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #649847;
+    position: relative;
+}
+.tutor-header {
+    background: linear-gradient(135deg, #0d5a47);
+    color: rgb(14, 15, 14);
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(237, 234, 234, 0.2);
+    position: relative;
+    z-index: 100;
+}
+.tutor-header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(35, 125, 49, 0.3);
+}
+.tutor-header p {
+    font-size: 1.2em;
+    opacity: 0.9;
+}
+.close-button {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: background 0.3s ease;
+}
+.close-button:hover {
+    background: rgba(255,255,255,0.3);
+}
+.main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+.chat-section {
+    width: 400px;
+    background: white;
+    border-right: 2px solid #ddd;
+    display: flex;
+    flex-direction: column;
+}
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: #fafafa;
+}
+.message {
+    display: flex;
+    margin-bottom: 20px;
+    align-items: flex-start;
+}
+.bot-message {
+    justify-content: flex-start;
+}
+.user-message {
+    justify-content: flex-end;
+}
+.message-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    margin: 0 10px;
+    flex-shrink: 0;
+}
+.bot-message .message-avatar {
+    background: #014148;
+}
+.user-message .message-avatar {
+    background: #337810;
+    order: 2;
+}
+.message-content {
+    max-width: 280px;
+    padding: 12px 16px;
+    border-radius: 18px;
+    line-height: 1.4;
+}
+.bot-message .message-content {
+    background: #e8f4fd;
+    border-bottom-left-radius: 4px;
+}
+.user-message .message-content {
+    background: #337810;
+    color: white;
+    border-bottom-right-radius: 4px;
+    order: 1;
+}
+.typing-animation {
+    animation: fadeIn 1s ease-in;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.message-content ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+.message-content li {
+    margin: 5px 0;
+}
+.chat-input-container {
+    display: flex;
+    padding: 20px;
+    background: white;
+    border-top: 1px solid #ddd;
+}
+#chatInput {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #ddd;
+    border-radius: 25px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+#chatInput:focus {
+    border-color: #337810;
+}
+#sendButton {
+    margin-left: 10px;
+    padding: 12px 20px;
+    background: #337810;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s ease;
+}
+#sendButton:hover {
+    background: #2a6209;
+}
+.whiteboard-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: white;
+}
+.whiteboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+.whiteboard-header h3 {
+    color: #333;
+    font-size: 1.3em;
+}
+.whiteboard-controls {
+    display: flex;
+    gap: 10px;
+}
+.whiteboard-controls button {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+.whiteboard-controls button:hover {
+    background: #014148;
+    color: white;
+}
+.whiteboard-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+#whiteboard {
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    background: white;
+}
+#chartContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+}
+.loading-indicator {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+}
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #337810;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+.chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+@media (max-width: 900px) {
+    .main-content {
+        flex-direction: column;
+    }
+    .chat-section {
+        width: 100%;
+        height: 40%;
+    }
+    .whiteboard-section {
+        height: 60%;
+    }
+    .tutor-header h1 {
+        font-size: 2em;
+    }
+}
+.slide-in {
+    animation: slideIn 0.5s ease-out;
+}
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+/* Chapter images */
+#chapter_image{width:65%; display: block; margin-left: auto; margin-right: auto; padding-top:20px; padding-bottom:20px;}
+figure { display: inline-block;}
+figure figcaption { text-align: center;}
+
+/* Chapter table */
+.table_formula tr td:LAST-CHILD{padding-left:75px; }
+
+/* This is to stop spam attacks */
+#username_comments {
+	display: none ;
+}	
+
+#chapterpdf	{color: black; font-size: 21px; font-weight:300;}
