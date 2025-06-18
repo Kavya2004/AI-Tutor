@@ -29,26 +29,28 @@ app.add_middleware(
 model = None
 tokenizer = None
 
+
 def load_model():
     global model, tokenizer
     try:
         logger.info("Loading TinyLlama model and tokenizer...")
         model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-        
+
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
-            torch_dtype=torch.float16 if torch.cuda.is_available() else None,  
+            torch_dtype=torch.float16 if torch.cuda.is_available() else None,
             device_map="auto" if torch.cuda.is_available() else None
         )
 
         if torch.cuda.is_available():
             torch.backends.cudnn.benchmark = True
             torch.cuda.empty_cache()
-            logger.info(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
+            logger.info(
+                f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
         else:
             logger.info("Running on CPU")
 
@@ -58,9 +60,11 @@ def load_model():
         logger.error(f"Error loading model: {e}")
         return False
 
+
 class ChatMessage(BaseModel):
     role: str
     content: str
+
 
 class ChatCompletionRequest(BaseModel):
     model: str
@@ -68,15 +72,18 @@ class ChatCompletionRequest(BaseModel):
     temperature: float = 0.7
     max_tokens: int = 200
 
+
 @app.on_event("startup")
 async def startup_event():
     success = load_model()
     if not success:
         logger.error("Failed to load model on startup!")
 
+
 @app.options("/v1/chat/completions")
 async def preflight_handler(request: Request):
     return JSONResponse(content={}, status_code=200)
+
 
 @app.post("/v1/chat/completions")
 async def chat_completions(request: ChatCompletionRequest):
@@ -95,17 +102,18 @@ async def chat_completions(request: ChatCompletionRequest):
 ### Response:
 """
 
-        inputs = tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, max_length=512)
+        inputs = tokenizer(prompt, return_tensors="pt",
+                           padding=True, truncation=True, max_length=512)
         device = next(model.parameters()).device
         inputs = {k: v.to(device) for k, v in inputs.items()}
 
         logger.info("Generating response...")
-        start_time = time.time() 
+        start_time = time.time()
 
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,
-                max_new_tokens=min(request.max_tokens, 100),  
+                max_new_tokens=min(request.max_tokens, 100),
                 temperature=max(request.temperature, 0.1),
                 do_sample=True,
                 pad_token_id=tokenizer.pad_token_id,
@@ -121,7 +129,8 @@ async def chat_completions(request: ChatCompletionRequest):
 
         input_length = inputs['input_ids'].shape[1]
         response_tokens = outputs[0][input_length:]
-        response_text = tokenizer.decode(response_tokens, skip_special_tokens=True).strip()
+        response_text = tokenizer.decode(
+            response_tokens, skip_special_tokens=True).strip()
 
         if not response_text:
             response_text = "Could you clarify your question about probability?"
@@ -155,6 +164,7 @@ async def chat_completions(request: ChatCompletionRequest):
             content={"error": {"message": str(e), "type": "server_error"}}
         )
 
+
 @app.get("/health")
 async def health_check():
     model_loaded = model is not None and tokenizer is not None
@@ -163,6 +173,7 @@ async def health_check():
         "model_loaded": model_loaded,
         "cuda_available": torch.cuda.is_available()
     }
+
 
 @app.get("/")
 async def root():
