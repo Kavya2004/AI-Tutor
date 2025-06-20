@@ -2,6 +2,9 @@ let canvas, ctx;
 let isDrawing = false;
 let isDrawingMode = false;
 let currentPath = [];
+let isExpanded = false;
+let recogTimer = null;         
+let isAnythingDrawn = false;   
 
 document.addEventListener('DOMContentLoaded', function() {
 	initializeWhiteboard();
@@ -12,6 +15,7 @@ function setupWhiteboardControls() {
 	const clearButton = document.getElementById('clearButton');
 	const drawButton = document.getElementById('drawButton');
 	const chartButton = document.getElementById('chartButton');
+	const expandButton = document.getElementById('expandButton');
 	
 	if (clearButton) {
 		clearButton.addEventListener('click', clearWhiteboard);
@@ -24,6 +28,12 @@ function setupWhiteboardControls() {
 	if (chartButton) {
 		chartButton.addEventListener('click', drawSampleDistribution);
 	}
+	
+	if (expandButton) {
+		expandButton.addEventListener('click', toggleWhiteboardSize);
+	}
+	
+	setupResizeHandle();
 }
 
 function initializeWhiteboard() {
@@ -52,12 +62,115 @@ function initializeWhiteboard() {
 	ctx.lineJoin = 'round';
 	
 	updateDrawButton();
+	updateExpandButton();
+}
+
+function setupResizeHandle() {
+	const chatSection = document.querySelector('.chat-section');
+	const whiteboardSection = document.querySelector('.whiteboard-section');
+	
+	if (!chatSection || !whiteboardSection) {
+		console.error('Chat or whiteboard section not found');
+		return;
+	}
+	
+	let resizeHandle = document.querySelector('.resize-handle');
+	if (!resizeHandle) {
+		resizeHandle = document.createElement('div');
+		resizeHandle.className = 'resize-handle';
+		resizeHandle.innerHTML = '⋮⋮';
+		chatSection.appendChild(resizeHandle);
+	}
+	
+	let isResizing = false;
+	let startX = 0;
+	let startWidth = 0;
+	
+	resizeHandle.addEventListener('mousedown', (e) => {
+		isResizing = true;
+		startX = e.clientX;
+		startWidth = parseInt(window.getComputedStyle(chatSection).width, 10);
+		document.body.style.cursor = 'col-resize';
+		document.body.style.userSelect = 'none';
+		
+		resizeHandle.style.background = '#337810';
+		resizeHandle.style.color = 'white';
+		
+		e.preventDefault();
+		e.stopPropagation();
+	});
+	
+	document.addEventListener('mousemove', (e) => {
+		if (!isResizing) return;
+		
+		const deltaX = e.clientX - startX;
+		const newWidth = startWidth + deltaX;
+		const minWidth = 250;
+		const maxWidth = window.innerWidth - 300;
+		
+		if (newWidth >= minWidth && newWidth <= maxWidth) {
+			chatSection.style.flexBasis = newWidth + 'px';
+			chatSection.style.width = newWidth + 'px';
+			
+			requestAnimationFrame(() => {
+				resizeCanvas();
+			});
+		}
+		
+		e.preventDefault();
+	});
+	
+	document.addEventListener('mouseup', () => {
+		if (isResizing) {
+			isResizing = false;
+			document.body.style.cursor = '';
+			document.body.style.userSelect = '';
+			resizeHandle.style.background = '#ddd';
+			resizeHandle.style.color = '#666';
+		}
+	});
+}
+
+function toggleWhiteboardSize() {
+	const whiteboardSection = document.querySelector('.whiteboard-section');
+	const chatSection = document.querySelector('.chat-section');
+	const mainContent = document.querySelector('.main-content');
+	
+	if (!whiteboardSection || !chatSection) {
+		console.error('Required sections not found');
+		return;
+	}
+	
+	if (!isExpanded) {
+		chatSection.style.flexBasis = '50px';
+		chatSection.style.width = '50px';
+		chatSection.style.minWidth = '50px';
+		isExpanded = true;
+	} else {
+		chatSection.style.flexBasis = '400px';
+		chatSection.style.width = '400px';
+		chatSection.style.minWidth = '200px';
+		isExpanded = false;
+	}
+	
+	updateExpandButton();
+	
+	setTimeout(() => {
+		resizeCanvas();
+	}, 50);
+}
+
+function updateExpandButton() {
+	const expandButton = document.getElementById('expandButton');
+	if (expandButton) {
+		expandButton.textContent = isExpanded ? '⬅️ Shrink' : '➡️ Expand';
+		expandButton.title = isExpanded ? 'Shrink whiteboard' : 'Expand whiteboard';
+	}
 }
 
 function handleTouchStart(e) {
 	e.preventDefault();
 	const touch = e.touches[0];
-	const rect = canvas.getBoundingClientRect();
 	const mouseEvent = new MouseEvent('mousedown', {
 		clientX: touch.clientX,
 		clientY: touch.clientY
@@ -68,7 +181,6 @@ function handleTouchStart(e) {
 function handleTouchMove(e) {
 	e.preventDefault();
 	const touch = e.touches[0];
-	const rect = canvas.getBoundingClientRect();
 	const mouseEvent = new MouseEvent('mousemove', {
 		clientX: touch.clientX,
 		clientY: touch.clientY
@@ -78,15 +190,23 @@ function handleTouchMove(e) {
 
 function resizeCanvas() {
 	const container = document.querySelector('.whiteboard-container');
-	if (!container) return;
+	if (!container || !canvas) return;
 	
-	canvas.width = container.clientWidth;
-	canvas.height = container.clientHeight;
+	container.offsetHeight;
 	
-	ctx.strokeStyle = '#333';
-	ctx.lineWidth = 4;
-	ctx.lineCap = 'round';
-	ctx.lineJoin = 'round';
+	const containerRect = container.getBoundingClientRect();
+	const newWidth = Math.floor(containerRect.width);
+	const newHeight = Math.floor(containerRect.height);
+	
+	if (canvas.width !== newWidth || canvas.height !== newHeight) {
+		canvas.width = newWidth;
+		canvas.height = newHeight;
+		
+		ctx.strokeStyle = '#333';
+		ctx.lineWidth = 4;
+		ctx.lineCap = 'round';
+		ctx.lineJoin = 'round';
+	}
 }
 
 function clearWhiteboard() {
@@ -111,16 +231,20 @@ function updateDrawButton() {
 
 function startDrawing(e) {
 	if (!isDrawingMode) return;
-	
+
 	isDrawing = true;
+	isAnythingDrawn = true;
+	clearTimeout(recogTimer);
+
 	const rect = canvas.getBoundingClientRect();
 	const x = e.clientX - rect.left;
 	const y = e.clientY - rect.top;
-	
+
 	currentPath = [{ x, y }];
 	ctx.beginPath();
 	ctx.moveTo(x, y);
 }
+
 
 function draw(e) {
 	if (!isDrawing || !isDrawingMode) return;
@@ -137,7 +261,13 @@ function draw(e) {
 function stopDrawing() {
 	isDrawing = false;
 	currentPath = [];
+
+	if (isAnythingDrawn) {
+		clearTimeout(recogTimer);
+		recogTimer = setTimeout(runOcrAndFillChat, 800); 
+	}
 }
+
 
 function drawProbabilityScale() {
 	if (!ctx) return;
@@ -444,11 +574,41 @@ function drawTreeDiagram() {
 	});
 }
 
+// Export functions for external use
 window.tutorWhiteboard = {
 	clearWhiteboard,
 	toggleDrawing,
+	toggleWhiteboardSize,
 	drawProbabilityScale,
 	drawSampleDistribution,
 	drawNormalCurve,
 	drawTreeDiagram
 };
+
+async function runOcrAndFillChat() {
+	try {
+		const dataUrl = canvas.toDataURL('image/png');
+		console.log('Running OCR...');
+
+		const { data: { text } } = await window.Tesseract.recognize(
+			dataUrl,
+			'eng',
+			{ logger: m => console.log(m) }
+		);
+
+		const cleaned = text.replace(/\s+/g, ' ').trim();
+		if (cleaned.length) {
+			console.log('OCR result:', cleaned);
+			const chatInput = document.getElementById('chatInput');
+			if (chatInput) {
+				chatInput.value = cleaned;
+				chatInput.focus();
+			}
+			// Optionally clear board after reading
+			// clearWhiteboard();
+		}
+	} catch (err) {
+		console.error('OCR failed:', err);
+	}
+	isAnythingDrawn = false;
+}
