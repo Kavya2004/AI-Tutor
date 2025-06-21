@@ -31,6 +31,9 @@
 					<button class="tab-button" id="studentTab" onclick="switchWhiteboard('student')">
 						✏️ Student Board
 					</button>
+					<button class="tab-button" id="notesTab" onclick="switchWhiteboard('notes')">
+						📝 Notes
+					</button>
 				</div>
 				<div class="whiteboard-container">
 					<!-- Teacher Whiteboard -->
@@ -58,6 +61,30 @@
 						</div>
 						<canvas id="studentWhiteboard" class="whiteboard-canvas"></canvas>
 					</div>
+
+					<div class="whiteboard-panel" id="notesPanel">
+						<div class="whiteboard-header">
+							<h3>Student Notes</h3>
+							<div class="whiteboard-controls">
+								<div class="notebook-mode-toggle">
+									<button class="mode-btn active" id="writeModeBtn">Write</button>
+									<button class="mode-btn" id="drawModeBtn">Draw</button>
+								</div>
+								<button id="clearNotesButton">Clear</button>
+								<button id="saveNotesButton">Save</button>
+								<button id="expandNotesButton">Expand</button>
+							</div>
+						</div>
+						<div class="notebook-container">
+							<div class="notebook-paper">
+								<textarea 
+									id="studentNotes" 
+									placeholder="Take your notes here... You can switch to draw mode to sketch diagrams and formulas!"
+								></textarea>
+								<canvas id="notesCanvas" class="notes-canvas"></canvas>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -69,6 +96,7 @@
 	
 	<script src="javascript/tutor-chat.js"></script>
 	<script src="javascript/tutor-whiteboard.js"></script>
+	<script src="javascript/student-notes.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 </body>
 </html>
