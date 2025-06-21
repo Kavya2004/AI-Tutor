@@ -24,16 +24,40 @@
 				</div>
 			</div>
 			<div class="whiteboard-section">
-				<div class="whiteboard-header">
-					<h3>Whiteboard</h3>
-					<div class="whiteboard-controls">
-						<button id="clearButton">Clear</button>
-						<button id="drawButton">Draw</button>
-						<button id="chartButton">Figure</button>
-					</div>
+				<div class="whiteboard-tabs">
+					<button class="tab-button active" id="teacherTab" onclick="switchWhiteboard('teacher')">
+						🎓 Teacher Board
+					</button>
+					<button class="tab-button" id="studentTab" onclick="switchWhiteboard('student')">
+						✏️ Student Board
+					</button>
 				</div>
 				<div class="whiteboard-container">
-					<canvas id="whiteboard"></canvas>
+					<!-- Teacher Whiteboard -->
+					<div class="whiteboard-panel active" id="teacherPanel">
+						<div class="whiteboard-header">
+							<h3>Teacher Whiteboard</h3>
+							<div class="whiteboard-controls">
+								<button id="clearTeacherButton">Clear</button>
+								<button id="drawTeacherButton">Draw</button>
+								<button id="expandTeacherButton">Expand</button>
+							</div>
+						</div>
+						<canvas id="teacherWhiteboard" class="whiteboard-canvas"></canvas>
+					</div>
+					
+					<!-- Student Whiteboard -->
+					<div class="whiteboard-panel" id="studentPanel">
+						<div class="whiteboard-header">
+							<h3>Student Whiteboard</h3>
+							<div class="whiteboard-controls">
+								<button id="clearStudentButton">Clear</button>
+								<button id="drawStudentButton">Draw</button>
+								<button id="expandStudentButton">Expand</button>
+							</div>
+						</div>
+						<canvas id="studentWhiteboard" class="whiteboard-canvas"></canvas>
+					</div>
 				</div>
 			</div>
 		</div>

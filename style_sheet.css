@@ -623,6 +623,60 @@ body {
     max-width: calc(100vw - 300px);
 }
 
+/* Whiteboard Tabs Styling */
+.whiteboard-tabs {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 12px 20px;
+    background: #e9ecef;
+    border: none;
+    border-right: 1px solid #ddd;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.tab-button:last-child {
+    border-right: none;
+}
+
+.tab-button:hover {
+    background: #dee2e6;
+}
+
+.tab-button.active {
+    background: #014148;
+    color: white;
+    font-weight: bold;
+}
+
+/* Whiteboard Panel Styling */
+.whiteboard-panel {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+}
+
+.whiteboard-panel.active {
+    display: flex;
+}
+
+.whiteboard-canvas {
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    background: white;
+}
+
 .whiteboard-section {
     flex: 1; /* Take remaining space */
     min-width: 300px;

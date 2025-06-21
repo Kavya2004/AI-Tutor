@@ -78,39 +78,41 @@ async function processUserMessage(message) {
 	showLoading();
 
 	try {
-		// Create a proper tutor prompt with better formatting
-		const tutorPrompt = `You are a friendly probability and statistics tutor. Please explain the following question in simple, clear terms suitable for a student:
+		// Enhanced tutor prompt with whiteboard decision making
+		const tutorPrompt = `You are a friendly probability and statistics tutor with access to two whiteboards:
+1. TEACHER WHITEBOARD - Use this to demonstrate concepts, draw examples, show solutions
+2. STUDENT WHITEBOARD - Use this for student practice, exercises, or when asking students to work
 
-Question: ${message}
+Instructions:
+- Respond naturally to the student's question
+- If you need to draw/demonstrate concepts, add [TEACHER_BOARD: action_name] 
+- If you want the student to practice/work, add [STUDENT_BOARD: action_name]
+- Available actions: probability_scale, distribution, normal_curve, tree_diagram, clear_board
 
-Please provide a concise but helpful explanation focusing on the key concepts.`;
+Student Question: ${message}
 
-		// Increase timeout to 30 seconds and add better error handling
-		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+Provide a helpful explanation and choose the appropriate whiteboard action if needed.`;
 
 		console.log('Sending request to server...');
 
-		const response = await fetch('http://localhost:11434/api/chat', {
+		const response = await fetch('http://localhost:8000/v1/chat/completions', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({
-				model: 'llama3.2:latest',
+				model: 'tinyllama',
 				messages: [
 					{
 						role: 'system',
-						content: 'You are a friendly probability and statistics tutor. Explain clearly and helpfully.'
+						content: 'You are a friendly probability and statistics tutor with dual whiteboard capabilities. Be helpful and educational.'
 					},
-					{ role: 'user', content: message }
+					{ role: 'user', content: tutorPrompt }
 				],
-				stream: false
-			}),
-			signal: controller.signal
+				temperature: 0.7,
+				max_tokens: 200
+			})
 		});
-
-		clearTimeout(timeoutId);
 
 		console.log('Response status:', response.status);
 
@@ -124,8 +126,8 @@ Please provide a concise but helpful explanation focusing on the key concepts.`;
 		console.log('Received data:', data);
 
 		let botResponse = '';
-		if (data.message && data.message.content) {
-			botResponse = data.message.content.trim();
+		if (data.choices && data.choices[0] && data.choices[0].message) {
+			botResponse = data.choices[0].message.content.trim();
 		} else {
 			console.error('Invalid response structure:', data);
 			throw new Error('Invalid response format from server');
@@ -133,7 +135,7 @@ Please provide a concise but helpful explanation focusing on the key concepts.`;
 
 		// Better fallback response
 		if (!botResponse || botResponse.length < 5) {
-			botResponse = `I understand you're asking about "${message}". Let me try to help! This relates to probability and statistics concepts. Could you be more specific about what aspect you'd like me to explain?`;
+			botResponse = `I understand you're asking about "${message}". Let me help explain this probability concept! Could you be more specific about what aspect you'd like me to demonstrate?`;
 		}
 
 		// Add to context for next interaction (keep last 4 messages)
@@ -143,38 +145,59 @@ Please provide a concise but helpful explanation focusing on the key concepts.`;
 			context = context.slice(-8);
 		}
 
-		// Check for whiteboard actions
-		let action = null;
-		const actionMatch = botResponse.match(/\[ACTION:\s*(\w+)\]/);
-		if (actionMatch) {
-			action = { type: actionMatch[1] };
-			botResponse = botResponse.replace(/\[ACTION:\s*\w+\]/, '').trim();
+		// Parse whiteboard actions
+		let whiteboardAction = null;
+		let targetBoard = null;
+
+		// Check for teacher board actions
+		const teacherMatch = botResponse.match(/\[TEACHER_BOARD:\s*(\w+)\]/);
+		if (teacherMatch) {
+			whiteboardAction = teacherMatch[1];
+			targetBoard = 'teacher';
+			botResponse = botResponse.replace(/\[TEACHER_BOARD:\s*\w+\]/, '').trim();
+			botResponse += '\n\n[Drawing on teacher whiteboard...]';
 		}
 
-		// Suggest whiteboard actions for common topics
-		if (!action) {
+		// Check for student board actions
+		const studentMatch = botResponse.match(/\[STUDENT_BOARD:\s*(\w+)\]/);
+		if (studentMatch) {
+			whiteboardAction = studentMatch[1];
+			targetBoard = 'student';
+			botResponse = botResponse.replace(/\[STUDENT_BOARD:\s*\w+\]/, '').trim();
+			botResponse += '\n\n[Setting up student whiteboard...]';
+		}
+
+		// Auto-suggest whiteboard actions based on keywords if not explicitly specified
+		if (!whiteboardAction) {
 			const lowerMessage = message.toLowerCase();
-			if (lowerMessage.includes('probability scale') || lowerMessage.includes('scale')) {
-				action = { type: 'draw_probability_scale' };
-				botResponse += '\n\n[Drawing probability scale on whiteboard...]';
-			} else if (lowerMessage.includes('distribution') || lowerMessage.includes('histogram')) {
-				action = { type: 'draw_distribution' };
-				botResponse += '\n\n[Drawing distribution on whiteboard...]';
-			} else if (lowerMessage.includes('normal') || lowerMessage.includes('bell curve')) {
-				action = { type: 'draw_normal_curve' };
-				botResponse += '\n\n[Drawing normal curve on whiteboard...]';
-			} else if (lowerMessage.includes('tree') || lowerMessage.includes('conditional')) {
-				action = { type: 'draw_tree_diagram' };
-				botResponse += '\n\n[Drawing tree diagram on whiteboard...]';
+			if (lowerMessage.includes('show me') || lowerMessage.includes('demonstrate') || lowerMessage.includes('example')) {
+				targetBoard = 'teacher';
+				if (lowerMessage.includes('probability scale') || lowerMessage.includes('scale')) {
+					whiteboardAction = 'probability_scale';
+					botResponse += '\n\n[Demonstrating on teacher whiteboard...]';
+				} else if (lowerMessage.includes('distribution') || lowerMessage.includes('histogram')) {
+					whiteboardAction = 'distribution';
+					botResponse += '\n\n[Drawing distribution on teacher whiteboard...]';
+				} else if (lowerMessage.includes('normal') || lowerMessage.includes('bell curve')) {
+					whiteboardAction = 'normal_curve';
+					botResponse += '\n\n[Drawing normal curve on teacher whiteboard...]';
+				} else if (lowerMessage.includes('tree') || lowerMessage.includes('conditional')) {
+					whiteboardAction = 'tree_diagram';
+					botResponse += '\n\n[Drawing tree diagram on teacher whiteboard...]';
+				}
+			} else if (lowerMessage.includes('practice') || lowerMessage.includes('try') || lowerMessage.includes('your turn')) {
+				targetBoard = 'student';
+				botResponse += '\n\n[Student practice area ready...]';
 			}
 		}
 
 		addMessage(botResponse, 'bot');
 
 		// Execute whiteboard action if available
-		if (action && window.tutorWhiteboard) {
-			setTimeout(() => executeWhiteboardAction(action.type), 500);
+		if (whiteboardAction && targetBoard && window.tutorWhiteboard) {
+			setTimeout(() => executeWhiteboardAction(whiteboardAction, targetBoard), 500);
 		}
+
 	} catch (error) {
 		console.error('Error processing message:', error);
 		let errorMessage = 'I apologize, but I encountered an issue. ';
@@ -182,8 +205,7 @@ Please provide a concise but helpful explanation focusing on the key concepts.`;
 		if (error.name === 'AbortError') {
 			errorMessage += 'The request took too long to process. Please try asking a shorter or simpler question.';
 		} else if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
-			errorMessage +=
-				'I cannot connect to the AI server. Please make sure the server is running on localhost:8000 and try again.';
+			errorMessage += 'I cannot connect to the AI server. Please make sure the server is running on localhost:8000 and try again.';
 		} else if (error.message.includes('Server error')) {
 			errorMessage += 'The AI server encountered an error. Please check the server logs and try again.';
 		} else {
@@ -197,31 +219,44 @@ Please provide a concise but helpful explanation focusing on the key concepts.`;
 	isProcessing = false;
 }
 
-function executeWhiteboardAction(actionType) {
+function executeWhiteboardAction(actionType, targetBoard) {
 	if (!window.tutorWhiteboard) {
 		console.log('Whiteboard not available');
 		return;
 	}
 
+	console.log(`Executing ${actionType} on ${targetBoard} whiteboard`);
+
+	// Switch to the target whiteboard first
+	if (window.switchWhiteboard) {
+		window.switchWhiteboard(targetBoard);
+	}
+
+	// Execute the action on the appropriate whiteboard
 	switch (actionType) {
-		case 'draw_probability_scale':
+		case 'probability_scale':
 			if (window.tutorWhiteboard.drawProbabilityScale) {
-				window.tutorWhiteboard.drawProbabilityScale();
+				window.tutorWhiteboard.drawProbabilityScale(targetBoard);
 			}
 			break;
-		case 'draw_distribution':
+		case 'distribution':
 			if (window.tutorWhiteboard.drawSampleDistribution) {
-				window.tutorWhiteboard.drawSampleDistribution();
+				window.tutorWhiteboard.drawSampleDistribution(targetBoard);
 			}
 			break;
-		case 'draw_normal_curve':
+		case 'normal_curve':
 			if (window.tutorWhiteboard.drawNormalCurve) {
-				window.tutorWhiteboard.drawNormalCurve();
+				window.tutorWhiteboard.drawNormalCurve(targetBoard);
 			}
 			break;
-		case 'draw_tree_diagram':
+		case 'tree_diagram':
 			if (window.tutorWhiteboard.drawTreeDiagram) {
-				window.tutorWhiteboard.drawTreeDiagram();
+				window.tutorWhiteboard.drawTreeDiagram(targetBoard);
+			}
+			break;
+		case 'clear_board':
+			if (window.tutorWhiteboard.clearWhiteboard) {
+				window.tutorWhiteboard.clearWhiteboard(targetBoard);
 			}
 			break;
 		default:

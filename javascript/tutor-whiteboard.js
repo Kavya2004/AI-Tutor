@@ -1,68 +1,120 @@
-let canvas, ctx;
+let teacherCanvas, teacherCtx, studentCanvas, studentCtx;
 let isDrawing = false;
 let isDrawingMode = false;
 let currentPath = [];
 let isExpanded = false;
 let recogTimer = null;         
-let isAnythingDrawn = false;   
+let isAnythingDrawn = false;
+let activeWhiteboard = 'teacher'; // Track which whiteboard is active
 
 document.addEventListener('DOMContentLoaded', function() {
-	initializeWhiteboard();
+	initializeWhiteboards();
 	setupWhiteboardControls();
 });
 
 function setupWhiteboardControls() {
-	const clearButton = document.getElementById('clearButton');
-	const drawButton = document.getElementById('drawButton');
-	const chartButton = document.getElementById('chartButton');
-	const expandButton = document.getElementById('expandButton');
+	// Teacher whiteboard controls
+	const clearTeacherButton = document.getElementById('clearTeacherButton');
+	const drawTeacherButton = document.getElementById('drawTeacherButton');
+	const expandTeacherButton = document.getElementById('expandTeacherButton');
 	
-	if (clearButton) {
-		clearButton.addEventListener('click', clearWhiteboard);
+	// Student whiteboard controls
+	const clearStudentButton = document.getElementById('clearStudentButton');
+	const drawStudentButton = document.getElementById('drawStudentButton');
+	const expandStudentButton = document.getElementById('expandStudentButton');
+	
+	if (clearTeacherButton) {
+		clearTeacherButton.addEventListener('click', () => clearWhiteboard('teacher'));
 	}
 	
-	if (drawButton) {
-		drawButton.addEventListener('click', toggleDrawing);
+	if (drawTeacherButton) {
+		drawTeacherButton.addEventListener('click', () => toggleDrawing('teacher'));
 	}
 	
-	if (chartButton) {
-		chartButton.addEventListener('click', drawSampleDistribution);
+	if (expandTeacherButton) {
+		expandTeacherButton.addEventListener('click', toggleWhiteboardSize);
 	}
 	
-	if (expandButton) {
-		expandButton.addEventListener('click', toggleWhiteboardSize);
+	if (clearStudentButton) {
+		clearStudentButton.addEventListener('click', () => clearWhiteboard('student'));
+	}
+	
+	if (drawStudentButton) {
+		drawStudentButton.addEventListener('click', () => toggleDrawing('student'));
+	}
+	
+	if (expandStudentButton) {
+		expandStudentButton.addEventListener('click', toggleWhiteboardSize);
 	}
 	
 	setupResizeHandle();
 }
 
-function initializeWhiteboard() {
-	canvas = document.getElementById('whiteboard');
-	if (!canvas) {
-		console.error('Whiteboard canvas not found');
+function initializeWhiteboards() {
+	// Initialize teacher whiteboard
+	teacherCanvas = document.getElementById('teacherWhiteboard');
+	if (teacherCanvas) {
+		teacherCtx = teacherCanvas.getContext('2d');
+		setupCanvas(teacherCanvas, teacherCtx, 'teacher');
+	}
+	
+	// Initialize student whiteboard
+	studentCanvas = document.getElementById('studentWhiteboard');
+	if (studentCanvas) {
+		studentCtx = studentCanvas.getContext('2d');
+		setupCanvas(studentCanvas, studentCtx, 'student');
+	}
+	
+	if (!teacherCanvas || !studentCanvas) {
+		console.error('Whiteboard canvases not found');
 		return;
 	}
 	
-	ctx = canvas.getContext('2d');
-	resizeCanvas();
-	window.addEventListener('resize', resizeCanvas);
+	resizeCanvases();
+	window.addEventListener('resize', resizeCanvases);
 	
-	canvas.addEventListener('mousedown', startDrawing);
-	canvas.addEventListener('mousemove', draw);
-	canvas.addEventListener('mouseup', stopDrawing);
-	canvas.addEventListener('mouseout', stopDrawing);
+	updateDrawButtons();
+	updateExpandButton();
+}
+
+function setupCanvas(canvas, ctx, boardType) {
+	canvas.addEventListener('mousedown', (e) => startDrawing(e, boardType));
+	canvas.addEventListener('mousemove', (e) => draw(e, boardType));
+	canvas.addEventListener('mouseup', () => stopDrawing(boardType));
+	canvas.addEventListener('mouseout', () => stopDrawing(boardType));
 	
-	canvas.addEventListener('touchstart', handleTouchStart);
-	canvas.addEventListener('touchmove', handleTouchMove);
-	canvas.addEventListener('touchend', stopDrawing);
+	canvas.addEventListener('touchstart', (e) => handleTouchStart(e, boardType));
+	canvas.addEventListener('touchmove', (e) => handleTouchMove(e, boardType));
+	canvas.addEventListener('touchend', () => stopDrawing(boardType));
 	
 	ctx.strokeStyle = '#333';
 	ctx.lineWidth = 4;
 	ctx.lineCap = 'round';
 	ctx.lineJoin = 'round';
+}
+
+function switchWhiteboard(boardType) {
+	const teacherPanel = document.getElementById('teacherPanel');
+	const studentPanel = document.getElementById('studentPanel');
+	const teacherTab = document.getElementById('teacherTab');
+	const studentTab = document.getElementById('studentTab');
 	
-	updateDrawButton();
-	updateExpandButton();
+	if (boardType === 'teacher') {
+		teacherPanel.classList.add('active');
+		studentPanel.classList.remove('active');
+		teacherTab.classList.add('active');
+		studentTab.classList.remove('active');
+		activeWhiteboard = 'teacher';
+	} else {
+		studentPanel.classList.add('active');
+		teacherPanel.classList.remove('active');
+		studentTab.classList.add('active');
+		teacherTab.classList.remove('active');
+		activeWhiteboard = 'student';
+	}
+	
+	// Resize canvases after switching
+	setTimeout(resizeCanvases, 100);
 }
 
 function setupResizeHandle() {
@@ -113,7 +165,7 @@ function setupResizeHandle() {
 			chatSection.style.width = newWidth + 'px';
 			
 			requestAnimationFrame(() => {
-				resizeCanvas();
+				resizeCanvases();
 			});
 		}
 		
@@ -134,7 +186,6 @@ function setupResizeHandle() {
 function toggleWhiteboardSize() {
 	const whiteboardSection = document.querySelector('.whiteboard-section');
 	const chatSection = document.querySelector('.chat-section');
-	const mainContent = document.querySelector('.main-content');
 	
 	if (!whiteboardSection || !chatSection) {
 		console.error('Required sections not found');
@@ -156,52 +207,68 @@ function toggleWhiteboardSize() {
 	updateExpandButton();
 	
 	setTimeout(() => {
-		resizeCanvas();
+		resizeCanvases();
 	}, 50);
 }
 
 function updateExpandButton() {
-	const expandButton = document.getElementById('expandButton');
-	if (expandButton) {
-		expandButton.textContent = isExpanded ? '⬅️ Shrink' : '➡️ Expand';
-		expandButton.title = isExpanded ? 'Shrink whiteboard' : 'Expand whiteboard';
+	const expandTeacherButton = document.getElementById('expandTeacherButton');
+	const expandStudentButton = document.getElementById('expandStudentButton');
+	
+	if (expandTeacherButton) {
+		expandTeacherButton.textContent = isExpanded ? '⬅️ Shrink' : '➡️ Expand';
+		expandTeacherButton.title = isExpanded ? 'Shrink whiteboard' : 'Expand whiteboard';
+	}
+	
+	if (expandStudentButton) {
+		expandStudentButton.textContent = isExpanded ? '⬅️ Shrink' : '➡️ Expand';
+		expandStudentButton.title = isExpanded ? 'Shrink whiteboard' : 'Expand whiteboard';
 	}
 }
 
-function handleTouchStart(e) {
+function handleTouchStart(e, boardType) {
 	e.preventDefault();
 	const touch = e.touches[0];
 	const mouseEvent = new MouseEvent('mousedown', {
 		clientX: touch.clientX,
 		clientY: touch.clientY
 	});
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	canvas.dispatchEvent(mouseEvent);
 }
 
-function handleTouchMove(e) {
+function handleTouchMove(e, boardType) {
 	e.preventDefault();
 	const touch = e.touches[0];
 	const mouseEvent = new MouseEvent('mousemove', {
 		clientX: touch.clientX,
 		clientY: touch.clientY
 	});
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	canvas.dispatchEvent(mouseEvent);
 }
 
-function resizeCanvas() {
-	const container = document.querySelector('.whiteboard-container');
-	if (!container || !canvas) return;
+function resizeCanvases() {
+	resizeCanvas(teacherCanvas, 'teacher');
+	resizeCanvas(studentCanvas, 'student');
+}
+
+function resizeCanvas(canvas, boardType) {
+	if (!canvas) return;
 	
-	container.offsetHeight;
+	const panel = document.getElementById(boardType + 'Panel');
+	if (!panel) return;
 	
+	const container = panel.querySelector('.whiteboard-container') || panel;
 	const containerRect = container.getBoundingClientRect();
 	const newWidth = Math.floor(containerRect.width);
-	const newHeight = Math.floor(containerRect.height);
+	const newHeight = Math.floor(containerRect.height - 60); // Account for header
 	
 	if (canvas.width !== newWidth || canvas.height !== newHeight) {
 		canvas.width = newWidth;
 		canvas.height = newHeight;
 		
+		const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 		ctx.strokeStyle = '#333';
 		ctx.lineWidth = 4;
 		ctx.lineCap = 'round';
@@ -209,33 +276,50 @@ function resizeCanvas() {
 	}
 }
 
-function clearWhiteboard() {
-	if (!ctx) return;
+function clearWhiteboard(boardType) {
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	if (!ctx || !canvas) return;
+	
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
-function toggleDrawing() {
+function toggleDrawing(boardType) {
 	isDrawingMode = !isDrawingMode;
-	canvas.style.cursor = isDrawingMode ? 'crosshair' : 'default';
-	updateDrawButton();
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	if (canvas) {
+		canvas.style.cursor = isDrawingMode ? 'crosshair' : 'default';
+	}
+	updateDrawButtons();
 }
 
-function updateDrawButton() {
-	const drawButton = document.getElementById('drawButton');
-	if (drawButton) {
-		drawButton.style.background = isDrawingMode ? '#337810' : 'white';
-		drawButton.style.color = isDrawingMode ? 'white' : '#333';
-		drawButton.textContent = isDrawingMode ? 'Stop Draw' : 'Draw';
+function updateDrawButtons() {
+	const drawTeacherButton = document.getElementById('drawTeacherButton');
+	const drawStudentButton = document.getElementById('drawStudentButton');
+	
+	if (drawTeacherButton) {
+		drawTeacherButton.style.background = isDrawingMode ? '#337810' : 'white';
+		drawTeacherButton.style.color = isDrawingMode ? 'white' : '#333';
+		drawTeacherButton.textContent = isDrawingMode ? 'Stop Draw' : 'Draw';
+	}
+	
+	if (drawStudentButton) {
+		drawStudentButton.style.background = isDrawingMode ? '#337810' : 'white';
+		drawStudentButton.style.color = isDrawingMode ? 'white' : '#333';
+		drawStudentButton.textContent = isDrawingMode ? 'Stop Draw' : 'Draw';
 	}
 }
 
-function startDrawing(e) {
+function startDrawing(e, boardType) {
 	if (!isDrawingMode) return;
 
 	isDrawing = true;
 	isAnythingDrawn = true;
 	clearTimeout(recogTimer);
 
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	
 	const rect = canvas.getBoundingClientRect();
 	const x = e.clientX - rect.left;
 	const y = e.clientY - rect.top;
@@ -245,9 +329,11 @@ function startDrawing(e) {
 	ctx.moveTo(x, y);
 }
 
-
-function draw(e) {
+function draw(e, boardType) {
 	if (!isDrawing || !isDrawingMode) return;
+	
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	
 	const rect = canvas.getBoundingClientRect();
 	const x = e.clientX - rect.left;
@@ -258,20 +344,23 @@ function draw(e) {
 	ctx.stroke();
 }
 
-function stopDrawing() {
+function stopDrawing(boardType) {
 	isDrawing = false;
 	currentPath = [];
 
 	if (isAnythingDrawn) {
 		clearTimeout(recogTimer);
-		recogTimer = setTimeout(runOcrAndFillChat, 800); 
+		recogTimer = setTimeout(() => runOcrAndFillChat(boardType), 800); 
 	}
 }
 
-
-function drawProbabilityScale() {
-	if (!ctx) return;
-	clearWhiteboard();
+// Drawing functions that can work on either whiteboard
+function drawProbabilityScale(boardType = 'teacher') {
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	if (!ctx || !canvas) return;
+	
+	clearWhiteboard(boardType);
 	
 	const width = canvas.width;
 	const height = canvas.height;
@@ -308,13 +397,13 @@ function drawProbabilityScale() {
 	ctx.fillText('Probability Scale', width / 2, 50);
 	
 	setTimeout(() => {
-		drawEventOnScale(startX, scaleLength, centerY, 0.5, 'Fair Coin Heads', '#337810');
-		drawEventOnScale(startX, scaleLength, centerY, 0.167, 'Rolling a 6', '#014148');
-		drawEventOnScale(startX, scaleLength, centerY, 1, 'Sun Rising Tomorrow', '#73c3f6');
+		drawEventOnScale(startX, scaleLength, centerY, 0.5, 'Fair Coin Heads', '#337810', ctx);
+		drawEventOnScale(startX, scaleLength, centerY, 0.167, 'Rolling a 6', '#014148', ctx);
+		drawEventOnScale(startX, scaleLength, centerY, 1, 'Sun Rising Tomorrow', '#73c3f6', ctx);
 	}, 1000);
 }
 
-function drawEventOnScale(startX, scaleLength, centerY, probability, label, color) {
+function drawEventOnScale(startX, scaleLength, centerY, probability, label, color, ctx) {
 	if (!ctx) return;
 	const x = startX + (scaleLength * probability);
 	
@@ -338,9 +427,12 @@ function drawEventOnScale(startX, scaleLength, centerY, probability, label, colo
 	ctx.fillText(label, x, centerY - 60);
 }
 
-function drawSampleDistribution() {
-	if (!ctx) return;
-	clearWhiteboard();
+function drawSampleDistribution(boardType = 'teacher') {
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	if (!ctx || !canvas) return;
+	
+	clearWhiteboard(boardType);
 	
 	const width = canvas.width;
 	const height = canvas.height;
@@ -407,9 +499,12 @@ function drawSampleDistribution() {
 	ctx.restore();
 }
 
-function drawNormalCurve() {
-	if (!ctx) return;
-	clearWhiteboard();
+function drawNormalCurve(boardType = 'teacher') {
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	if (!ctx || !canvas) return;
+	
+	clearWhiteboard(boardType);
 	
 	const width = canvas.width;
 	const height = canvas.height;
@@ -483,9 +578,12 @@ function drawNormalCurve() {
 	ctx.fillText('μ (mean)', centerX, centerY + 135);
 }
 
-function drawTreeDiagram() {
-	if (!ctx) return;
-	clearWhiteboard();
+function drawTreeDiagram(boardType = 'teacher') {
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	if (!ctx || !canvas) return;
+	
+	clearWhiteboard(boardType);
 	
 	const width = canvas.width;
 	const height = canvas.height;
@@ -582,13 +680,18 @@ window.tutorWhiteboard = {
 	drawProbabilityScale,
 	drawSampleDistribution,
 	drawNormalCurve,
-	drawTreeDiagram
+	drawTreeDiagram,
+	switchWhiteboard
 };
 
-async function runOcrAndFillChat() {
+// Make switchWhiteboard globally available
+window.switchWhiteboard = switchWhiteboard;
+
+async function runOcrAndFillChat(boardType) {
 	try {
+		const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 		const dataUrl = canvas.toDataURL('image/png');
-		console.log('Running OCR...');
+		console.log('Running OCR on', boardType, 'whiteboard...');
 
 		const { data: { text } } = await window.Tesseract.recognize(
 			dataUrl,
@@ -604,8 +707,6 @@ async function runOcrAndFillChat() {
 				chatInput.value = cleaned;
 				chatInput.focus();
 			}
-			// Optionally clear board after reading
-			// clearWhiteboard();
 		}
 	} catch (err) {
 		console.error('OCR failed:', err);
