@@ -1,4 +1,4 @@
-        html, body 		{ margin: 0; padding: 0; }
+html, body 		{ margin: 0; padding: 0; }
 		body 			{ /*background-color: #d9d0c2; */  background: url(//www.probabilitycourse.com/images/Template/newbackground.png); color: #333; font: 16px "Myriad Pro", Verdana, Geneva, Arial, sans-serif; line-height: 24px;}
 		h1				{ color: #333; left: 20px; text-align: center; }
 		a				{ color: #337810;}
@@ -424,9 +424,30 @@ body {
 }
 .chat-input-container {
     display: flex;
-    padding: 20px;
-    background: white;
-    border-top: 1px solid #ddd;
+    gap: 10px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    align-items: center; /* Add this */
+    flex-shrink: 0; /* Add this */
+}
+.chat-input-container input {
+    flex: 1; /* Make input flexible */
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 25px;
+    outline: none;
+    min-width: 0; /* Add this for proper flex behavior */
+}
+.chat-input-container button {
+    flex-shrink: 0; /* Prevent button from shrinking */
+    padding: 12px 20px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    white-space: nowrap; /* Prevent text wrapping */
 }
 #chatInput {
     flex: 1;
@@ -474,16 +495,20 @@ body {
 }
 .whiteboard-controls {
     display: flex;
-    gap: 10px;
+    gap: 8px;
+    flex-wrap: wrap; /* Add this */
+    align-items: center; /* Add this */
 }
+
 .whiteboard-controls button {
-    padding: 8px 12px;
+    padding: 8px 15px;
     border: 1px solid #ddd;
     background: white;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 0.9em;
     transition: all 0.3s ease;
+    flex-shrink: 0; /* Prevent shrinking */
+    white-space: nowrap; /* Prevent text wrapping */
 }
 .whiteboard-controls button:hover {
     background: #014148;
@@ -509,18 +534,20 @@ body {
     background: white;
 }
 .loading-indicator {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
-    background: white;
-    padding: 12px 20px;
-    border-radius: 25px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    position: fixed; /* Change from absolute to fixed */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0; /* Add this */
 }
 .spinner {
     width: 20px;
@@ -627,22 +654,20 @@ body {
 .whiteboard-tabs {
     display: flex;
     background: #f8f9fa;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #e9ecef;
+    flex-wrap: wrap; /* Add this for small screens */
+    gap: 2px; /* Add small gap */
 }
 
 .tab-button {
-    flex: 1;
+    flex: 1; /* Make tabs flexible */
     padding: 12px 20px;
-    background: #e9ecef;
     border: none;
-    border-right: 1px solid #ddd;
+    background: transparent;
     cursor: pointer;
-    font-size: 16px;
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    white-space: nowrap; /* Prevent text wrapping */
+    min-width: 0; /* Allow shrinking if needed */
 }
 
 .tab-button:last-child {
@@ -818,20 +843,19 @@ body {
 /* Notebook mode toggle */
 .notebook-mode-toggle {
     display: flex;
-    gap: 5px;
-    margin: 0 15px;
+    background: #f0f0f0;
+    border-radius: 20px;
+    overflow: hidden;
+    flex-shrink: 0; /* Add this */
 }
-
 .mode-btn {
     padding: 8px 16px;
-    border: 2px solid #014148;
-    background: white;
-    border-radius: 20px;
+    border: none;
+    background: transparent;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
     transition: all 0.3s ease;
-    color: #014148;
+    flex: 1; /* Make buttons equal width */
+    white-space: nowrap; /* Prevent text wrapping */
 }
 
 .mode-btn:hover {
@@ -938,6 +962,32 @@ body {
     );
     border-radius: 5px;
     z-index: 1;
+}
+
+/* Voice control styles */
+#voiceControls button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+#voiceInputBtn.listening {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.voice-status-active {
+    background: #e8f5e8 !important;
+    color: #337810 !important;
+}
+
+.voice-status-error {
+    background: #ffe8e8 !important;
+    color: #ff6b6b !important;
 }
 
 /* Add some paper texture */

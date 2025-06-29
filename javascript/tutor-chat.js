@@ -1,5 +1,6 @@
 let isProcessing = false;
 let context = [];
+let voiceEnabled = true;
 
 document.addEventListener('DOMContentLoaded', function () {
 	initializeChat();
@@ -18,6 +19,34 @@ function initializeChat() {
 	}
 
 	addMessage("Hi there! I'm your probability tutor! Ask me anything about probability and statistics!", 'bot');
+	
+
+	voiceEnabled = localStorage.getItem('autoSpeech') !== 'false';
+	
+	setTimeout(createVoiceToggle, 1500); 
+}
+
+function createVoiceToggle() {
+	const chatHeader = document.querySelector('.chat-header') || document.querySelector('h2');
+	if (!chatHeader || document.getElementById('voiceToggle')) return;
+
+	const toggleBtn = document.createElement('button');
+	toggleBtn.id = 'voiceToggle';
+	toggleBtn.innerHTML = voiceEnabled ? '🔊 Voice On' : '🔇 Voice Off';
+	toggleBtn.style.cssText = `
+		padding: 5px 10px;
+		margin-left: 10px;
+		border: 1px solid #ccc;
+		border-radius: 15px;
+		background: ${voiceEnabled ? '#337810' : '#666'};
+		color: white;
+		cursor: pointer;
+		font-size: 12px;
+		transition: all 0.3s ease;
+	`;
+	toggleBtn.addEventListener('click', toggleVoiceResponse);
+	
+	chatHeader.appendChild(toggleBtn);
 }
 
 function handleKeyPress(event) {
@@ -54,6 +83,11 @@ function addMessage(text, sender) {
 	messageDiv.appendChild(content);
 	chatMessages.appendChild(messageDiv);
 	chatMessages.scrollTop = chatMessages.scrollHeight;
+
+	// ADD THIS: Trigger voice response for bot messages
+	if (sender === 'bot' && window.voiceTutor && voiceEnabled) {
+		window.voiceTutor.handleBotResponse(text);
+	}
 }
 
 function showLoading() {
@@ -69,8 +103,26 @@ function hideLoading() {
 		loadingIndicator.style.display = 'none';
 	}
 }
+function toggleVoiceResponse() {
+    voiceEnabled = !voiceEnabled;
+    localStorage.setItem('autoSpeech', voiceEnabled.toString());
+    
+    const toggleBtn = document.getElementById('voiceToggle');
+    if (toggleBtn) {
+        toggleBtn.innerHTML = voiceEnabled ? '🎤' : '🔇';
+        toggleBtn.title = voiceEnabled ? 'Voice On - Click to disable' : 'Voice Off - Click to enable';
+        toggleBtn.style.background = voiceEnabled ? '#337810' : '#666';
+        toggleBtn.style.borderColor = voiceEnabled ? '#337810' : '#666';
+    }
+    
+    // Stop current speech if disabling
+    if (!voiceEnabled && window.voiceTutor) {
+        window.voiceTutor.stopSpeaking();
+    }
+}
 
 async function processUserMessage(message) {
+	window.processUserMessage = processUserMessage;
 	if (isProcessing || !message.trim()) return;
 
 	isProcessing = true;
@@ -79,20 +131,27 @@ async function processUserMessage(message) {
 
 	try {
 		// Enhanced tutor prompt with whiteboard decision making
-		const tutorPrompt = `You are a friendly probability and statistics tutor with access to two whiteboards:
-1. TEACHER WHITEBOARD - Use this to demonstrate concepts, draw examples, show solutions
-2. STUDENT WHITEBOARD - Use this for student practice, exercises, or when asking students to work
+		const tutorPrompt = `You are a friendly probability and statistics tutor. 
 
-Instructions:
-- Respond naturally to the student's question
-- If you need to draw/demonstrate concepts, add [TEACHER_BOARD: action_name] 
-- If you want the student to practice/work, add [STUDENT_BOARD: action_name]
-- Available actions: probability_scale, distribution, normal_curve, tree_diagram, clear_board
-
-Student Question: ${message}
-
-Provide a helpful explanation and choose the appropriate whiteboard action if needed.`;
-
+		IMPORTANT: Only provide probability/statistics help when the question is actually about probability or statistics topics. For other subjects (like basic math, general questions), give a brief, helpful answer and gently redirect to probability topics.
+		
+		For probability/statistics questions, you have access to two whiteboards:
+		1. TEACHER WHITEBOARD - Use this to demonstrate concepts, draw examples, show solutions
+		2. STUDENT WHITEBOARD - Use this for student practice, exercises, or when asking students to work
+		
+		Instructions for probability/statistics questions:
+		- Respond naturally to the student's question
+		- If you need to draw/demonstrate concepts, add [TEACHER_BOARD: action_name] 
+		- If you want the student to practice/work, add [STUDENT_BOARD: action_name]
+		- Available actions: probability_scale, distribution, normal_curve, tree_diagram, clear_board
+		
+		For non-probability questions:
+		- Answer briefly and helpfully
+		- Gently suggest exploring probability topics instead
+		
+		Student Question: ${message}
+		
+		Determine if this is a probability/statistics question first, then respond appropriately.`;
 		console.log('Sending request to server...');
 
 		const response = await fetch('http://localhost:8000/v1/chat/completions', {
