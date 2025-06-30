@@ -1,5 +1,19 @@
 let isProcessing = false;
-let context = [];
+let context = [
+	{
+		role: 'system',
+		content: `You are a friendly probability and statistics tutor with access to two whiteboards:
+1. TEACHER WHITEBOARD - Use this to demonstrate concepts, draw examples, show solutions
+2. STUDENT WHITEBOARD - Use this for student practice, exercises, or when asking students to work
+
+Instructions:
+- Respond naturally but BRIEFLY to the student's question
+- If you need to draw/demonstrate concepts, add [TEACHER_BOARD: action_name]
+- If you want the student to practice/work, add [STUDENT_BOARD: action_name]
+- Available actions: probability_scale, distribution, normal_curve, tree_diagram, clear_board`
+	}
+];
+
 let voiceEnabled = true;
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -70,7 +84,6 @@ function addMessage(text, sender) {
 	const messageDiv = document.createElement('div');
 	messageDiv.className = `message ${sender}-message slide-in`;
 
-	// Create message structure
 	const avatar = document.createElement('div');
 	avatar.className = 'message-avatar';
 	avatar.innerHTML = sender === 'bot' ? '🤖' : '👤';
@@ -130,147 +143,97 @@ async function processUserMessage(message) {
 	showLoading();
 
 	try {
-		// Enhanced tutor prompt with whiteboard decision making
-		const tutorPrompt = `You are a friendly probability and statistics tutor. 
+let boardToCheck = null;
+if (/student board|student whiteboard/i.test(message)) {
+	boardToCheck = 'student';
+} else if (/teacher board|teacher whiteboard/i.test(message)) {
+	boardToCheck = 'teacher';
+}
 
-		IMPORTANT: Only provide probability/statistics help when the question is actually about probability or statistics topics. For other subjects (like basic math, general questions), give a brief, helpful answer and gently redirect to probability topics.
-		
-		For probability/statistics questions, you have access to two whiteboards:
-		1. TEACHER WHITEBOARD - Use this to demonstrate concepts, draw examples, show solutions
-		2. STUDENT WHITEBOARD - Use this for student practice, exercises, or when asking students to work
-		
-		Instructions for probability/statistics questions:
-		- Respond naturally to the student's question
-		- If you need to draw/demonstrate concepts, add [TEACHER_BOARD: action_name] 
-		- If you want the student to practice/work, add [STUDENT_BOARD: action_name]
-		- Available actions: probability_scale, distribution, normal_curve, tree_diagram, clear_board
-		
-		For non-probability questions:
-		- Answer briefly and helpfully
-		- Gently suggest exploring probability topics instead
-		
-		Student Question: ${message}
-		
-		Determine if this is a probability/statistics question first, then respond appropriately.`;
-		console.log('Sending request to server...');
+let ocrText = null;
+if (boardToCheck) {
+	ocrText = await getOcrTextFromWhiteboard(boardToCheck);
+	console.log(`[DEBUG] OCR result from ${boardToCheck} board:`, ocrText);
 
-		const response = await fetch('http://localhost:8000/v1/chat/completions', {
+	const latestOcrSummary = ocrText
+		? `The ${boardToCheck} whiteboard contains: "${ocrText}"`
+		: `The ${boardToCheck} whiteboard is currently blank.`;
+
+	context = context.filter(
+		(entry) => !(entry.role === 'system' && entry.content.startsWith(`The ${boardToCheck} whiteboard`))
+	);
+
+	context.splice(1, 0, {
+		role: 'system',
+		content: latestOcrSummary
+	});
+}
+
+context.push({ role: 'user', content: message });
+
+
+		const response = await fetch('http://localhost:11434/api/chat', {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
+			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				model: 'tinyllama',
-				messages: [
-					{
-						role: 'system',
-						content: 'You are a friendly probability and statistics tutor with dual whiteboard capabilities. Be helpful and educational.'
-					},
-					{ role: 'user', content: tutorPrompt }
-				],
+				model: 'llama3',
+				messages: context,
 				temperature: 0.7,
-				max_tokens: 200
+				max_tokens: 200,
+				stream: false
 			})
 		});
 
-		console.log('Response status:', response.status);
-
 		if (!response.ok) {
 			const errorText = await response.text();
-			console.error('Server error response:', errorText);
 			throw new Error(`Server error: ${response.status} - ${errorText}`);
 		}
 
 		const data = await response.json();
-		console.log('Received data:', data);
+		console.log('Received response:', data);
 
-		let botResponse = '';
-		if (data.choices && data.choices[0] && data.choices[0].message) {
-			botResponse = data.choices[0].message.content.trim();
-		} else {
-			console.error('Invalid response structure:', data);
-			throw new Error('Invalid response format from server');
-		}
-
-		// Better fallback response
+		let botResponse = data.message?.content?.trim() || '';
 		if (!botResponse || botResponse.length < 5) {
 			botResponse = `I understand you're asking about "${message}". Let me help explain this probability concept! Could you be more specific about what aspect you'd like me to demonstrate?`;
 		}
 
-		// Add to context for next interaction (keep last 4 messages)
-		context.push({ role: 'user', content: message });
 		context.push({ role: 'assistant', content: botResponse });
-		if (context.length > 8) {
-			context = context.slice(-8);
+
+		const maxContextMessages = 18;
+		if (context.length > maxContextMessages) {
+			context = [context[0], ...context.slice(-(maxContextMessages - 1))];
 		}
 
-		// Parse whiteboard actions
 		let whiteboardAction = null;
 		let targetBoard = null;
-
-		// Check for teacher board actions
 		const teacherMatch = botResponse.match(/\[TEACHER_BOARD:\s*(\w+)\]/);
+		const studentMatch = botResponse.match(/\[STUDENT_BOARD:\s*(\w+)\]/);
+
 		if (teacherMatch) {
 			whiteboardAction = teacherMatch[1];
 			targetBoard = 'teacher';
 			botResponse = botResponse.replace(/\[TEACHER_BOARD:\s*\w+\]/, '').trim();
 			botResponse += '\n\n[Drawing on teacher whiteboard...]';
-		}
-
-		// Check for student board actions
-		const studentMatch = botResponse.match(/\[STUDENT_BOARD:\s*(\w+)\]/);
-		if (studentMatch) {
+		} else if (studentMatch) {
 			whiteboardAction = studentMatch[1];
 			targetBoard = 'student';
 			botResponse = botResponse.replace(/\[STUDENT_BOARD:\s*\w+\]/, '').trim();
 			botResponse += '\n\n[Setting up student whiteboard...]';
 		}
 
-		// Auto-suggest whiteboard actions based on keywords if not explicitly specified
-		if (!whiteboardAction) {
-			const lowerMessage = message.toLowerCase();
-			if (lowerMessage.includes('show me') || lowerMessage.includes('demonstrate') || lowerMessage.includes('example')) {
-				targetBoard = 'teacher';
-				if (lowerMessage.includes('probability scale') || lowerMessage.includes('scale')) {
-					whiteboardAction = 'probability_scale';
-					botResponse += '\n\n[Demonstrating on teacher whiteboard...]';
-				} else if (lowerMessage.includes('distribution') || lowerMessage.includes('histogram')) {
-					whiteboardAction = 'distribution';
-					botResponse += '\n\n[Drawing distribution on teacher whiteboard...]';
-				} else if (lowerMessage.includes('normal') || lowerMessage.includes('bell curve')) {
-					whiteboardAction = 'normal_curve';
-					botResponse += '\n\n[Drawing normal curve on teacher whiteboard...]';
-				} else if (lowerMessage.includes('tree') || lowerMessage.includes('conditional')) {
-					whiteboardAction = 'tree_diagram';
-					botResponse += '\n\n[Drawing tree diagram on teacher whiteboard...]';
-				}
-			} else if (lowerMessage.includes('practice') || lowerMessage.includes('try') || lowerMessage.includes('your turn')) {
-				targetBoard = 'student';
-				botResponse += '\n\n[Student practice area ready...]';
-			}
-		}
-
 		addMessage(botResponse, 'bot');
 
-		// Execute whiteboard action if available
 		if (whiteboardAction && targetBoard && window.tutorWhiteboard) {
 			setTimeout(() => executeWhiteboardAction(whiteboardAction, targetBoard), 500);
 		}
-
 	} catch (error) {
 		console.error('Error processing message:', error);
 		let errorMessage = 'I apologize, but I encountered an issue. ';
-
-		if (error.name === 'AbortError') {
-			errorMessage += 'The request took too long to process. Please try asking a shorter or simpler question.';
-		} else if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
-			errorMessage += 'I cannot connect to the AI server. Please make sure the server is running on localhost:8000 and try again.';
-		} else if (error.message.includes('Server error')) {
-			errorMessage += 'The AI server encountered an error. Please check the server logs and try again.';
+		if (error.message.includes('fetch')) {
+			errorMessage += 'Unable to connect to the AI server. Please make sure it’s running.';
 		} else {
-			errorMessage += 'Please try rephrasing your question or check if the server is running properly.';
+			errorMessage += 'Please try again or check your server logs.';
 		}
-
 		addMessage(errorMessage, 'bot');
 	}
 
@@ -286,12 +249,10 @@ function executeWhiteboardAction(actionType, targetBoard) {
 
 	console.log(`Executing ${actionType} on ${targetBoard} whiteboard`);
 
-	// Switch to the target whiteboard first
 	if (window.switchWhiteboard) {
 		window.switchWhiteboard(targetBoard);
 	}
 
-	// Execute the action on the appropriate whiteboard
 	switch (actionType) {
 		case 'probability_scale':
 			if (window.tutorWhiteboard.drawProbabilityScale) {

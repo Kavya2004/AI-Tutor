@@ -3,11 +3,11 @@ let isDrawing = false;
 let isDrawingMode = false;
 let currentPath = [];
 let isExpanded = false;
-let recogTimer = null;         
+let recogTimer = null;
 let isAnythingDrawn = false;
 let activeWhiteboard = 'teacher'; // Track which whiteboard is active
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 	initializeWhiteboards();
 	setupWhiteboardControls();
 });
@@ -17,36 +17,36 @@ function setupWhiteboardControls() {
 	const clearTeacherButton = document.getElementById('clearTeacherButton');
 	const drawTeacherButton = document.getElementById('drawTeacherButton');
 	const expandTeacherButton = document.getElementById('expandTeacherButton');
-	
+
 	// Student whiteboard controls
 	const clearStudentButton = document.getElementById('clearStudentButton');
 	const drawStudentButton = document.getElementById('drawStudentButton');
 	const expandStudentButton = document.getElementById('expandStudentButton');
-	
+
 	if (clearTeacherButton) {
 		clearTeacherButton.addEventListener('click', () => clearWhiteboard('teacher'));
 	}
-	
+
 	if (drawTeacherButton) {
 		drawTeacherButton.addEventListener('click', () => toggleDrawing('teacher'));
 	}
-	
+
 	if (expandTeacherButton) {
 		expandTeacherButton.addEventListener('click', toggleWhiteboardSize);
 	}
-	
+
 	if (clearStudentButton) {
 		clearStudentButton.addEventListener('click', () => clearWhiteboard('student'));
 	}
-	
+
 	if (drawStudentButton) {
 		drawStudentButton.addEventListener('click', () => toggleDrawing('student'));
 	}
-	
+
 	if (expandStudentButton) {
 		expandStudentButton.addEventListener('click', toggleWhiteboardSize);
 	}
-	
+
 	setupResizeHandle();
 }
 
@@ -57,22 +57,22 @@ function initializeWhiteboards() {
 		teacherCtx = teacherCanvas.getContext('2d');
 		setupCanvas(teacherCanvas, teacherCtx, 'teacher');
 	}
-	
+
 	// Initialize student whiteboard
 	studentCanvas = document.getElementById('studentWhiteboard');
 	if (studentCanvas) {
 		studentCtx = studentCanvas.getContext('2d');
 		setupCanvas(studentCanvas, studentCtx, 'student');
 	}
-	
+
 	if (!teacherCanvas || !studentCanvas) {
 		console.error('Whiteboard canvases not found');
 		return;
 	}
-	
+
 	resizeCanvases();
 	window.addEventListener('resize', resizeCanvases);
-	
+
 	updateDrawButtons();
 	updateExpandButton();
 }
@@ -82,11 +82,11 @@ function setupCanvas(canvas, ctx, boardType) {
 	canvas.addEventListener('mousemove', (e) => draw(e, boardType));
 	canvas.addEventListener('mouseup', () => stopDrawing(boardType));
 	canvas.addEventListener('mouseout', () => stopDrawing(boardType));
-	
+
 	canvas.addEventListener('touchstart', (e) => handleTouchStart(e, boardType));
 	canvas.addEventListener('touchmove', (e) => handleTouchMove(e, boardType));
 	canvas.addEventListener('touchend', () => stopDrawing(boardType));
-	
+
 	ctx.strokeStyle = '#333';
 	ctx.lineWidth = 4;
 	ctx.lineCap = 'round';
@@ -98,7 +98,7 @@ function switchWhiteboard(boardType) {
 	const studentPanel = document.getElementById('studentPanel');
 	const teacherTab = document.getElementById('teacherTab');
 	const studentTab = document.getElementById('studentTab');
-	
+
 	if (boardType === 'teacher') {
 		teacherPanel.classList.add('active');
 		studentPanel.classList.remove('active');
@@ -112,7 +112,7 @@ function switchWhiteboard(boardType) {
 		teacherTab.classList.remove('active');
 		activeWhiteboard = 'student';
 	}
-	
+
 	// Resize canvases after switching
 	setTimeout(resizeCanvases, 100);
 }
@@ -120,12 +120,12 @@ function switchWhiteboard(boardType) {
 function setupResizeHandle() {
 	const chatSection = document.querySelector('.chat-section');
 	const whiteboardSection = document.querySelector('.whiteboard-section');
-	
+
 	if (!chatSection || !whiteboardSection) {
 		console.error('Chat or whiteboard section not found');
 		return;
 	}
-	
+
 	let resizeHandle = document.querySelector('.resize-handle');
 	if (!resizeHandle) {
 		resizeHandle = document.createElement('div');
@@ -133,45 +133,45 @@ function setupResizeHandle() {
 		resizeHandle.innerHTML = '⋮⋮';
 		chatSection.appendChild(resizeHandle);
 	}
-	
+
 	let isResizing = false;
 	let startX = 0;
 	let startWidth = 0;
-	
+
 	resizeHandle.addEventListener('mousedown', (e) => {
 		isResizing = true;
 		startX = e.clientX;
 		startWidth = parseInt(window.getComputedStyle(chatSection).width, 10);
 		document.body.style.cursor = 'col-resize';
 		document.body.style.userSelect = 'none';
-		
+
 		resizeHandle.style.background = '#337810';
 		resizeHandle.style.color = 'white';
-		
+
 		e.preventDefault();
 		e.stopPropagation();
 	});
-	
+
 	document.addEventListener('mousemove', (e) => {
 		if (!isResizing) return;
-		
+
 		const deltaX = e.clientX - startX;
 		const newWidth = startWidth + deltaX;
 		const minWidth = 250;
 		const maxWidth = window.innerWidth - 300;
-		
+
 		if (newWidth >= minWidth && newWidth <= maxWidth) {
 			chatSection.style.flexBasis = newWidth + 'px';
 			chatSection.style.width = newWidth + 'px';
-			
+
 			requestAnimationFrame(() => {
 				resizeCanvases();
 			});
 		}
-		
+
 		e.preventDefault();
 	});
-	
+
 	document.addEventListener('mouseup', () => {
 		if (isResizing) {
 			isResizing = false;
@@ -186,12 +186,12 @@ function setupResizeHandle() {
 function toggleWhiteboardSize() {
 	const whiteboardSection = document.querySelector('.whiteboard-section');
 	const chatSection = document.querySelector('.chat-section');
-	
+
 	if (!whiteboardSection || !chatSection) {
 		console.error('Required sections not found');
 		return;
 	}
-	
+
 	if (!isExpanded) {
 		chatSection.style.flexBasis = '50px';
 		chatSection.style.width = '50px';
@@ -203,9 +203,9 @@ function toggleWhiteboardSize() {
 		chatSection.style.minWidth = '200px';
 		isExpanded = false;
 	}
-	
+
 	updateExpandButton();
-	
+
 	setTimeout(() => {
 		resizeCanvases();
 	}, 50);
@@ -214,12 +214,12 @@ function toggleWhiteboardSize() {
 function updateExpandButton() {
 	const expandTeacherButton = document.getElementById('expandTeacherButton');
 	const expandStudentButton = document.getElementById('expandStudentButton');
-	
+
 	if (expandTeacherButton) {
 		expandTeacherButton.textContent = isExpanded ? '⬅️ Shrink' : '➡️ Expand';
 		expandTeacherButton.title = isExpanded ? 'Shrink whiteboard' : 'Expand whiteboard';
 	}
-	
+
 	if (expandStudentButton) {
 		expandStudentButton.textContent = isExpanded ? '⬅️ Shrink' : '➡️ Expand';
 		expandStudentButton.title = isExpanded ? 'Shrink whiteboard' : 'Expand whiteboard';
@@ -255,19 +255,19 @@ function resizeCanvases() {
 
 function resizeCanvas(canvas, boardType) {
 	if (!canvas) return;
-	
+
 	const panel = document.getElementById(boardType + 'Panel');
 	if (!panel) return;
-	
+
 	const container = panel.querySelector('.whiteboard-container') || panel;
 	const containerRect = container.getBoundingClientRect();
 	const newWidth = Math.floor(containerRect.width);
 	const newHeight = Math.floor(containerRect.height - 60); // Account for header
-	
+
 	if (canvas.width !== newWidth || canvas.height !== newHeight) {
 		canvas.width = newWidth;
 		canvas.height = newHeight;
-		
+
 		const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 		ctx.strokeStyle = '#333';
 		ctx.lineWidth = 4;
@@ -280,7 +280,7 @@ function clearWhiteboard(boardType) {
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	if (!ctx || !canvas) return;
-	
+
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -296,13 +296,13 @@ function toggleDrawing(boardType) {
 function updateDrawButtons() {
 	const drawTeacherButton = document.getElementById('drawTeacherButton');
 	const drawStudentButton = document.getElementById('drawStudentButton');
-	
+
 	if (drawTeacherButton) {
 		drawTeacherButton.style.background = isDrawingMode ? '#337810' : 'white';
 		drawTeacherButton.style.color = isDrawingMode ? 'white' : '#333';
 		drawTeacherButton.textContent = isDrawingMode ? 'Stop Draw' : 'Draw';
 	}
-	
+
 	if (drawStudentButton) {
 		drawStudentButton.style.background = isDrawingMode ? '#337810' : 'white';
 		drawStudentButton.style.color = isDrawingMode ? 'white' : '#333';
@@ -319,7 +319,7 @@ function startDrawing(e, boardType) {
 
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
-	
+
 	const rect = canvas.getBoundingClientRect();
 	const x = e.clientX - rect.left;
 	const y = e.clientY - rect.top;
@@ -331,14 +331,16 @@ function startDrawing(e, boardType) {
 
 function draw(e, boardType) {
 	if (!isDrawing || !isDrawingMode) return;
-	
+
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
-	
+
 	const rect = canvas.getBoundingClientRect();
 	const x = e.clientX - rect.left;
 	const y = e.clientY - rect.top;
-	
+
+	console.log(`[DRAW] ${boardType} board drawing at`, x, y); // <--- Add this line
+
 	currentPath.push({ x, y });
 	ctx.lineTo(x, y);
 	ctx.stroke();
@@ -350,7 +352,7 @@ function stopDrawing(boardType) {
 
 	if (isAnythingDrawn) {
 		clearTimeout(recogTimer);
-		recogTimer = setTimeout(() => runOcrAndFillChat(boardType), 800); 
+		//recogTimer = setTimeout(() => runOcrAndFillChat(boardType), 800);
 	}
 }
 
@@ -359,43 +361,43 @@ function drawProbabilityScale(boardType = 'teacher') {
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	if (!ctx || !canvas) return;
-	
+
 	clearWhiteboard(boardType);
-	
+
 	const width = canvas.width;
 	const height = canvas.height;
 	const centerY = height / 2;
 	const scaleLength = width * 0.8;
 	const startX = (width - scaleLength) / 2;
-	
+
 	ctx.strokeStyle = '#333';
 	ctx.lineWidth = 3;
 	ctx.beginPath();
 	ctx.moveTo(startX, centerY);
 	ctx.lineTo(startX + scaleLength, centerY);
 	ctx.stroke();
-	
+
 	ctx.font = '16px Arial';
 	ctx.textAlign = 'center';
 	ctx.fillStyle = '#333';
-	
+
 	for (let i = 0; i <= 10; i++) {
-		const x = startX + (scaleLength * i / 10);
+		const x = startX + (scaleLength * i) / 10;
 		const probability = i / 10;
-		
+
 		ctx.beginPath();
 		ctx.moveTo(x, centerY - 10);
 		ctx.lineTo(x, centerY + 10);
 		ctx.stroke();
-		
+
 		ctx.fillText(probability.toFixed(1), x, centerY + 30);
 	}
-	
+
 	ctx.font = '18px Arial';
 	ctx.fillText('Impossible', startX, centerY - 30);
 	ctx.fillText('Certain', startX + scaleLength, centerY - 30);
 	ctx.fillText('Probability Scale', width / 2, 50);
-	
+
 	setTimeout(() => {
 		drawEventOnScale(startX, scaleLength, centerY, 0.5, 'Fair Coin Heads', '#337810', ctx);
 		drawEventOnScale(startX, scaleLength, centerY, 0.167, 'Rolling a 6', '#014148', ctx);
@@ -405,23 +407,23 @@ function drawProbabilityScale(boardType = 'teacher') {
 
 function drawEventOnScale(startX, scaleLength, centerY, probability, label, color, ctx) {
 	if (!ctx) return;
-	const x = startX + (scaleLength * probability);
-	
+	const x = startX + scaleLength * probability;
+
 	ctx.strokeStyle = color;
 	ctx.fillStyle = color;
 	ctx.lineWidth = 2;
-	
+
 	ctx.beginPath();
 	ctx.moveTo(x, centerY - 50);
 	ctx.lineTo(x, centerY - 20);
 	ctx.stroke();
-	
+
 	ctx.beginPath();
 	ctx.moveTo(x - 5, centerY - 25);
 	ctx.lineTo(x, centerY - 20);
 	ctx.lineTo(x + 5, centerY - 25);
 	ctx.stroke();
-	
+
 	ctx.font = '14px Arial';
 	ctx.textAlign = 'center';
 	ctx.fillText(label, x, centerY - 60);
@@ -431,14 +433,14 @@ function drawSampleDistribution(boardType = 'teacher') {
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	if (!ctx || !canvas) return;
-	
+
 	clearWhiteboard(boardType);
-	
+
 	const width = canvas.width;
 	const height = canvas.height;
 	const centerX = width / 2;
 	const centerY = height / 2;
-	
+
 	const bars = [
 		{ value: 1, frequency: 2, color: '#337810' },
 		{ value: 2, frequency: 5, color: '#337810' },
@@ -452,11 +454,11 @@ function drawSampleDistribution(boardType = 'teacher') {
 		{ value: 10, frequency: 5, color: '#337810' },
 		{ value: 11, frequency: 2, color: '#337810' }
 	];
-	
+
 	const barWidth = 60;
 	const maxHeight = 150;
-	const maxFreq = Math.max(...bars.map(b => b.frequency));
-	
+	const maxFreq = Math.max(...bars.map((b) => b.frequency));
+
 	ctx.strokeStyle = '#333';
 	ctx.lineWidth = 2;
 	ctx.beginPath();
@@ -465,16 +467,16 @@ function drawSampleDistribution(boardType = 'teacher') {
 	ctx.moveTo(centerX - 350, centerY + 100);
 	ctx.lineTo(centerX - 350, centerY - 100);
 	ctx.stroke();
-	
+
 	bars.forEach((bar, index) => {
 		setTimeout(() => {
-			const x = centerX - 300 + (index * 55);
+			const x = centerX - 300 + index * 55;
 			const barHeight = (bar.frequency / maxFreq) * maxHeight;
 			const y = centerY + 100 - barHeight;
-			
+
 			ctx.fillStyle = bar.color;
 			ctx.fillRect(x, y, 40, barHeight);
-			
+
 			ctx.fillStyle = '#333';
 			ctx.font = '14px Arial';
 			ctx.textAlign = 'center';
@@ -482,15 +484,15 @@ function drawSampleDistribution(boardType = 'teacher') {
 			ctx.fillText(bar.frequency, x + 20, y - 5);
 		}, index * 200);
 	});
-	
+
 	ctx.fillStyle = '#333';
 	ctx.font = '20px Arial';
 	ctx.textAlign = 'center';
 	ctx.fillText('Sample Distribution', centerX, 50);
-	
+
 	ctx.font = '16px Arial';
 	ctx.fillText('Value', centerX, height - 20);
-	
+
 	ctx.save();
 	ctx.translate(50, centerY);
 	ctx.rotate(-Math.PI / 2);
@@ -503,14 +505,14 @@ function drawNormalCurve(boardType = 'teacher') {
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	if (!ctx || !canvas) return;
-	
+
 	clearWhiteboard(boardType);
-	
+
 	const width = canvas.width;
 	const height = canvas.height;
 	const centerX = width / 2;
 	const centerY = height / 2;
-	
+
 	ctx.strokeStyle = '#333';
 	ctx.lineWidth = 2;
 	ctx.beginPath();
@@ -519,21 +521,20 @@ function drawNormalCurve(boardType = 'teacher') {
 	ctx.moveTo(centerX, centerY + 100);
 	ctx.lineTo(centerX, centerY - 150);
 	ctx.stroke();
-	
+
 	ctx.strokeStyle = '#014148';
 	ctx.lineWidth = 3;
 	ctx.beginPath();
-	
+
 	const mean = 0;
 	const stdDev = 1;
 	const scale = 80;
-	
+
 	for (let x = -4; x <= 4; x += 0.1) {
-		const xPixel = centerX + (x * scale);
-		const y = (1 / (stdDev * Math.sqrt(2 * Math.PI))) * 
-				  Math.exp(-0.5 * Math.pow((x - mean) / stdDev, 2));
-		const yPixel = centerY + 100 - (y * 200);
-		
+		const xPixel = centerX + x * scale;
+		const y = (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mean) / stdDev, 2));
+		const yPixel = centerY + 100 - y * 200;
+
 		if (x === -4) {
 			ctx.moveTo(xPixel, yPixel);
 		} else {
@@ -541,39 +542,39 @@ function drawNormalCurve(boardType = 'teacher') {
 		}
 	}
 	ctx.stroke();
-	
+
 	ctx.strokeStyle = '#337810';
 	ctx.lineWidth = 2;
 	ctx.setLineDash([5, 5]);
-	
+
 	for (let i = -3; i <= 3; i++) {
 		if (i === 0) continue;
-		const x = centerX + (i * scale);
+		const x = centerX + i * scale;
 		ctx.beginPath();
 		ctx.moveTo(x, centerY + 100);
 		ctx.lineTo(x, centerY - 50);
 		ctx.stroke();
-		
+
 		ctx.fillStyle = '#337810';
 		ctx.font = '14px Arial';
 		ctx.textAlign = 'center';
 		ctx.fillText(`${i}σ`, x, centerY + 120);
 	}
-	
+
 	ctx.setLineDash([]);
-	
+
 	ctx.fillStyle = '#333';
 	ctx.font = '20px Arial';
 	ctx.textAlign = 'center';
 	ctx.fillText('Normal Distribution Curve', centerX, 50);
-	
+
 	ctx.strokeStyle = '#ff6b6b';
 	ctx.lineWidth = 2;
 	ctx.beginPath();
 	ctx.moveTo(centerX, centerY + 100);
 	ctx.lineTo(centerX, centerY - 50);
 	ctx.stroke();
-	
+
 	ctx.fillStyle = '#ff6b6b';
 	ctx.fillText('μ (mean)', centerX, centerY + 135);
 }
@@ -582,92 +583,92 @@ function drawTreeDiagram(boardType = 'teacher') {
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	if (!ctx || !canvas) return;
-	
+
 	clearWhiteboard(boardType);
-	
+
 	const width = canvas.width;
 	const height = canvas.height;
 	const centerX = width / 2;
 	const startY = 100;
-	
+
 	ctx.fillStyle = '#333';
 	ctx.font = '20px Arial';
 	ctx.textAlign = 'center';
 	ctx.fillText('Probability Tree Diagram', centerX, 50);
-	
+
 	ctx.fillStyle = '#014148';
 	ctx.beginPath();
 	ctx.arc(centerX, startY, 8, 0, 2 * Math.PI);
 	ctx.fill();
-	
+
 	const firstLevel = [
 		{ x: centerX - 200, y: startY + 100, label: 'A (0.6)', prob: '0.6' },
 		{ x: centerX + 200, y: startY + 100, label: 'B (0.4)', prob: '0.4' }
 	];
-	
-	firstLevel.forEach(branch => {
+
+	firstLevel.forEach((branch) => {
 		ctx.strokeStyle = '#333';
 		ctx.lineWidth = 2;
 		ctx.beginPath();
 		ctx.moveTo(centerX, startY);
 		ctx.lineTo(branch.x, branch.y);
 		ctx.stroke();
-		
+
 		ctx.fillStyle = '#014148';
 		ctx.beginPath();
 		ctx.arc(branch.x, branch.y, 8, 0, 2 * Math.PI);
 		ctx.fill();
-		
+
 		ctx.fillStyle = '#333';
 		ctx.font = '16px Arial';
 		ctx.textAlign = 'center';
 		ctx.fillText(branch.label, branch.x, branch.y - 20);
-		
+
 		const midX = (centerX + branch.x) / 2;
 		const midY = (startY + branch.y) / 2;
 		ctx.fillText(branch.prob, midX, midY - 10);
 	});
-	
+
 	const secondLevel = [
 		{ fromX: centerX - 200, fromY: startY + 100, x: centerX - 300, y: startY + 200, label: 'C|A (0.7)', prob: '0.7' },
 		{ fromX: centerX - 200, fromY: startY + 100, x: centerX - 100, y: startY + 200, label: 'D|A (0.3)', prob: '0.3' },
 		{ fromX: centerX + 200, fromY: startY + 100, x: centerX + 100, y: startY + 200, label: 'C|B (0.2)', prob: '0.2' },
 		{ fromX: centerX + 200, fromY: startY + 100, x: centerX + 300, y: startY + 200, label: 'D|B (0.8)', prob: '0.8' }
 	];
-	
-	secondLevel.forEach(branch => {
+
+	secondLevel.forEach((branch) => {
 		ctx.strokeStyle = '#337810';
 		ctx.lineWidth = 2;
 		ctx.beginPath();
 		ctx.moveTo(branch.fromX, branch.fromY);
 		ctx.lineTo(branch.x, branch.y);
 		ctx.stroke();
-		
+
 		ctx.fillStyle = '#337810';
 		ctx.beginPath();
 		ctx.arc(branch.x, branch.y, 6, 0, 2 * Math.PI);
 		ctx.fill();
-		
+
 		ctx.fillStyle = '#333';
 		ctx.font = '14px Arial';
 		ctx.textAlign = 'center';
 		ctx.fillText(branch.label, branch.x, branch.y + 25);
-		
+
 		const midX = (branch.fromX + branch.x) / 2;
 		const midY = (branch.fromY + branch.y) / 2;
 		ctx.fillText(branch.prob, midX + 15, midY);
 	});
-	
+
 	const finalProbs = [
 		{ x: centerX - 300, y: startY + 250, text: 'P(A∩C) = 0.42' },
 		{ x: centerX - 100, y: startY + 250, text: 'P(A∩D) = 0.18' },
 		{ x: centerX + 100, y: startY + 250, text: 'P(B∩C) = 0.08' },
 		{ x: centerX + 300, y: startY + 250, text: 'P(B∩D) = 0.32' }
 	];
-	
+
 	ctx.fillStyle = '#ff6b6b';
 	ctx.font = '14px Arial';
-	finalProbs.forEach(prob => {
+	finalProbs.forEach((prob) => {
 		ctx.fillText(prob.text, prob.x, prob.y);
 	});
 }
@@ -686,30 +687,67 @@ window.tutorWhiteboard = {
 
 // Make switchWhiteboard globally available
 window.switchWhiteboard = switchWhiteboard;
-
-async function runOcrAndFillChat(boardType) {
-	try {
-		const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
-		const dataUrl = canvas.toDataURL('image/png');
-		console.log('Running OCR on', boardType, 'whiteboard...');
-
-		const { data: { text } } = await window.Tesseract.recognize(
-			dataUrl,
-			'eng',
-			{ logger: m => console.log(m) }
-		);
-
-		const cleaned = text.replace(/\s+/g, ' ').trim();
-		if (cleaned.length) {
-			console.log('OCR result:', cleaned);
-			const chatInput = document.getElementById('chatInput');
-			if (chatInput) {
-				chatInput.value = cleaned;
-				chatInput.focus();
-			}
+window.addEventListener('load', () => {
+	const waitForCanvas = setInterval(() => {
+		const canvas = document.querySelector('#studentWhiteboard');
+		if (canvas && canvas.width > 0 && canvas.height > 0) {
+			clearInterval(waitForCanvas);
+			console.log('[DEBUG] Canvas ready, triggering OCR');
+			getOcrTextFromWhiteboard('student').then((result) => {
+				console.log('[OCR DEBUG] Final OCR text:', result);
+			});
+		} else {
+			console.log('[DEBUG] Waiting for student canvas to mount...');
 		}
+	}, 300); // check every 300ms
+});
+
+async function getOcrTextFromWhiteboard(board) {
+	try {
+		//test
+		// const fakecanvas = document.querySelector('#studentWhiteboard');
+		// const img = new Image();
+		// setTimeout(() => {
+		// 	getOcrTextFromWhiteboard('student').then(console.log);
+		// }, 1000); // 1 second after interaction
+
+		// img.src = fakecanvas.toDataURL();
+		// document.body.appendChild(img);
+
+		//test
+
+		console.log(`[OCR] Attempting to capture ${board} whiteboard...`);
+		console.log(document.body.innerHTML);
+
+		const canvas = document.querySelector(board === 'student' ? '#studentWhiteboard' : '#teacherWhiteboard');
+
+		if (!canvas) {
+			console.warn(`[OCR] No canvas found for ${board} whiteboard.`);
+			return '';
+		}
+		setTimeout(() => {
+			getOcrTextFromWhiteboard('student').then(console.log);
+		}, 1000); // 1 second after interaction
+		const dataUrl = canvas.toDataURL('image/png');
+		console.log(`[OCR] Captured canvas for ${board} board. Sending to OCR server...`);
+
+		const response = await fetch('http://localhost:5000/api/ocr', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ image: dataUrl })
+		});
+
+		if (!response.ok) {
+			const err = await response.text();
+			throw new Error(`[OCR] Server returned ${response.status}: ${err}`);
+		}
+
+		const { text } = await response.json();
+		console.log(`[OCR] OCR result from ${board} board:`, text);
+
+		return text.trim();
 	} catch (err) {
-		console.error('OCR failed:', err);
+		console.error(`[OCR] Error during OCR on ${board} board:`, err);
+		return '';
 	}
-	isAnythingDrawn = false;
 }
