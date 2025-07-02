@@ -693,7 +693,7 @@ window.addEventListener('load', () => {
 		if (canvas && canvas.width > 0 && canvas.height > 0) {
 			clearInterval(waitForCanvas);
 			console.log('[DEBUG] Canvas ready, triggering OCR');
-			getOcrTextFromWhiteboard('student').then((result) => {
+			getOcrTextFromWhiteboardWithLlava('student').then((result) => {
 				console.log('[OCR DEBUG] Final OCR text:', result);
 			});
 		} else {
@@ -702,52 +702,36 @@ window.addEventListener('load', () => {
 	}, 300); // check every 300ms
 });
 
-async function getOcrTextFromWhiteboard(board) {
+async function getOcrTextFromWhiteboardWithLlava(board) {
 	try {
-		//test
-		// const fakecanvas = document.querySelector('#studentWhiteboard');
-		// const img = new Image();
-		// setTimeout(() => {
-		// 	getOcrTextFromWhiteboard('student').then(console.log);
-		// }, 1000); // 1 second after interaction
-
-		// img.src = fakecanvas.toDataURL();
-		// document.body.appendChild(img);
-
-		//test
-
-		console.log(`[OCR] Attempting to capture ${board} whiteboard...`);
-		console.log(document.body.innerHTML);
-
+		console.log(`[OCR-LLAVA] Capturing ${board} canvas...`);
 		const canvas = document.querySelector(board === 'student' ? '#studentWhiteboard' : '#teacherWhiteboard');
+		if (!canvas) return '';
 
-		if (!canvas) {
-			console.warn(`[OCR] No canvas found for ${board} whiteboard.`);
-			return '';
-		}
-		setTimeout(() => {
-			getOcrTextFromWhiteboard('student').then(console.log);
-		}, 1000); // 1 second after interaction
 		const dataUrl = canvas.toDataURL('image/png');
-		console.log(`[OCR] Captured canvas for ${board} board. Sending to OCR server...`);
+		const base64Image = dataUrl.replace(/^data:image\/png;base64,/, '');
 
-		const response = await fetch('http://localhost:5000/api/ocr', {
+		const response = await fetch('http://localhost:11434/api/generate', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ image: dataUrl })
+			body: JSON.stringify({
+				model: 'llava:7b',
+				prompt: 'What text is written on the whiteboard?',
+				images: [base64Image],
+				stream: false
+			})
 		});
 
 		if (!response.ok) {
 			const err = await response.text();
-			throw new Error(`[OCR] Server returned ${response.status}: ${err}`);
+			throw new Error(`[LLAVA] ${response.status}: ${err}`);
 		}
 
-		const { text } = await response.json();
-		console.log(`[OCR] OCR result from ${board} board:`, text);
-
-		return text.trim();
+		const { response: llavaText } = await response.json();
+		console.log(`[LLAVA] OCR result:`, llavaText);
+		return llavaText.trim();
 	} catch (err) {
-		console.error(`[OCR] Error during OCR on ${board} board:`, err);
+		console.error(`[LLAVA] OCR error:`, err);
 		return '';
 	}
 }
