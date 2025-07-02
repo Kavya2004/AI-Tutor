@@ -33,11 +33,10 @@ function initializeChat() {
 	}
 
 	addMessage("Hi there! I'm your probability tutor! Ask me anything about probability and statistics!", 'bot');
-	
 
 	voiceEnabled = localStorage.getItem('autoSpeech') !== 'false';
-	
-	setTimeout(createVoiceToggle, 1500); 
+
+	setTimeout(createVoiceToggle, 1500);
 }
 
 function createVoiceToggle() {
@@ -59,7 +58,7 @@ function createVoiceToggle() {
 		transition: all 0.3s ease;
 	`;
 	toggleBtn.addEventListener('click', toggleVoiceResponse);
-	
+
 	chatHeader.appendChild(toggleBtn);
 }
 
@@ -117,21 +116,21 @@ function hideLoading() {
 	}
 }
 function toggleVoiceResponse() {
-    voiceEnabled = !voiceEnabled;
-    localStorage.setItem('autoSpeech', voiceEnabled.toString());
-    
-    const toggleBtn = document.getElementById('voiceToggle');
-    if (toggleBtn) {
-        toggleBtn.innerHTML = voiceEnabled ? '🎤' : '🔇';
-        toggleBtn.title = voiceEnabled ? 'Voice On - Click to disable' : 'Voice Off - Click to enable';
-        toggleBtn.style.background = voiceEnabled ? '#337810' : '#666';
-        toggleBtn.style.borderColor = voiceEnabled ? '#337810' : '#666';
-    }
-    
-    // Stop current speech if disabling
-    if (!voiceEnabled && window.voiceTutor) {
-        window.voiceTutor.stopSpeaking();
-    }
+	voiceEnabled = !voiceEnabled;
+	localStorage.setItem('autoSpeech', voiceEnabled.toString());
+
+	const toggleBtn = document.getElementById('voiceToggle');
+	if (toggleBtn) {
+		toggleBtn.innerHTML = voiceEnabled ? '🎤' : '🔇';
+		toggleBtn.title = voiceEnabled ? 'Voice On - Click to disable' : 'Voice Off - Click to enable';
+		toggleBtn.style.background = voiceEnabled ? '#337810' : '#666';
+		toggleBtn.style.borderColor = voiceEnabled ? '#337810' : '#666';
+	}
+
+	// Stop current speech if disabling
+	if (!voiceEnabled && window.voiceTutor) {
+		window.voiceTutor.stopSpeaking();
+	}
 }
 
 async function processUserMessage(message) {
@@ -143,34 +142,33 @@ async function processUserMessage(message) {
 	showLoading();
 
 	try {
-let boardToCheck = null;
-if (/student board|student whiteboard/i.test(message)) {
-	boardToCheck = 'student';
-} else if (/teacher board|teacher whiteboard/i.test(message)) {
-	boardToCheck = 'teacher';
-}
+		let boardToCheck = null;
+		if (/student board|student whiteboard/i.test(message)) {
+			boardToCheck = 'student';
+		} else if (/teacher board|teacher whiteboard/i.test(message)) {
+			boardToCheck = 'teacher';
+		}
 
-let ocrText = null;
-if (boardToCheck) {
-	ocrText = await getOcrTextFromWhiteboard(boardToCheck);
-	console.log(`[DEBUG] OCR result from ${boardToCheck} board:`, ocrText);
+		let ocrText = null;
+		if (boardToCheck) {
+			ocrText = await getOcrTextFromWhiteboardWithLlava(boardToCheck);
+			console.log(`[DEBUG] OCR result from ${boardToCheck} board:`, ocrText);
 
-	const latestOcrSummary = ocrText
-		? `The ${boardToCheck} whiteboard contains: "${ocrText}"`
-		: `The ${boardToCheck} whiteboard is currently blank.`;
+			const latestOcrSummary = ocrText
+				? `The ${boardToCheck} whiteboard contains: "${ocrText}"`
+				: `The ${boardToCheck} whiteboard is currently blank.`;
 
-	context = context.filter(
-		(entry) => !(entry.role === 'system' && entry.content.startsWith(`The ${boardToCheck} whiteboard`))
-	);
+			context = context.filter(
+				(entry) => !(entry.role === 'system' && entry.content.startsWith(`The ${boardToCheck} whiteboard`))
+			);
 
-	context.splice(1, 0, {
-		role: 'system',
-		content: latestOcrSummary
-	});
-}
+			context.splice(1, 0, {
+				role: 'system',
+				content: latestOcrSummary
+			});
+		}
 
-context.push({ role: 'user', content: message });
-
+		context.push({ role: 'user', content: message });
 
 		const response = await fetch('http://localhost:11434/api/chat', {
 			method: 'POST',
