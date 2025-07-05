@@ -304,20 +304,16 @@ class VoiceTutor {
         if (chatInput) {
             chatInput.value = transcript;
         }
-
+    
         // Show what was heard
         this.showVoiceStatus(`Heard: "${transcript}"`);
         
-        // Automatically send the message
+        // Automatically send the message by clicking the send button
+        // This ensures the normal message flow is followed
         setTimeout(() => {
-            if (window.processUserMessage) {
-                window.processUserMessage(transcript);
-            } else {
-                // Fallback: trigger the send button
-                const sendButton = document.getElementById('sendButton');
-                if (sendButton) {
-                    sendButton.click();
-                }
+            const sendButton = document.getElementById('sendButton');
+            if (sendButton) {
+                sendButton.click(); // This will read from the input field
             }
             this.hideVoiceStatus();
         }, 1000);

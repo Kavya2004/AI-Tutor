@@ -85,7 +85,7 @@
               </tr>
             </table>
           <li><b>A chapter on <a href='https://www.probabilitycourse.com/chapter14/chapter14.php'>simulation using Python</a> was added!</b></li>   
-        </ul> 
+        </ul> l
 	-->	
 		<br/>
 			
