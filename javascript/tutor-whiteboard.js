@@ -685,7 +685,6 @@ window.tutorWhiteboard = {
 	switchWhiteboard
 };
 
-// Make switchWhiteboard globally available
 window.switchWhiteboard = switchWhiteboard;
 window.addEventListener('load', () => {
 	const waitForCanvas = setInterval(() => {
@@ -716,7 +715,7 @@ async function getOcrTextFromWhiteboardWithLlava(board) {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				model: 'llava:7b',
-				prompt: 'What text is written on the whiteboard?',
+				prompt: 'What text is written on the whiteboard?. Do not add additional information.',
 				images: [base64Image],
 				stream: false
 			})
