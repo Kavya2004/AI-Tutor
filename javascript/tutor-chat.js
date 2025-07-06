@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function initializeChat() {
+	window.processUserMessage = processUserMessage;
 	const sendButton = document.getElementById('sendButton');
 	const chatInput = document.getElementById('chatInput');
 
@@ -134,7 +135,7 @@ function toggleVoiceResponse() {
 }
 
 async function processUserMessage(message) {
-	window.processUserMessage = processUserMessage;
+	
 	if (isProcessing || !message.trim()) return;
 
 	isProcessing = true;
