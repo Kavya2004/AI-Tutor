@@ -160,9 +160,33 @@
 
 <html>
 <div id="floating-dice" onclick="openDicePage()">
-    <img src="images/dice.png" alt="Dice" />
+    <img id="dice-icon" src="images/dice.png" alt="Dice" />
 </div>
 
+<div id="dice-settings">
+    <h3>Customize Button</h3>
+    <div class="setting-group">
+        <label>Button Color:</label>
+        <input type="color" id="bg-color" value="#337810">
+    </div>
+    <div class="setting-group">
+        <label>Hover Color:</label>
+        <input type="color" id="hover-color" value="#2a6209">
+    </div>
+    <div class="setting-group">
+        <label>Upload Custom Icon:</label>
+        <input type="file" id="icon-upload" accept="image/*">
+    </div>
+    <div class="setting-group">
+        <label>Reset Options:</label>
+        <button id="reset-icon">Reset Icon</button>
+        <button id="reset-colors">Reset Colors</button>
+        <button id="reset-all">Reset All</button>
+    </div>
+    <button id="close-settings">Close</button>
+</div>
+
+<div id="settings-trigger" onclick="toggleSettings()">⚙️</div>
 <script type="text/javascript" src="javascript/launch_tutor.js"></script>
 
 </body>
