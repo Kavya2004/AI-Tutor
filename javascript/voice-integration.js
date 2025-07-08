@@ -1,4 +1,3 @@
-// voice-integration.js
 class VoiceTutor {
     constructor() {
         this.recognition = null;
@@ -8,6 +7,11 @@ class VoiceTutor {
         this.currentUtterance = null;
         this.voices = [];
         this.preferredVoice = null;
+        this.speechSettings = {
+            pitch: parseFloat(localStorage.getItem('speechPitch')) || 1.0,
+            rate: parseFloat(localStorage.getItem('speechRate')) || 0.9,
+            volume: parseFloat(localStorage.getItem('speechVolume')) || 0.8
+        };
         
         this.initializeVoiceRecognition();
         this.initializeVoiceSynthesis();
@@ -15,24 +19,20 @@ class VoiceTutor {
     }
 
     initializeVoiceRecognition() {
-        // Check if browser supports speech recognition
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
             console.error('Speech recognition not supported in this browser');
             this.showVoiceError('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
             return;
         }
 
-        // Create speech recognition instance
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         this.recognition = new SpeechRecognition();
         
-        // Configure recognition settings
         this.recognition.continuous = false;
         this.recognition.interimResults = false;
         this.recognition.lang = 'en-US';
         this.recognition.maxAlternatives = 1;
 
-        // Set up event handlers
         this.recognition.onstart = () => {
             console.log('Voice recognition started');
             this.isListening = true;
@@ -77,11 +77,9 @@ class VoiceTutor {
     }
 
     initializeVoiceSynthesis() {
-        // Load available voices
         const loadVoices = () => {
             this.voices = this.synthesis.getVoices();
             
-            // Find a good English voice
             this.preferredVoice = this.voices.find(voice => 
                 voice.lang.startsWith('en') && 
                 (voice.name.includes('Female') || voice.name.includes('Samantha') || voice.name.includes('Karen'))
@@ -91,13 +89,11 @@ class VoiceTutor {
             console.log('Selected voice:', this.preferredVoice?.name);
         };
 
-        // Load voices immediately and also on voiceschanged event
         loadVoices();
         this.synthesis.onvoiceschanged = loadVoices;
     }
 
     setupVoiceControls() {
-        // Create voice control buttons if they don't exist
         this.createVoiceButtons();
     }
 
@@ -111,13 +107,11 @@ class VoiceTutor {
 
         const inputContainer = chatInput.parentElement;
         
-        // Check if voice controls already exist
         if (document.getElementById('voiceControls')) {
             console.log('Voice controls already exist');
             return;
         }
 
-        // Modify the input container to be flex
         inputContainer.style.cssText = `
             display: flex;
             align-items: center;
@@ -125,19 +119,17 @@ class VoiceTutor {
             width: 100%;
         `;
 
-        // Ensure chat input takes remaining space
         chatInput.style.flex = '1';
 
-        // Create voice controls container (inline with input)
         const voiceControls = document.createElement('div');
         voiceControls.id = 'voiceControls';
         voiceControls.style.cssText = `
             display: flex;
             align-items: center;
             gap: 8px;
+            position: relative;
         `;
 
-        // Voice input button (smaller and aligned with send button)
         const voiceInputBtn = document.createElement('button');
         voiceInputBtn.id = 'voiceInputBtn';
         voiceInputBtn.title = 'Click to speak your question';
@@ -155,7 +147,6 @@ class VoiceTutor {
         `;
         voiceInputBtn.addEventListener('click', () => this.toggleVoiceInput());
 
-        // Stop speaking button (smaller and inline)
         const stopSpeakingBtn = document.createElement('button');
         stopSpeakingBtn.id = 'stopSpeakingBtn';
         stopSpeakingBtn.innerHTML = '⏹️';
@@ -175,32 +166,157 @@ class VoiceTutor {
         `;
         stopSpeakingBtn.addEventListener('click', () => this.stopSpeaking());
 
-        // Auto-speech toggle button (compact)
         const autoSpeechBtn = document.createElement('button');
         autoSpeechBtn.id = 'autoSpeechBtn';
         const autoSpeechEnabled = localStorage.getItem('autoSpeech') !== 'false';
         autoSpeechBtn.innerHTML = autoSpeechEnabled ? '🔊' : '🔇';
         autoSpeechBtn.title = autoSpeechEnabled ? 'Auto-speech ON (click to disable)' : 'Auto-speech OFF (click to enable)';
         autoSpeechBtn.style.cssText = `
-        width: 36px;
-        height: 36px;
-        border: 2px solid ${autoSpeechEnabled ? '#6b7d4f' : '#ccc'};
-        border-radius: 50%;
-        background: white;
-        color: ${autoSpeechEnabled ? '#6b7d4f' : '#666'};
-        cursor: pointer;
-        font-size: 14px;
-        transition: all 0.3s ease;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-    `;
-    
+            width: 36px;
+            height: 36px;
+            border: 2px solid ${autoSpeechEnabled ? '#6b7d4f' : '#ccc'};
+            border-radius: 50%;
+            background: white;
+            color: ${autoSpeechEnabled ? '#6b7d4f' : '#666'};
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        `;
         autoSpeechBtn.addEventListener('click', () => this.toggleAutoSpeech());
 
-        // Voice status indicator (compact)
+        const settingsBtn = document.createElement('button');
+        settingsBtn.id = 'settingsBtn';
+        settingsBtn.innerHTML = '⚙️';
+        settingsBtn.title = 'Adjust speech settings';
+        settingsBtn.style.cssText = `
+            width: 36px;
+            height: 36px;
+            border: 2px solid #6b7d4f;
+            border-radius: 50%;
+            background: white;
+            color: #6b7d4f;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        `;
+        settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            console.log('Settings button clicked');
+            this.toggleSettingsMenu();
+        });
+
+        const settingsContainer = document.createElement('div');
+        settingsContainer.id = 'speechSettings';
+        settingsContainer.style.cssText = `
+            display: none;
+            position: absolute;
+            bottom: 48px; /* Position above the button */
+            right: 0;
+            background: #ffffff;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.2);
+            z-index: 1001;
+            flex-direction: column;
+            gap: 8px;
+            width: 220px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        `;
+
+        const createSlider = (id, label, min, max, step, value, onChange) => {
+            const sliderContainer = document.createElement('div');
+            sliderContainer.style.cssText = `
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 12px;
+            `;
+            const labelEl = document.createElement('label');
+            labelEl.htmlFor = id;
+            labelEl.textContent = label;
+            labelEl.style.width = '50px';
+            
+            const slider = document.createElement('input');
+            slider.type = 'range';
+            slider.id = id;
+            slider.min = min;
+            slider.max = max;
+            slider.step = step;
+            slider.value = value;
+            slider.style.width = '100px';
+            
+            const valueDisplay = document.createElement('span');
+            valueDisplay.id = `${id}Value`;
+            valueDisplay.textContent = value.toFixed(1);
+            
+            slider.addEventListener('input', () => {
+                valueDisplay.textContent = slider.value;
+                onChange(slider.value);
+                console.log(`${label} set to ${slider.value}`);
+            });
+            
+            sliderContainer.appendChild(labelEl);
+            sliderContainer.appendChild(slider);
+            sliderContainer.appendChild(valueDisplay);
+            return sliderContainer;
+        };
+
+        const pitchSlider = createSlider(
+            'pitchSlider',
+            'Pitch:',
+            0.5,
+            2.0,
+            0.1,
+            this.speechSettings.pitch,
+            (value) => {
+                this.speechSettings.pitch = parseFloat(value);
+                localStorage.setItem('speechPitch', value);
+            }
+        );
+
+        const rateSlider = createSlider(
+            'rateSlider',
+            'Speed:',
+            0.5,
+            2.0,
+            0.1,
+            this.speechSettings.rate,
+            (value) => {
+                this.speechSettings.rate = parseFloat(value);
+                localStorage.setItem('speechRate', value);
+            }
+        );
+
+        const volumeSlider = createSlider(
+            'volumeSlider',
+            'Volume:',
+            0.1,
+            1.0,
+            0.1,
+            this.speechSettings.volume,
+            (value) => {
+                this.speechSettings.volume = parseFloat(value);
+                localStorage.setItem('speechVolume', value);
+            }
+        );
+
+        settingsContainer.appendChild(pitchSlider);
+        settingsContainer.appendChild(rateSlider);
+        settingsContainer.appendChild(volumeSlider);
+
         const voiceStatus = document.createElement('div');
         voiceStatus.id = 'voiceStatus';
         voiceStatus.style.cssText = `
@@ -218,17 +334,15 @@ class VoiceTutor {
             z-index: 1000;
         `;
 
-        // Make voice controls container relative for status positioning
-        voiceControls.style.position = 'relative';
-
         voiceControls.appendChild(voiceInputBtn);
         voiceControls.appendChild(stopSpeakingBtn);
         voiceControls.appendChild(autoSpeechBtn);
+        voiceControls.appendChild(settingsBtn);
+        voiceControls.appendChild(settingsContainer);
         voiceControls.appendChild(voiceStatus);
         
         inputContainer.appendChild(voiceControls);
         
-        // Add CSS animation
         const style = document.createElement('style');
         style.textContent = `
             @keyframes pulse {
@@ -237,16 +351,57 @@ class VoiceTutor {
                 100% { opacity: 1; }
             }
             
-            /* Pulsing animation for listening state */
             @keyframes micPulse {
-                0% { transform: translateY(0) scale(1); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-                50% { transform: translateY(-1px) scale(1.05); box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4); }
-                100% { transform: translateY(0) scale(1); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+                0% { transform: translateY(0) scale(1); }
+                50% { transform: translateY(-1px) scale(1.05); box-shadow: 0 4px 10px rgba(255,0,0,0.3); }
+                100% { transform: translateY(0) scale(1); }
+            }
+            
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            #speechSettings.show {
+                display: flex;
+                opacity: 1;
+                transform: translateY(0);
+                animation: fadeInUp 0.2s ease forwards;
             }
         `;
         document.head.appendChild(style);
+
+        document.addEventListener('click', (e) => {
+            if (!settingsContainer.contains(e.target) && !settingsBtn.contains(e.target)) {
+                settingsContainer.style.display = 'none';
+                settingsContainer.classList.remove('show');
+                console.log('Settings menu closed due to click outside');
+            }
+        });
         
         console.log('Voice controls created successfully');
+    }
+
+    toggleSettingsMenu() {
+        const settingsContainer = document.getElementById('speechSettings');
+        if (settingsContainer) {
+            const isVisible = settingsContainer.style.display === 'flex';
+            settingsContainer.style.display = isVisible ? 'none' : 'flex';
+            if (!isVisible) {
+                settingsContainer.classList.add('show');
+            } else {
+                settingsContainer.classList.remove('show');
+            }
+            console.log(`Settings menu toggled to ${isVisible ? 'hidden' : 'visible'}`);
+        } else {
+            console.error('Settings container not found');
+        }
     }
 
     toggleVoiceInput() {
@@ -299,28 +454,23 @@ class VoiceTutor {
     handleVoiceInput(transcript) {
         console.log('Processing voice input:', transcript);
         
-        // Put the transcript in the chat input
         const chatInput = document.getElementById('chatInput');
         if (chatInput) {
             chatInput.value = transcript;
         }
     
-        // Show what was heard
         this.showVoiceStatus(`Heard: "${transcript}"`);
         
-        // Automatically send the message by clicking the send button
-        // This ensures the normal message flow is followed
         setTimeout(() => {
             const sendButton = document.getElementById('sendButton');
             if (sendButton) {
-                sendButton.click(); // This will read from the input field
+                sendButton.click();
             }
             this.hideVoiceStatus();
         }, 1000);
     }
 
     speakText(text) {
-        // Stop any current speech
         this.stopSpeaking();
 
         if (!this.synthesis) {
@@ -328,26 +478,23 @@ class VoiceTutor {
             return;
         }
 
-        // Clean the text (remove whiteboard commands and extra formatting)
         const cleanText = text
-            .replace(/\[.*?\]/g, '') // Remove whiteboard commands
-            .replace(/\n+/g, ' ') // Replace newlines with spaces
-            .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+            .replace(/\[.*?\]/g, '')
+            .replace(/\n+/g, ' ')
+            .replace(/\s+/g, ' ')
             .trim();
 
         if (!cleanText) return;
 
         this.currentUtterance = new SpeechSynthesisUtterance(cleanText);
         
-        // Configure the utterance
         if (this.preferredVoice) {
             this.currentUtterance.voice = this.preferredVoice;
         }
-        this.currentUtterance.rate = 0.9; // Slightly slower for better comprehension
-        this.currentUtterance.pitch = 1.0;
-        this.currentUtterance.volume = 0.8;
+        this.currentUtterance.rate = this.speechSettings.rate;
+        this.currentUtterance.pitch = this.speechSettings.pitch;
+        this.currentUtterance.volume = this.speechSettings.volume;
 
-        // Set up event handlers
         this.currentUtterance.onstart = () => {
             console.log('Started speaking');
             this.showStopButton();
@@ -365,7 +512,6 @@ class VoiceTutor {
             this.currentUtterance = null;
         };
 
-        // Start speaking
         this.synthesis.speak(this.currentUtterance);
     }
 
@@ -382,13 +528,11 @@ class VoiceTutor {
         if (!voiceBtn) return;
 
         if (this.isListening) {
-            // Listening state - red background with pulsing animation
             voiceBtn.style.background = '#ff6b6b url("images/mic.png") no-repeat center center';
             voiceBtn.style.backgroundSize = '16px 16px';
             voiceBtn.style.borderColor = '#ff6b6b';
             voiceBtn.style.animation = 'micPulse 1s infinite';
         } else {
-            // Default state - white background with green border
             voiceBtn.style.background = 'white url("images/mic.png") no-repeat center center';
             voiceBtn.style.backgroundSize = '16px 16px';
             voiceBtn.style.borderColor = '#6b7d4f';
@@ -435,7 +579,6 @@ class VoiceTutor {
             status.style.color = '#ff6b6b';
             status.style.display = 'block';
             
-            // Hide after 3 seconds
             setTimeout(() => {
                 this.hideVoiceStatus();
                 status.style.background = '#e8f5e8';
@@ -444,13 +587,9 @@ class VoiceTutor {
         }
     }
 
-    // Method to handle automatic speech for bot responses
     handleBotResponse(text) {
-        // Check if user wants automatic speech
-        const autoSpeech = localStorage.getItem('autoSpeech') !== 'false'; // Default to true
-        
+        const autoSpeech = localStorage.getItem('autoSpeech') !== 'false';
         if (autoSpeech) {
-            // Small delay to let the message appear first
             setTimeout(() => {
                 this.speakText(text);
             }, 300);
@@ -458,28 +597,20 @@ class VoiceTutor {
     }
 }
 
-// Initialize voice tutor when DOM is loaded
 let voiceTutor = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing voice tutor...');
     
-    // Small delay to ensure other scripts are loaded
     setTimeout(() => {
         voiceTutor = new VoiceTutor();
-        
-        // Make it globally available
         window.voiceTutor = voiceTutor;
-        
         console.log('Voice tutor initialized');
     }, 1000);
 });
 
-// Fallback initialization if DOMContentLoaded already fired
 if (document.readyState === 'loading') {
-    // DOMContentLoaded has not fired yet
 } else {
-    // DOMContentLoaded has already fired
     console.log('DOM already loaded, initializing voice tutor immediately...');
     setTimeout(() => {
         if (!voiceTutor) {
@@ -490,7 +621,6 @@ if (document.readyState === 'loading') {
     }, 500);
 }
 
-// Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = VoiceTutor;
 }
