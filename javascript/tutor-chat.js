@@ -21,25 +21,168 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function initializeChat() {
-	window.processUserMessage = processUserMessage;
-	const sendButton = document.getElementById('sendButton');
-	const chatInput = document.getElementById('chatInput');
+    window.processUserMessage = processUserMessage;
+    const sendButton = document.getElementById('sendButton');
+    const chatInput = document.getElementById('chatInput');
 
-	if (sendButton) {
-		sendButton.addEventListener('click', handleSendMessage);
-	}
+    if (sendButton) {
+        sendButton.addEventListener('click', handleSendMessage);
+    }
 
-	if (chatInput) {
-		chatInput.addEventListener('keypress', handleKeyPress);
-	}
+    if (chatInput) {
+        chatInput.addEventListener('keypress', handleKeyPress);
+    }
 
-	addMessage("Hi there! I'm your probability tutor! Ask me anything about probability and statistics!", 'bot');
+    // ADD THIS LINE
+    initializeFileUpload();
 
-	voiceEnabled = localStorage.getItem('autoSpeech') !== 'false';
+    addMessage("Hi there! I'm your probability tutor! Ask me anything about probability and statistics!", 'bot');
 
-	setTimeout(createVoiceToggle, 1500);
+    voiceEnabled = localStorage.getItem('autoSpeech') !== 'false';
+
+    setTimeout(createVoiceToggle, 1500);
+}
+// File upload functionality
+let uploadedFiles = [];
+
+function initializeFileUpload() {
+    const uploadButton = document.getElementById('uploadButton');
+    const fileInput = document.getElementById('fileInput');
+    
+    if (uploadButton && fileInput) {
+        uploadButton.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+    }
 }
 
+function handleFileSelect(event) {
+    const files = Array.from(event.target.files);
+    
+    files.forEach(file => {
+        if (isValidFileType(file)) {
+            uploadedFiles.push(file);
+            addFileToPreview(file);
+        } else {
+            addMessage(`File type "${file.type}" is not supported. Please upload PDF, PNG, JPG, or other image files.`, 'bot');
+        }
+    });
+    
+    // Clear the input
+    event.target.value = '';
+}
+
+function isValidFileType(file) {
+    const validTypes = [
+        'application/pdf',
+        'image/png',
+        'image/jpeg',
+        'image/jpg',
+        'image/gif',
+        'image/bmp',
+        'image/tiff',
+        'image/webp'
+    ];
+    return validTypes.includes(file.type);
+}
+
+function addFileToPreview(file) {
+    const filePreview = document.getElementById('filePreview');
+    const fileItem = document.createElement('div');
+    fileItem.className = 'file-item';
+    fileItem.dataset.fileName = file.name;
+    
+    const fileIcon = getFileIcon(file.type);
+    const fileName = file.name.length > 20 ? file.name.substring(0, 20) + '...' : file.name;
+    
+    fileItem.innerHTML = `
+        <span class="file-icon">${fileIcon}</span>
+        <span class="file-name" title="${file.name}">${fileName}</span>
+        <button class="remove-file" onclick="removeFile('${file.name}')">×</button>
+    `;
+    
+    filePreview.appendChild(fileItem);
+}
+
+function getFileIcon(fileType) {
+    if (fileType === 'application/pdf') return '📄';
+    if (fileType.startsWith('image/')) return '🖼️';
+    return '📎';
+}
+
+function removeFile(fileName) {
+    uploadedFiles = uploadedFiles.filter(file => file.name !== fileName);
+    const fileItem = document.querySelector(`.file-item[data-file-name="${fileName}"]`);
+    if (fileItem) {
+        fileItem.remove();
+    }
+}
+
+async function processFilesForTutor(files) {
+    const processedFiles = [];
+    
+    for (const file of files) {
+        try {
+            if (file.type === 'application/pdf') {
+                const base64 = await fileToBase64(file);
+                processedFiles.push({
+                    name: file.name,
+                    type: 'pdf',
+                    content: `PDF file uploaded: ${file.name}. Please describe what you'd like me to help you with from this document.`
+                });
+            } else if (file.type.startsWith('image/')) {
+                const base64 = await fileToBase64(file);
+                const ocrText = await getOcrFromImage(base64);
+                processedFiles.push({
+                    name: file.name,
+                    type: 'image',
+                    content: ocrText || `Image uploaded: ${file.name}. No text was detected, but I can help explain any probability concepts you see in the image.`
+                });
+            }
+        } catch (error) {
+            console.error('Error processing file:', file.name, error);
+            processedFiles.push({
+                name: file.name,
+                type: 'error',
+                content: `Error processing ${file.name}. Please try uploading the file again.`
+            });
+        }
+    }
+    
+    return processedFiles;
+}
+
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+async function getOcrFromImage(base64Image) {
+    try {
+        const response = await fetch('http://localhost:5000/api/ocr', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                image: base64Image
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('OCR request failed');
+        }
+        
+        const data = await response.json();
+        return data.text;
+    } catch (error) {
+        console.error('OCR Error:', error);
+        return null;
+    }
+}
 function createVoiceToggle() {
 	const chatHeader = document.querySelector('.chat-header') || document.querySelector('h2');
 	if (!chatHeader || document.getElementById('voiceToggle')) return;
@@ -71,12 +214,14 @@ function handleKeyPress(event) {
 }
 
 function handleSendMessage() {
-	const input = document.getElementById('chatInput');
-	const message = input.value.trim();
-	if (message && !isProcessing) {
-		processUserMessage(message);
-		input.value = '';
-	}
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    
+    // Allow sending if there's a message OR files are uploaded
+    if ((message || uploadedFiles.length > 0) && !isProcessing) {
+        processUserMessage(message);
+        input.value = '';
+    }
 }
 
 function addMessage(text, sender) {
@@ -136,9 +281,37 @@ function toggleVoiceResponse() {
 
 async function processUserMessage(message) {
 	
-	if (isProcessing || !message.trim()) return;
+	if (isProcessing || (!message.trim() && uploadedFiles.length === 0)) return;
 
-	isProcessing = true;
+    isProcessing = true;
+    
+    // Process uploaded files if any
+    let processedFiles = [];
+    if (uploadedFiles.length > 0) {
+        processedFiles = await processFilesForTutor(uploadedFiles);
+        // Clear uploaded files after processing
+        uploadedFiles = [];
+        document.getElementById('filePreview').innerHTML = '';
+    }
+
+    // Add user message (include file info if files were uploaded)
+    let userMessage = message.trim();
+    if (processedFiles.length > 0) {
+        const fileNames = processedFiles.map(f => f.name).join(', ');
+        userMessage = userMessage || `I've uploaded these files: ${fileNames}`;
+        addMessage(userMessage, 'user');
+        
+        // Add file contents to context
+        processedFiles.forEach(file => {
+            context.push({
+                role: 'user',
+                content: `File: ${file.name}\nContent: ${file.content}`
+            });
+        });
+    } else if (userMessage) {
+        addMessage(userMessage, 'user');
+    }
+
 	addMessage(message, 'user');
 	showLoading();
 
