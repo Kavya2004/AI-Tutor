@@ -242,7 +242,12 @@ function addMessage(text, sender) {
 	chatMessages.appendChild(messageDiv);
 	chatMessages.scrollTop = chatMessages.scrollHeight;
 
-	// ADD THIS: Trigger voice response for bot messages
+	// ADD THIS: Broadcast message to session if in a session
+	if (window.sessionManager && window.sessionManager.sessionId) {
+		window.sessionManager.broadcastMessage(text, sender);
+	}
+
+	// Trigger voice response for bot messages
 	if (sender === 'bot' && window.voiceTutor && voiceEnabled) {
 		window.voiceTutor.handleBotResponse(text);
 	}
@@ -299,7 +304,11 @@ async function processUserMessage(message) {
     if (processedFiles.length > 0) {
         const fileNames = processedFiles.map(f => f.name).join(', ');
         userMessage = userMessage || `I've uploaded these files: ${fileNames}`;
-        addMessage(userMessage, 'user');
+        
+        // ADD THIS: Only add message locally if not in session (session will handle broadcasting)
+        if (!window.sessionManager || !window.sessionManager.sessionId) {
+            addMessage(userMessage, 'user');
+        }
         
         // Add file contents to context
         processedFiles.forEach(file => {
@@ -309,10 +318,22 @@ async function processUserMessage(message) {
             });
         });
     } else if (userMessage) {
-        addMessage(userMessage, 'user');
+        // ADD THIS: Only add message locally if not in session
+        if (!window.sessionManager || !window.sessionManager.sessionId) {
+            addMessage(userMessage, 'user');
+        }
     }
 
-	addMessage(message, 'user');
+    // ADD THIS: If in session, broadcast the user message
+    if (window.sessionManager && window.sessionManager.sessionId) {
+        window.sessionManager.broadcastMessage(userMessage, 'user');
+    } else {
+        // Only add message locally if not already added above
+        if (!processedFiles.length && userMessage) {
+            addMessage(userMessage, 'user');
+        }
+    }
+
 	showLoading();
 
 	try {
@@ -393,7 +414,14 @@ async function processUserMessage(message) {
 			botResponse += '\n\n[Setting up student whiteboard...]';
 		}
 
-		addMessage(botResponse, 'bot');
+		// ADD THIS: Handle bot response for sessions
+		if (window.sessionManager && window.sessionManager.sessionId) {
+			// In session mode, broadcast bot response
+			window.sessionManager.broadcastMessage(botResponse, 'bot');
+		} else {
+			// Not in session, add message locally
+			addMessage(botResponse, 'bot');
+		}
 
 		if (whiteboardAction && targetBoard && window.tutorWhiteboard) {
 			setTimeout(() => executeWhiteboardAction(whiteboardAction, targetBoard), 500);
@@ -402,16 +430,23 @@ async function processUserMessage(message) {
 		console.error('Error processing message:', error);
 		let errorMessage = 'I apologize, but I encountered an issue. ';
 		if (error.message.includes('fetch')) {
-			errorMessage += 'Unable to connect to the AI server. Please make sure it’s running.';
+			errorMessage += 'Unable to connect to the AI server. Please make sure it\'s running.';
 		} else {
 			errorMessage += 'Please try again or check your server logs.';
 		}
-		addMessage(errorMessage, 'bot');
+		
+		// ADD THIS: Handle error messages for sessions
+		if (window.sessionManager && window.sessionManager.sessionId) {
+			window.sessionManager.broadcastMessage(errorMessage, 'bot');
+		} else {
+			addMessage(errorMessage, 'bot');
+		}
 	}
 
 	hideLoading();
 	isProcessing = false;
 }
+
 
 function executeWhiteboardAction(actionType, targetBoard) {
 	if (!window.tutorWhiteboard) {
@@ -420,6 +455,16 @@ function executeWhiteboardAction(actionType, targetBoard) {
 	}
 
 	console.log(`Executing ${actionType} on ${targetBoard} whiteboard`);
+
+	// ADD THIS: Broadcast whiteboard action to session
+	if (window.sessionManager && window.sessionManager.sessionId) {
+		window.sessionManager.ws.send(JSON.stringify({
+			type: 'whiteboard_action',
+			action: actionType,
+			targetBoard: targetBoard,
+			userName: window.sessionManager.userName
+		}));
+	}
 
 	if (window.switchWhiteboard) {
 		window.switchWhiteboard(targetBoard);
@@ -455,6 +500,7 @@ function executeWhiteboardAction(actionType, targetBoard) {
 			console.log('Unknown whiteboard action:', actionType);
 	}
 }
+
 
 function handleDiceResult(result) {
 	const message = `I rolled a ${result}! What does this tell us about probability?`;
