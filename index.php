@@ -32,7 +32,7 @@
 	<script type="text/javascript" src="//www.probabilitycourse.com/javascript/scroll_navigation.js"></script>
 
 	<meta name="viewport" content="width=480px">
-	<link media="only screen and (min-device-width: 751px) and (max-width:9999px)" href="style_sheet.css" title="Simplr" type="text/css" rel="stylesheet" />
+	<link media="only screen and (min-device-width: 751px) and (max-width:9999px)" href="css/style_sheet.css" title="Simplr" type="text/css" rel="stylesheet" />
 	<link rel="stylesheet" type="text/css" media="only screen and (max-device-width: 750px)" href="mobile.css"/>
 	
 	<title>Probability, Statistics & Random Processes | Free Textbook | Course</title>
