@@ -15,9 +15,11 @@ const sessions = new Map();
 const sessionConnections = new Map();
 
 class TutorSession {
-  constructor(sessionId, hostName) {
+  constructor(sessionId, hostName, isPublic = false, sessionTitle = '') {
     this.sessionId = sessionId;
     this.hostName = hostName;
+    this.isPublic = isPublic;           
+    this.sessionTitle = sessionTitle;
     this.participants = new Map();
     this.messages = [];
     this.whiteboardActions = [];
@@ -91,6 +93,8 @@ class TutorSession {
     return {
       sessionId: this.sessionId,
       hostName: this.hostName,
+      isPublic: this.isPublic,           
+      sessionTitle: this.sessionTitle,
       participants: this.getParticipantsList(),
       messages: this.messages,
       whiteboardActions: this.whiteboardActions,
@@ -114,15 +118,15 @@ function broadcastToSession(sessionId, message, excludeWs = null) {
 }
 
 app.post("/api/sessions/create", (req, res) => {
-  const { hostName, avatar, color } = req.body;
+  const { hostName, avatar, color, isPublic, sessionTitle } = req.body;  
 
   if (!hostName || hostName.trim().length === 0) {
     return res.status(400).json({ error: "Host name is required" });
   }
 
   const sessionId = generateSessionId();
-  const session = new TutorSession(sessionId, hostName.trim());
-
+  const session = new TutorSession(sessionId, hostName.trim(), isPublic, sessionTitle);  
+  
   session.participants.set(hostName.trim(), {
     userName: hostName.trim(),
     avatar: avatar || "👨‍🏫",
@@ -165,6 +169,21 @@ app.post("/api/sessions/:sessionId/join", (req, res) => {
     message: "Joined session successfully",
     session: session.toJSON(),
   });
+});
+
+app.get("/api/sessions/public", (req, res) => {
+  const publicSessions = Array.from(sessions.values())
+    .filter(session => session.isPublic)
+    .map(session => ({
+      sessionId: session.sessionId,
+      sessionTitle: session.sessionTitle,
+      hostName: session.hostName,
+      participantCount: session.participants.size,
+      createdAt: session.createdAt,
+      lastActivity: session.lastActivity,
+    }));
+
+  res.json(publicSessions);
 });
 
 app.get("/api/sessions/:sessionId", (req, res) => {
@@ -225,7 +244,6 @@ wss.on("connection", (ws, req) => {
   let userName = null;
   let isHost = false;
 
-  // Add connection to session
   if (!sessionConnections.has(sessionId)) {
     sessionConnections.set(sessionId, []);
   }
@@ -244,7 +262,7 @@ wss.on("connection", (ws, req) => {
             participant.color = message.color || participant.color;
           }
           sessionConnections.get(sessionId).push({ ws, userName });
-
+        
           broadcastToSession(
             sessionId,
             {
@@ -254,14 +272,23 @@ wss.on("connection", (ws, req) => {
             },
             ws,
           );
-
+        
+          ws.send(
+            JSON.stringify({
+              type: "session_info",
+              sessionTitle: session.sessionTitle,
+              isPublic: session.isPublic,
+              participants: session.getParticipantsList(),
+            }),
+          );
+        
           ws.send(
             JSON.stringify({
               type: "participants_update",
               participants: session.getParticipantsList(),
             }),
           );
-
+        
           console.log(`${userName} connected to session ${sessionId}`);
           break;
 

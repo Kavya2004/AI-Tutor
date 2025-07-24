@@ -7,7 +7,7 @@ class SessionManager {
       this.sessionMessages = [];
       this.ws = null;
       this.sessionId = null;
-  
+      this.currentSessionTitle = null;
       this.initializeSessionUI();
       this.selectedAvatar = "👨‍🎓";
       this.selectedColor = "#3498db";
@@ -21,6 +21,7 @@ class SessionManager {
       this.createSessionButton();
       this.createSessionModal();
       this.createParticipantsList();
+      this.createPublicSessionsList(); 
   
       const urlParams = new URLSearchParams(window.location.search);
       const sessionId = urlParams.get("session");
@@ -96,6 +97,90 @@ class SessionManager {
         .addEventListener("click", () => this.downloadSession());
     }
   
+    createPublicSessionsList() {
+      const sessionControls = document.querySelector(".session-controls");
+      
+      const publicSessionsBtn = document.createElement("button");
+      publicSessionsBtn.id = "publicSessionsBtn";
+      publicSessionsBtn.className = "session-btn";
+      publicSessionsBtn.textContent = "🌐 Browse Public Sessions";
+      publicSessionsBtn.addEventListener("click", () => this.showPublicSessions());
+      
+      const joinBtn = document.getElementById("joinSessionBtn");
+      joinBtn.parentNode.insertBefore(publicSessionsBtn, joinBtn.nextSibling);
+    }
+    
+    async showPublicSessions() {
+      try {
+        const response = await fetch("http://localhost:5001/api/sessions/public");
+        const publicSessions = await response.json();
+        
+        if (publicSessions.length === 0) {
+          alert("No public sessions available right now.");
+          return;
+        }
+        
+        // Create a modal with clickable session list
+        this.showPublicSessionsModal(publicSessions);
+        
+      } catch (error) {
+        console.error("Error fetching public sessions:", error);
+        alert("Failed to load public sessions.");
+      }
+    }
+
+    showPublicSessionsModal(publicSessions) {
+      // Create modal HTML
+      const modalHTML = `
+        <div id="publicSessionsModal" class="session-modal" style="display: flex;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3>Public Sessions</h3>
+              <button class="close-modal" onclick="document.getElementById('publicSessionsModal').remove()">×</button>
+            </div>
+            <div class="modal-body">
+              <div class="public-sessions-list">
+                ${publicSessions.map(session => `
+                  <div class="public-session-item" data-session-id="${session.sessionId}">
+                    <div class="session-details">
+                      <div class="session-title">${session.sessionTitle || 'Untitled Session'}</div>
+                      <div class="session-meta">
+                        <span class="host-name">Host: ${session.hostName}</span>
+                        <span class="participant-count">${session.participantCount} participants</span>
+                      </div>
+                    </div>
+                    <div class="join-arrow">→</div>
+                  </div>
+                `).join('')}
+              </div>
+              ${!this.userName ? '<p class="join-note">Click any session to join!</p>' : ''}
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Add modal to page
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      
+      // Add click handlers
+      const sessionItems = document.querySelectorAll('.public-session-item');
+      sessionItems.forEach(item => {
+        item.addEventListener('click', () => {
+          const sessionId = item.dataset.sessionId;
+          document.getElementById('publicSessionsModal').remove();
+          
+          if (!this.userName) {
+            this.showNameModal("join");
+            setTimeout(() => {
+              document.getElementById("sessionIdInput").value = sessionId;
+            }, 100);
+          } else {
+            this.joinSession(sessionId);
+          }
+        });
+      });
+    }
+
     createSessionModal() {
       const modal = document.createElement("div");
       modal.id = "sessionModal";
@@ -109,6 +194,13 @@ class SessionManager {
           <div class="modal-body">
               <input type="text" id="userNameInput" placeholder="Your name..." maxlength="20">
               <input type="text" id="sessionIdInput" placeholder="Session ID (optional)" style="display: none;">
+              <input type="text" id="sessionTitleInput" placeholder="Session title (e.g., 'Probability Basics')" maxlength="50" style="display: none;">
+              <div class="session-privacy" id="sessionPrivacy" style="display: none;">
+                  <label>
+                      <input type="checkbox" id="publicSessionCheckbox"> Make this session public
+                  </label>
+                  <small>Public sessions can be joined by anyone</small>
+              </div>
               
               <div class="customization-section">
                   <h4>Choose Your Avatar</h4>
@@ -152,14 +244,14 @@ class SessionManager {
           </div>
       </div>
       `;
-  
+
       document.body.appendChild(modal);
   
-      // Store the original session-related click handler
       const originalSessionHandler = () => {
         const userName = document.getElementById("userNameInput").value.trim();
         const sessionId = document.getElementById("sessionIdInput").value.trim();
-  
+        const sessionTitle = document.getElementById("sessionTitleInput").value.trim();     
+        const isPublic = document.getElementById("publicSessionCheckbox").checked;
         if (!userName) {
           alert("Please enter your name");
           return;
@@ -171,7 +263,7 @@ class SessionManager {
         if (sessionId) {
           this.joinSession(sessionId);
         } else {
-          this.createNewSession();
+          this.createNewSessionWithParams(sessionTitle, isPublic);
         }
   
         modal.style.display = "none";
@@ -198,7 +290,6 @@ class SessionManager {
         });
       });
   
-      // Color selection
       colorOptions.forEach((option) => {
         option.addEventListener("click", () => {
           colorOptions.forEach((opt) => opt.classList.remove("selected"));
@@ -225,10 +316,10 @@ class SessionManager {
       min-width: 0;
       resize: vertical;
       max-height: 300px;
-  `;
+    `;
       participantsList.innerHTML = `
               <div class="participants-header">
-                  <h4>Session Participants</h4>
+                  <h4 id="sessionTitleHeader">Session Participants</h4>
                   <div class="session-info">
                       <span id="sessionIdDisplay"></span>
                       <span id="participantCount">0 participants</span>
@@ -236,11 +327,11 @@ class SessionManager {
               </div>
               <div class="participants-container" id="participantsContainer"></div>
           `;
-  
+    
       chatMessages.parentNode.insertBefore(participantsList, chatMessages);
       participantsList.style.display = "none";
     }
-  
+
     async createSession() {
       if (!this.userName) {
         this.showNameModal("create");
@@ -251,6 +342,9 @@ class SessionManager {
   
     async createNewSession() {
       try {
+        const sessionTitle = document.getElementById("sessionTitleInput").value.trim();     
+        const isPublic = document.getElementById("publicSessionCheckbox").checked;         
+        
         const response = await fetch(
           "http://localhost:5001/api/sessions/create",
           {
@@ -260,6 +354,8 @@ class SessionManager {
               hostName: this.userName,
               avatar: this.selectedAvatar,
               color: this.selectedColor,
+              isPublic: isPublic,              
+              sessionTitle: sessionTitle,      
               timestamp: new Date().toISOString(),
             }),
           },
@@ -269,8 +365,42 @@ class SessionManager {
         this.sessionId = data.sessionId;
         this.isHost = true;
         this.connectToSession();
+        this.currentSessionTitle = sessionTitle || null;
         this.updateSessionUI();
   
+        this.addSystemMessage(
+          `Session created! Share this link with others: ${window.location.origin}${window.location.pathname}?session=${this.sessionId}`,
+        );
+      } catch (error) {
+        console.error("Error creating session:", error);
+        alert("Failed to create session. Please try again.");
+      }
+    }
+
+    async createNewSessionWithParams(sessionTitle, isPublic) {
+      try {
+        const response = await fetch(
+          "http://localhost:5001/api/sessions/create",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              hostName: this.userName,
+              avatar: this.selectedAvatar,
+              color: this.selectedColor,
+              isPublic: isPublic,              
+              sessionTitle: sessionTitle,      
+              timestamp: new Date().toISOString(),
+            }),
+          },
+        );
+    
+        const data = await response.json();
+        this.sessionId = data.sessionId;
+        this.isHost = true;
+        this.connectToSession();
+        this.updateSessionUI();
+    
         this.addSystemMessage(
           `Session created! Share this link with others: ${window.location.origin}${window.location.pathname}?session=${this.sessionId}`,
         );
@@ -297,16 +427,22 @@ class SessionManager {
       const title = document.getElementById("modalTitle");
       const confirmBtn = document.getElementById("confirmSessionBtn");
       const sessionInput = document.getElementById("sessionIdInput");
+      const titleInput = document.getElementById("sessionTitleInput");     
+      const privacyDiv = document.getElementById("sessionPrivacy");
   
       if (action === "join") {
         title.textContent = "Join Session";
         confirmBtn.textContent = "Join Session";
         sessionInput.style.display = "block";
+        titleInput.style.display = "none";           
+        privacyDiv.style.display = "none"; 
         sessionInput.setAttribute("placeholder", "Enter Session ID");
       } else {
         title.textContent = "Create Session";
         confirmBtn.textContent = "Create Session";
         sessionInput.style.display = "none";
+        titleInput.style.display = "block";         
+        privacyDiv.style.display = "block";          
       }
   
       modal.style.display = "flex";
@@ -338,7 +474,7 @@ class SessionManager {
         this.sessionId = sessionId;
         this.isHost = false;
         this.sessionMessages = data.messages || [];
-  
+        this.currentSessionTitle = data.session?.sessionTitle || null;
         this.connectToSession();
         this.updateSessionUI();
         this.loadSessionHistory();
@@ -457,6 +593,11 @@ class SessionManager {
               participants: session.getParticipantsList(),
             });
           }
+          break;
+        case "session_info":
+          this.currentSessionTitle = data.sessionTitle;
+          this.updateSessionUI();
+          this.updateParticipants(data.participants);
           break;
       }
     }
@@ -600,22 +741,34 @@ class SessionManager {
     updateSessionUI() {
       const sessionIdDisplay = document.getElementById("sessionIdDisplay");
       const participantsList = document.getElementById("participantsList");
-  
+      const titleHeader = document.getElementById("sessionTitleHeader");
+    
       if (this.sessionId) {
-        sessionIdDisplay.textContent = `Session: ${this.sessionId}`;
+        let displayText = `Session: ${this.sessionId}`;
+        if (this.currentSessionTitle) {
+          displayText = `${this.currentSessionTitle} (${this.sessionId})`;
+        }
+        sessionIdDisplay.textContent = displayText;
+        
         participantsList.style.display = "block";
-  
+    
+        if (titleHeader) {
+          titleHeader.textContent = this.currentSessionTitle || 'Session Participants';
+        }
+    
         document.getElementById("createSessionBtn").style.display = "none";
         document.getElementById("joinSessionBtn").style.display = "none";
         document.getElementById("leaveSessionBtn").style.display = "inline-block";
         document.getElementById("shareSessionBtn").style.display = "inline-block";
-        document.getElementById("downloadSessionBtn").style.display =
-          "inline-block";
+        document.getElementById("downloadSessionBtn").style.display = "inline-block";
       } else {
         participantsList.style.display = "none";
-  
-        document.getElementById("createSessionBtn").style.display =
-          "inline-block";
+        
+        if (titleHeader) {
+          titleHeader.textContent = 'Session Participants';
+        }
+    
+        document.getElementById("createSessionBtn").style.display = "inline-block";
         document.getElementById("joinSessionBtn").style.display = "inline-block";
         document.getElementById("leaveSessionBtn").style.display = "none";
         document.getElementById("shareSessionBtn").style.display = "none";
