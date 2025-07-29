@@ -51,13 +51,7 @@ function setupWhiteboardControls() {
 }
 
 function getOcrServerUrl() {
-	// Check if we're in development
-	if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-		return 'http://localhost:5001'; // Updated port to match your server
-	}
-	
-	// Production - use your actual Render URL
-	return 'https://ai-tutor-53f1.onrender.com';
+    return ''; // ✅ Use same origin (your Vercel app)
 }
 
 async function runOcrAndFillChat(boardType) {
@@ -108,7 +102,7 @@ async function runOcrAndFillChat(boardType) {
 		console.log(`[OCR] Using server URL:`, serverUrl);
 		
 		// Send to your OCR server
-		const response = await fetch(`${serverUrl}/api/ocr`, {
+		const response = await fetch('/api/ocr', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

@@ -323,7 +323,9 @@ function toggleVoiceResponse() {
 
 async function getOcrTextFromWhiteboardImage(board) {
 	try {
-		const canvas = document.getElementById(`${board}-whiteboard-canvas`);
+		const canvas = board === 'teacher' ? 
+		document.getElementById('teacherWhiteboard') : 
+		document.getElementById('studentWhiteboard');
 		if (!canvas) {
 			console.warn(`Canvas not found for ${board} board.`);
 			return null;
