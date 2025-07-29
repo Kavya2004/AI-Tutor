@@ -52,6 +52,40 @@ function initializeFileUpload() {
 		fileInput.addEventListener('change', handleFileSelect);
 	}
 }
+async function getGeminiResponse(messages) {
+	try {
+	  // Use your Vercel API endpoint instead of direct Gemini call
+	  const response = await fetch('/api/gemini', {
+		method: 'POST',
+		headers: {
+		  'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({ messages })
+	  });
+  
+	  if (!response.ok) {
+		const errorData = await response.json().catch(() => ({}));
+		throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+	  }
+  
+	  const data = await response.json();
+	  return data.response || 'No response received from Gemini.';
+  
+	} catch (error) {
+	  console.error('Error calling Gemini API:', error);
+	  
+	  // Provide user-friendly error messages
+	  if (error.message.includes('fetch')) {
+		throw new Error('Unable to connect to the AI service. Please check your internet connection.');
+	  } else if (error.message.includes('429')) {
+		throw new Error('Too many requests. Please wait a moment and try again.');
+	  } else if (error.message.includes('401')) {
+		throw new Error('API authentication failed. Please check your configuration.');
+	  } else {
+		throw new Error('AI service is temporarily unavailable. Please try again.');
+	  }
+	}
+  }
 
 function handleFileSelect(event) {
 	const files = Array.from(event.target.files);
@@ -164,7 +198,8 @@ function fileToBase64(file) {
 
 async function getOcrFromImage(base64Image) {
 	try {
-		const response = await fetch('http://localhost:5000/api/ocr', {
+		// UPDATE THIS URL to match your Render deployment:
+		const response = await fetch('https://ai-tutor-53f1.onrender.com/api/ocr', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -383,30 +418,7 @@ async function processUserMessage(message) {
 
 		context.push({ role: 'user', content: message });
 
-		const response = await fetch('http://localhost:11434/api/chat', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				model: 'llama3',
-				messages: context,
-				temperature: 0.7,
-				max_tokens: 200,
-				stream: false
-			})
-		});
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(`Server error: ${response.status} - ${errorText}`);
-		}
-
-		const data = await response.json();
-		console.log('Received response:', data);
-
-		let botResponse = data.message?.content?.trim() || '';
-		if (!botResponse || botResponse.length < 5) {
-			botResponse = `I understand you're asking about "${message}". Let me help explain this probability concept! Could you be more specific about what aspect you'd like me to demonstrate?`;
-		}
+		let botResponse = await getGeminiResponse(context);
 
 		context.push({ role: 'assistant', content: botResponse });
 
