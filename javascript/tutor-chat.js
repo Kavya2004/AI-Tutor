@@ -197,31 +197,31 @@ function fileToBase64(file) {
 }
 
 async function getOcrFromImage(base64Image) {
-	try {
-		// UPDATE THIS URL to match your Render deployment:
-		const response = await fetch('https://ai-tutor-53f1.onrender.com/api/ocr', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ image: base64Image })
-		});
-
-		if (!response.ok) throw new Error('OCR request failed');
-
-		const data = await response.json();
-
-		if (data.text && data.text.trim()) {
-			return data.text;
-		} else if (data.data?.value?.length > 0) {
-			return data.data.value.map((entry) => entry.value).join(' ');
-		} else {
-			return 'No recognizable text found in image.';
-		}
-	} catch (error) {
-		console.error('OCR Error:', error);
-		return 'Error reading image text.';
-	}
+    try {
+        const response = await fetch('https://ai-tutor-53f1.onrender.com/api/ocr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64Image })
+        });
+        if (!response.ok) throw new Error(`OCR request failed: ${response.status}`);
+        const data = await response.json();
+        console.log('[OCR] Raw server response:', data); // Log full server response
+        if (data.text && data.text.trim()) {
+            return data.text;
+        } else if (data.latex) {
+            console.log('[OCR] LaTeX detected:', data.latex);
+            return `LaTeX: ${data.latex}`;
+        } else if (data.data?.value?.length > 0) {
+            const value = data.data.value.map((entry) => entry.value).join(' ');
+            console.log('[OCR] Data value extracted:', value);
+            return value;
+        }
+        console.warn('[OCR] No recognizable text or equation found in image');
+        return 'No recognizable text or equation found in image.';
+    } catch (error) {
+        console.error('[OCR] Error:', error);
+        return `Error reading image: ${error.message}`;
+    }
 }
 
 function createVoiceToggle() {
@@ -322,164 +322,146 @@ function toggleVoiceResponse() {
 }
 
 async function getOcrTextFromWhiteboardImage(board) {
-	try {
-		const canvas = document.getElementById(`${board}-whiteboard-canvas`);
-		if (!canvas) {
-			console.warn(`Canvas not found for ${board} board.`);
-			return null;
-		}
-
-		const base64Image = canvas.toDataURL('image/png');
-		const text = await getOcrFromImage(base64Image);
-		return text;
-	} catch (err) {
-		console.error(`[Whiteboard OCR] Failed for ${board} board:`, err);
-		return null;
-	}
+    try {
+        const canvas = document.getElementById(`${board}Whiteboard`);
+        if (!canvas || canvas.width === 0 || canvas.height === 0) {
+            console.warn(`[OCR] Canvas not found or invalid for ${board} board:`, canvas);
+            return null;
+        }
+        const base64Image = canvas.toDataURL('image/png');
+        console.log(`[OCR] Base64 image for ${board} whiteboard:`, base64Image.substring(0, 100)); // Log first 100 chars to avoid clutter
+        const text = await getOcrFromImage(base64Image);
+        console.log(`[OCR] Result from ${board} whiteboard:`, text);
+        return text;
+    } catch (err) {
+        console.error(`[OCR] Failed for ${board} board:`, err);
+        return null;
+    }
 }
-
 async function processUserMessage(message) {
-	if (isProcessing || (!message.trim() && uploadedFiles.length === 0)) return;
+    if (isProcessing || (!message.trim() && uploadedFiles.length === 0)) return;
 
-	isProcessing = true;
+    isProcessing = true;
 
-	// Process uploaded files if any
-	let processedFiles = [];
-	if (uploadedFiles.length > 0) {
-		processedFiles = await processFilesForTutor(uploadedFiles);
-		// Clear uploaded files after processing
-		uploadedFiles = [];
-		document.getElementById('filePreview').innerHTML = '';
-	}
+    // Process uploaded files if any
+    let processedFiles = [];
+    if (uploadedFiles.length > 0) {
+        processedFiles = await processFilesForTutor(uploadedFiles);
+        uploadedFiles = [];
+        document.getElementById('filePreview').innerHTML = '';
+    }
 
-	// Prepare user message (include file info if files were uploaded)
-	let userMessage = message.trim();
-	if (processedFiles.length > 0) {
-		const fileNames = processedFiles.map((f) => f.name).join(', ');
-		userMessage = userMessage || `I've uploaded these files: ${fileNames}`;
+    let userMessage = message.trim();
+    if (processedFiles.length > 0) {
+        const fileNames = processedFiles.map((f) => f.name).join(', ');
+        userMessage = userMessage || `I've uploaded these files: ${fileNames}`;
+        processedFiles.forEach((file) => {
+            context.push({
+                role: 'user',
+                content: `File: ${file.name}\nContent: ${file.content}`
+            });
+        });
+    }
 
-		// Add file contents to context
-		processedFiles.forEach((file) => {
-			context.push({
-				role: 'user',
-				content: `File: ${file.name}\nContent: ${file.content}`
-			});
-		});
-	}
+    if (window.sessionManager && window.sessionManager.sessionId) {
+        window.sessionManager.broadcastMessage(userMessage, 'user');
+    } else {
+        addMessage(userMessage, 'user');
+    }
 
-	// Handle message display/broadcasting (only once!)
-	if (window.sessionManager && window.sessionManager.sessionId) {
-		// In session mode, broadcast user message
-		window.sessionManager.broadcastMessage(userMessage, 'user');
-	} else {
-		// Not in session, add message locally
-		addMessage(userMessage, 'user');
-	}
+    showLoading();
 
-	showLoading();
+    try {
+        let boardToCheck = null;
+        if (/student board|student whiteboard/i.test(message)) {
+            boardToCheck = 'student';
+        } else if (/teacher board|teacher whiteboard|teacher ans/i.test(message)) {
+            boardToCheck = 'teacher';
+        } else if (/whiteboard/i.test(message)) {
+            boardToCheck = window.tutorWhiteboard?.activeWhiteboard || 'teacher';
+        }
 
-	try {
-		let boardToCheck = null;
-		if (/student board|student whiteboard/i.test(message)) {
-			boardToCheck = 'student';
-		} else if (/teacher board|teacher whiteboard/i.test(message)) {
-			boardToCheck = 'teacher';
-		}
+        let ocrText = null;
+        if (boardToCheck) {
+            ocrText = await getOcrTextFromWhiteboardImage(boardToCheck);
+            console.log(`[DEBUG] OCR result from ${boardToCheck} board:`, ocrText);
 
-		let ocrText = null;
-		if (boardToCheck) {
-			ocrText = await getOcrTextFromWhiteboardImage(boardToCheck);
-			console.log(`[DEBUG] OCR result from ${boardToCheck} board:`, ocrText);
+            const latestOcrSummary = ocrText
+                ? `The ${boardToCheck} whiteboard contains: "${ocrText}"`
+                : `The ${boardToCheck} whiteboard is currently blank.`;
 
-			const latestOcrSummary = ocrText
-				? `The ${boardToCheck} whiteboard contains: "${ocrText}"`
-				: `The ${boardToCheck} whiteboard is currently blank.`;
+            context = context.filter(
+                (entry) => !(entry.role === 'system' && entry.content.startsWith(`The ${boardToCheck} whiteboard`))
+            );
 
-			context = context.filter(
-				(entry) => !(entry.role === 'system' && entry.content.startsWith(`The ${boardToCheck} whiteboard`))
-			);
+            context.splice(1, 0, {
+                role: 'system',
+                content: latestOcrSummary
+            });
+        }
 
-			context.splice(1, 0, {
-				role: 'system',
-				content: latestOcrSummary
-			});
-		}
+        context.push({ role: 'user', content: message });
+        console.log('[DEBUG] Context sent to Gemini:', JSON.stringify(context, null, 2)); // Log full context
 
-		// Add user message to context for AI
-		context.push({ role: 'user', content: message });
+        let botResponse = await getGeminiResponse(context);
+        context.push({ role: 'assistant', content: botResponse });
 
-		// Get AI response
-		let botResponse = await getGeminiResponse(context);
+        const maxContextMessages = 18;
+        if (context.length > maxContextMessages) {
+            context = [context[0], ...context.slice(-(maxContextMessages - 1))];
+        }
 
-		// Add bot response to context
-		context.push({ role: 'assistant', content: botResponse });
+        let whiteboardAction = null;
+        let targetBoard = null;
+        const teacherMatch = botResponse.match(/\[TEACHER_BOARD:\s*(\w+)\]/);
+        const studentMatch = botResponse.match(/\[STUDENT_BOARD:\s*(\w+)\]/);
 
-		// Manage context size
-		const maxContextMessages = 18;
-		if (context.length > maxContextMessages) {
-			context = [context[0], ...context.slice(-(maxContextMessages - 1))];
-		}
+        if (teacherMatch) {
+            whiteboardAction = teacherMatch[1];
+            targetBoard = 'teacher';
+            botResponse = botResponse.replace(/\[TEACHER_BOARD:\s*\w+\]/, '').trim();
+            botResponse += '\n\n[Drawing on teacher whiteboard...]';
+        } else if (studentMatch) {
+            whiteboardAction = studentMatch[1];
+            targetBoard = 'student';
+            botResponse = botResponse.replace(/\[STUDENT_BOARD:\s*\w+\]/, '').trim();
+            botResponse += '\n\n[Setting up student whiteboard...]';
+        }
 
-		// Check for whiteboard actions
-		let whiteboardAction = null;
-		let targetBoard = null;
-		const teacherMatch = botResponse.match(/\[TEACHER_BOARD:\s*(\w+)\]/);
-		const studentMatch = botResponse.match(/\[STUDENT_BOARD:\s*(\w+)\]/);
+        if (window.sessionManager && window.sessionManager.sessionId) {
+            window.sessionManager.broadcastMessage(botResponse, 'bot');
+        } else {
+            addMessage(botResponse, 'bot');
+        }
 
-		if (teacherMatch) {
-			whiteboardAction = teacherMatch[1];
-			targetBoard = 'teacher';
-			botResponse = botResponse.replace(/\[TEACHER_BOARD:\s*\w+\]/, '').trim();
-			botResponse += '\n\n[Drawing on teacher whiteboard...]';
-		} else if (studentMatch) {
-			whiteboardAction = studentMatch[1];
-			targetBoard = 'student';
-			botResponse = botResponse.replace(/\[STUDENT_BOARD:\s*\w+\]/, '').trim();
-			botResponse += '\n\n[Setting up student whiteboard...]';
-		}
+        if (whiteboardAction && targetBoard && window.tutorWhiteboard) {
+            setTimeout(() => executeWhiteboardAction(whiteboardAction, targetBoard), 500);
+        }
 
-		// Handle bot response display/broadcasting
-		if (window.sessionManager && window.sessionManager.sessionId) {
-			// In session mode, broadcast bot response
-			window.sessionManager.broadcastMessage(botResponse, 'bot');
-		} else {
-			// Not in session, add message locally
-			addMessage(botResponse, 'bot');
-		}
+    } catch (error) {
+        console.error('Error processing message:', error);
+        let errorMessage = 'I apologize, but I encountered an issue. ';
+        if (error.message.includes('Cannot reach the API')) {
+            errorMessage += 'The API endpoint is not responding. Please check your deployment.';
+        } else if (error.message.includes('API endpoint not found')) {
+            errorMessage += 'The API endpoint is missing. Make sure /api/gemini.js exists.';
+        } else if (error.message.includes('API authentication failed')) {
+            errorMessage += 'Please check your GEMINI_API_KEY environment variable.';
+        } else if (error.message.includes('Server error')) {
+            errorMessage += 'Please check your server logs and API configuration.';
+        } else {
+            errorMessage += 'Please try again or check the browser console for details.';
+        }
 
-		// Execute whiteboard action if needed
-		if (whiteboardAction && targetBoard && window.tutorWhiteboard) {
-			setTimeout(() => executeWhiteboardAction(whiteboardAction, targetBoard), 500);
-		}
+        if (window.sessionManager && window.sessionManager.sessionId) {
+            window.sessionManager.broadcastMessage(errorMessage, 'bot');
+        } else {
+            addMessage(errorMessage, 'bot');
+        }
+    }
 
-	} catch (error) {
-		console.error('Error processing message:', error);
-		
-		// Create user-friendly error message
-		let errorMessage = 'I apologize, but I encountered an issue. ';
-		
-		if (error.message.includes('Cannot reach the API')) {
-			errorMessage += 'The API endpoint is not responding. Please check your deployment.';
-		} else if (error.message.includes('API endpoint not found')) {
-			errorMessage += 'The API endpoint is missing. Make sure /api/gemini.js exists.';
-		} else if (error.message.includes('API authentication failed')) {
-			errorMessage += 'Please check your GEMINI_API_KEY environment variable.';
-		} else if (error.message.includes('Server error')) {
-			errorMessage += 'Please check your server logs and API configuration.';
-		} else {
-			errorMessage += 'Please try again or check the browser console for details.';
-		}
-
-		// Handle error message display/broadcasting
-		if (window.sessionManager && window.sessionManager.sessionId) {
-			window.sessionManager.broadcastMessage(errorMessage, 'bot');
-		} else {
-			addMessage(errorMessage, 'bot');
-		}
-	}
-
-	hideLoading();
-	isProcessing = false;
+    hideLoading();
+    isProcessing = false;
 }
 
 function executeWhiteboardAction(actionType, targetBoard) {
