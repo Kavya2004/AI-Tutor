@@ -13,7 +13,46 @@ app.use(express.json());
 
 const sessions = new Map();
 const sessionConnections = new Map();
+const fetch = require('node-fetch'); 
+app.post('/api/ocr', async (req, res) => {
+  try {
+    const { image } = req.body;
+    
+    if (!image) {
+      return res.status(400).json({ error: 'Missing image data' });
+    }
 
+    // Extract base64 data
+    const imageData = image.includes(',') ? image.split(',')[1] : image;
+
+    // Mathpix API call
+    const mathpixResponse = await fetch('https://api.mathpix.com/v3/text', {
+      method: 'POST',
+      headers: {
+        'app_id': process.env.MATHPIX_APP_ID,
+        'app_key': process.env.MATHPIX_APP_KEY,
+        'Content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        src: `data:image/png;base64,${imageData}`,
+        formats: ['text', 'data'],
+        ocr: ['math', 'text']
+      })
+    });
+
+    const result = await mathpixResponse.json();
+    res.json(result);
+
+  } catch (error) {
+    console.error('[OCR ERROR]', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy', message: 'Server is running' });
+});
 class TutorSession {
   constructor(sessionId, hostName, isPublic = true, sessionTitle = '') {
     this.sessionId = sessionId;
