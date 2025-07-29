@@ -8,14 +8,14 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-app.use(cors());
+app.use(cors({ origin: "https://ai-tutor-teal-one.vercel.app" }));
 app.use(express.json());
 
 const sessions = new Map();
 const sessionConnections = new Map();
 
 class TutorSession {
-  constructor(sessionId, hostName, isPublic = false, sessionTitle = '') {
+  constructor(sessionId, hostName, isPublic = true, sessionTitle = '') {
     this.sessionId = sessionId;
     this.hostName = hostName;
     this.isPublic = isPublic;           
@@ -26,12 +26,6 @@ class TutorSession {
     this.createdAt = new Date();
     this.lastActivity = new Date();
 
-    this.participants.set(hostName, {
-      userName: hostName,
-      isHost: true,
-      joinedAt: new Date(),
-      lastSeen: new Date(),
-    });
     this.participants.set(hostName, {
       userName: hostName,
       avatar: "👨‍🏫", 
@@ -112,13 +106,17 @@ function broadcastToSession(sessionId, message, excludeWs = null) {
   const connections = sessionConnections.get(sessionId) || [];
   connections.forEach(({ ws, userName }) => {
     if (ws !== excludeWs && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(message));
+      try {
+        ws.send(JSON.stringify(message));
+      } catch (error) {
+        console.error(`Error broadcasting to ${userName}:`, error);
+      }
     }
   });
 }
 
 app.post("/api/sessions/create", (req, res) => {
-  const { hostName, avatar, color, isPublic, sessionTitle } = req.body;  
+  const { hostName, avatar, color, isPublic = true, sessionTitle } = req.body;  
 
   if (!hostName || hostName.trim().length === 0) {
     return res.status(400).json({ error: "Host name is required" });
@@ -126,7 +124,7 @@ app.post("/api/sessions/create", (req, res) => {
 
   const sessionId = generateSessionId();
   const session = new TutorSession(sessionId, hostName.trim(), isPublic, sessionTitle);  
-  
+
   session.participants.set(hostName.trim(), {
     userName: hostName.trim(),
     avatar: avatar || "👨‍🏫",
@@ -159,6 +157,10 @@ app.post("/api/sessions/:sessionId/join", (req, res) => {
   const session = sessions.get(sessionId);
   if (!session) {
     return res.status(404).json({ error: "Session not found" });
+  }
+
+  if (session.participants.has(userName.trim())) {
+    return res.status(400).json({ error: "User name already taken in this session" });
   }
 
   session.addParticipant(userName.trim(), avatar, color);
@@ -260,6 +262,7 @@ wss.on("connection", (ws, req) => {
             const participant = session.participants.get(userName);
             participant.avatar = message.avatar || participant.avatar;
             participant.color = message.color || participant.color;
+            participant.lastSeen = new Date();
           }
           sessionConnections.get(sessionId).push({ ws, userName });
         
@@ -322,7 +325,6 @@ wss.on("connection", (ws, req) => {
               userName,
             );
 
-            // Broadcast to all participants
             broadcastToSession(
               sessionId,
               {
@@ -363,6 +365,7 @@ wss.on("connection", (ws, req) => {
             const participant = session.participants.get(userName);
             participant.avatar = message.avatar || participant.avatar;
             participant.color = message.color || participant.color;
+            participant.lastSeen = new Date();
 
             broadcastToSession(sessionId, {
               type: "participants_update",
@@ -427,7 +430,7 @@ const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => {
   console.log(`Session server running on port ${PORT}`);
   console.log(
-    `WebSocket endpoint: ws://localhost:${PORT}/sessions/{sessionId}`,
+    `WebSocket endpoint: wss://ai-tutor-53f1.onrender.com/sessions/{sessionId}`,
   );
 });
 
