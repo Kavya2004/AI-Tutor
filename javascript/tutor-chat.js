@@ -541,3 +541,26 @@ function handleDiceResult(result) {
 	const message = `I rolled a ${result}! What does this tell us about probability?`;
 	processUserMessage(message);
 }
+// Global function for whiteboard OCR integration
+window.addOcrMessageToChat = function(ocrText, boardType) {
+    const message = `I wrote on the ${boardType} whiteboard: "${ocrText}"`;
+    
+    // Add to chat input
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+        const currentValue = chatInput.value || '';
+        const newValue = currentValue ? `${currentValue}\n\n${message}` : message;
+        chatInput.value = newValue;
+        
+        // Trigger events
+        chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+        chatInput.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        // Auto-send if possible
+        setTimeout(() => {
+            if (!isProcessing) {
+                handleSendMessage();
+            }
+        }, 100);
+    }
+};

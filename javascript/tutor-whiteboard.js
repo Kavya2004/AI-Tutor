@@ -50,6 +50,267 @@ function setupWhiteboardControls() {
 	setupResizeHandle();
 }
 
+function getOcrServerUrl() {
+	// Check if we're in development
+	if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+		return 'http://localhost:5001'; // Updated port to match your server
+	}
+	
+	// Production - use your actual Render URL
+	return 'https://ai-tutor-53f1.onrender.com';
+}
+
+async function runOcrAndFillChat(boardType) {
+	try {
+		console.log(`[OCR] Starting OCR for ${boardType} whiteboard...`);
+		
+		// Get the correct canvas using the global variables from your whiteboard code
+		const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+		if (!canvas) {
+			console.error(`[OCR] Canvas not found for ${boardType}`);
+			return;
+		}
+
+		console.log(`[OCR] Found canvas:`, {
+			id: canvas.id,
+			width: canvas.width,
+			height: canvas.height
+		});
+
+		// Check if canvas has any content
+		const ctx = canvas.getContext('2d');
+		const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+		let hasContent = false;
+		for (let i = 0; i < imageData.data.length; i += 4) {
+			const r = imageData.data[i];
+			const g = imageData.data[i + 1]; 
+			const b = imageData.data[i + 2];
+			const a = imageData.data[i + 3];
+			
+			// Check for any non-white, non-transparent pixels
+			if (a > 0 && (r < 250 || g < 250 || b < 250)) {
+				hasContent = true;
+				break;
+			}
+		}
+
+		if (!hasContent) {
+			console.log(`[OCR] Canvas appears to be empty`);
+			return;
+		}
+
+		// Convert canvas to base64 image
+		const dataUrl = canvas.toDataURL('image/png', 0.8);
+		console.log(`[OCR] Canvas data URL length:`, dataUrl.length);
+		
+		// Get the correct server URL
+		const serverUrl = getOcrServerUrl();
+		console.log(`[OCR] Using server URL:`, serverUrl);
+		
+		// Send to your OCR server
+		const response = await fetch(`${serverUrl}/api/ocr`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				image: dataUrl
+			})
+		});
+
+		if (!response.ok) {
+			const errorText = await response.text();
+			throw new Error(`OCR request failed: ${response.status} - ${errorText}`);
+		}
+
+		const result = await response.json();
+		console.log('[OCR] Raw result:', result);
+
+		// Extract the recognized text from Mathpix response
+// Extract the recognized text from Mathpix response
+let ocrText = '';
+if (result.text) {
+    ocrText = result.text;
+} else if (result.latex_styled) {
+    ocrText = result.latex_styled;
+} else if (result.data && Array.isArray(result.data)) {
+    ocrText = result.data.map(item => item.value || '').join(' ');
+} else if (result.error) {
+    console.error('[OCR] Server returned error:', result.error);
+    showOcrError(`OCR Error: ${result.error}`);
+    return;
+} else {
+    console.log('[OCR] Unexpected response format:', result);
+    ocrText = JSON.stringify(result); // Fallback to see what we got
+}
+
+		if (ocrText.trim()) {
+			console.log('[OCR] Recognized text:', ocrText);
+			await sendOcrToChat(ocrText, boardType);
+		} else {
+			console.log('[OCR] No text recognized');
+		}
+
+	} catch (error) {
+		console.error('[OCR] Error:', error);
+		showOcrError(`Failed to process whiteboard: ${error.message}`);
+	}
+}
+
+// Send OCR result to chat system
+async function sendOcrToChat(ocrText, boardType) {
+	const message = `I wrote on the ${boardType} whiteboard: "${ocrText}"`;
+	
+	console.log('[OCR->CHAT]', message);
+	
+	const chatInput = document.querySelector('#chatInput') || // This matches your HTML
+	document.querySelector('#messageInput') ||
+	document.querySelector('[data-testid="chat-input"]') ||
+	document.querySelector('textarea[placeholder*="message"]') ||
+	document.querySelector('input[type="text"]') ||
+	document.querySelector('textarea');
+	if (chatInput) {
+		// Add the OCR text to the chat input
+		const currentValue = chatInput.value || '';
+		const newValue = currentValue ? `${currentValue}\n\n${message}` : message;
+		chatInput.value = newValue;
+		
+		// Trigger input events to notify React/Vue/etc if needed
+		chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+		chatInput.dispatchEvent(new Event('change', { bubbles: true }));
+		
+		const sendButton = document.querySelector('#sendButton') || 
+		document.querySelector('[data-testid="send-button"]') ||
+		document.querySelector('button[type="submit"]') ||
+		document.querySelector('.send-button');
+		if (sendButton && !sendButton.disabled) {
+			console.log('[OCR] Auto-sending message...');
+			setTimeout(() => sendButton.click(), 100);
+		} else {
+			console.log('[OCR] Send button not found or disabled, message added to input');
+			// Show a notification that the text was added
+			showOcrSuccess(`Text "${ocrText}" added to chat input`);
+		}
+	} else {
+		console.log('[OCR] Chat input not found, trying to call global functions...');
+		
+		// Try to call global functions that might exist in your chat system
+		if (typeof window.addOcrMessageToChat === 'function') {
+			window.addOcrMessageToChat(ocrText, boardType);
+		} else if (typeof window.addMessageToChat === 'function') {
+			window.addMessageToChat(message);
+		} else if (typeof window.sendMessage === 'function') {
+			window.sendMessage(message);
+		} else {
+			// Show the OCR result in a notification
+			showOcrSuccess(`Recognized text: "${ocrText}"`);
+		}
+	}
+}
+// Global function for whiteboard OCR integration
+window.addOcrMessageToChat = function(ocrText, boardType) {
+    const message = `I wrote on the ${boardType} whiteboard: "${ocrText}"`;
+    
+    // Add to chat input
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+        const currentValue = chatInput.value || '';
+        const newValue = currentValue ? `${currentValue}\n\n${message}` : message;
+        chatInput.value = newValue;
+        
+        // Trigger events
+        chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+        chatInput.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        // Auto-send if possible
+        setTimeout(() => {
+            if (!isProcessing) {
+                handleSendMessage();
+            }
+        }, 100);
+    }
+};
+// Show success notification
+function showOcrSuccess(message) {
+	const notification = document.createElement('div');
+	notification.style.cssText = `
+		position: fixed;
+		top: 20px;
+		right: 20px;
+		background: #28a745;
+		color: white;
+		padding: 12px 16px;
+		border-radius: 8px;
+		z-index: 10000;
+		font-size: 14px;
+		max-width: 300px;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+	`;
+	notification.textContent = message;
+	
+	document.body.appendChild(notification);
+	
+	// Remove after 4 seconds
+	setTimeout(() => {
+		if (notification.parentNode) {
+			notification.parentNode.removeChild(notification);
+		}
+	}, 4000);
+}
+
+// Show error notification
+function showOcrError(message) {
+	const errorDiv = document.createElement('div');
+	errorDiv.style.cssText = `
+		position: fixed;
+		top: 20px;
+		right: 20px;
+		background: #dc3545;
+		color: white;
+		padding: 12px 16px;
+		border-radius: 8px;
+		z-index: 10000;
+		font-size: 14px;
+		max-width: 300px;
+		box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+	`;
+	errorDiv.textContent = message;
+	
+	document.body.appendChild(errorDiv);
+	
+	// Remove after 5 seconds
+	setTimeout(() => {
+		if (errorDiv.parentNode) {
+			errorDiv.parentNode.removeChild(errorDiv);
+		}
+	}, 5000);
+}
+
+// Debug function to help troubleshoot
+function debugWhiteboardOcr() {
+	console.log('=== WHITEBOARD OCR DEBUG ===');
+	console.log('teacherCanvas:', teacherCanvas);
+	console.log('studentCanvas:', studentCanvas);
+	console.log('isDrawingMode:', isDrawingMode);
+	console.log('isAnythingDrawn:', isAnythingDrawn);
+	
+	// Test OCR on both canvases
+	if (teacherCanvas) {
+		console.log('Testing teacher canvas OCR...');
+		runOcrAndFillChat('teacher');
+	}
+	
+	if (studentCanvas) {
+		console.log('Testing student canvas OCR...');
+		runOcrAndFillChat('student');
+	}
+}
+
+// Make debug function available globally
+window.debugWhiteboardOcr = debugWhiteboardOcr;
+
+// Also export the OCR functions for external use
+window.runOcrAndFillChat = runOcrAndFillChat;
 function initializeWhiteboards() {
 	// Initialize teacher whiteboard
 	teacherCanvas = document.getElementById('teacherWhiteboard');
@@ -286,11 +547,18 @@ function clearWhiteboard(boardType) {
 
 function toggleDrawing(boardType) {
 	isDrawingMode = !isDrawingMode;
-	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
-	if (canvas) {
-		canvas.style.cursor = isDrawingMode ? 'crosshair' : 'default';
+	
+	// Update cursor for BOTH canvases when drawing mode changes
+	if (teacherCanvas) {
+		teacherCanvas.style.cursor = isDrawingMode ? 'crosshair' : 'default';
 	}
+	if (studentCanvas) {
+		studentCanvas.style.cursor = isDrawingMode ? 'crosshair' : 'default';
+	}
+	
 	updateDrawButtons();
+	
+	console.log(`[DRAW] Drawing mode ${isDrawingMode ? 'ENABLED' : 'DISABLED'} for ${boardType}`);
 }
 
 function updateDrawButtons() {
@@ -352,7 +620,7 @@ function stopDrawing(boardType) {
 
 	if (isAnythingDrawn) {
 		clearTimeout(recogTimer);
-		//recogTimer = setTimeout(() => runOcrAndFillChat(boardType), 800);
+		recogTimer = setTimeout(() => runOcrAndFillChat(boardType), 800);
 	}
 }
 
@@ -735,3 +1003,26 @@ async function getOcrTextFromWhiteboardWithLlava(board) {
 		return '';
 	}
 }
+// Add this function for testing
+window.testOcrConnection = async function() {
+    console.log('Testing OCR connection...');
+    
+    // Test server
+    try {
+        const response = await fetch(getOcrServerUrl() + '/api/ocr', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==' 
+            })
+        });
+        console.log('Server response:', await response.json());
+    } catch (e) {
+        console.error('Server test failed:', e);
+    }
+    
+    // Test chat integration
+    console.log('Chat input found:', !!document.getElementById('chatInput'));
+    console.log('Send button found:', !!document.getElementById('sendButton'));
+    console.log('OCR function available:', typeof window.addOcrMessageToChat);
+};
