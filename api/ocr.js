@@ -2,9 +2,13 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
-
+    
     try {
         const { image } = req.body;
+        
+        if (!image) {
+            return res.status(400).json({ error: 'Image data is required' });
+        }
         
         // Log the actual credential values (first few chars only for security)
         console.log('Using credentials:', {
@@ -45,6 +49,6 @@ export default async function handler(req, res) {
         
     } catch (error) {
         console.error('OCR Error:', error);
-        res.status(500).json({ error: 'OCR processing failed' });
+        res.status(500).json({ error: 'OCR processing failed', details: error.message });
     }
 }
