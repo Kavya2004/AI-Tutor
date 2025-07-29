@@ -31,7 +31,6 @@ app.add_middleware(
 model = None
 tokenizer = None
 
-# Enhanced whiteboard decision system
 WHITEBOARD_KEYWORDS = {
     'teacher': [
         'show', 'demonstrate', 'example', 'explain', 'illustrate', 'draw', 'see',

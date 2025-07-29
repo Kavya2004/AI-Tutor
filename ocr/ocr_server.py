@@ -1,14 +1,21 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import easyocr
 import base64
 from io import BytesIO
 from PIL import Image
-import numpy as np
+import requests
+import os
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env'))
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
-reader = easyocr.Reader(['en'])
+
+MATHPIX_APP_ID = os.getenv('MATHPIX_APP_ID')
+MATHPIX_APP_KEY = os.getenv('MATHPIX_APP_KEY')
+
+MATHPIX_ENDPOINT = 'https://api.mathpix.com/v3/text'
 
 
 @app.route('/api/ocr', methods=['POST'])
@@ -17,13 +24,25 @@ def ocr():
         data = request.get_json()
         image_data = data.get('image', '').split(',')[1]
         image_bytes = base64.b64decode(image_data)
-        pil_image = Image.open(BytesIO(image_bytes)).convert('RGB')
-        np_image = np.array(pil_image)
+        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
 
-        result = reader.readtext(np_image)
-        text = ' '.join([res[1] for res in result])
+        headers = {
+            'app_id': MATHPIX_APP_ID,
+            'app_key': MATHPIX_APP_KEY,
+            'Content-type': 'application/json'
+        }
 
-        return jsonify({'text': text})
+        payload = {
+            'src': f'data:image/png;base64,{image_base64}',
+            'formats': ['text', 'data'],
+            'ocr': ['math', 'text']
+        }
+
+        response = requests.post(
+            MATHPIX_ENDPOINT, json=payload, headers=headers)
+        result = response.json()
+
+        return jsonify(result)
 
     except Exception as e:
         print('[OCR ERROR]', e)
