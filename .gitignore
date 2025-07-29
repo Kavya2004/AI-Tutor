@@ -2,4 +2,6 @@ vllm-env/
 node_modules/
 venv/
 ocr/.env
+
 index.php
+
