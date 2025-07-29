@@ -693,45 +693,47 @@ window.addEventListener('load', () => {
 		if (canvas && canvas.width > 0 && canvas.height > 0) {
 			clearInterval(waitForCanvas);
 			console.log('[DEBUG] Canvas ready, triggering OCR');
-			getOcrTextFromWhiteboardWithLlava('student').then((result) => {
-				console.log('[OCR DEBUG] Final OCR text:', result);
+
+			getOcrTextFromWhiteboardImage('student').then((result) => {
+				console.log('[OCR DEBUG] Final OCR text from Mathpix:', result);
 			});
 		} else {
 			console.log('[DEBUG] Waiting for student canvas to mount...');
 		}
-	}, 300); // check every 300ms
+	}, 300);
 });
 
-async function getOcrTextFromWhiteboardWithLlava(board) {
-	try {
-		console.log(`[OCR-LLAVA] Capturing ${board} canvas...`);
-		const canvas = document.querySelector(board === 'student' ? '#studentWhiteboard' : '#teacherWhiteboard');
-		if (!canvas) return '';
 
-		const dataUrl = canvas.toDataURL('image/png');
-		const base64Image = dataUrl.replace(/^data:image\/png;base64,/, '');
+// async function getOcrTextFromWhiteboardWithLlava(board) {
+// 	try {
+// 		console.log(`[OCR-LLAVA] Capturing ${board} canvas...`);
+// 		const canvas = document.querySelector(board === 'student' ? '#studentWhiteboard' : '#teacherWhiteboard');
+// 		if (!canvas) return '';
 
-		const response = await fetch('http://localhost:11434/api/generate', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				model: 'llava:7b',
-				prompt: 'What text is written on the whiteboard?',
-				images: [base64Image],
-				stream: false
-			})
-		});
+// 		const dataUrl = canvas.toDataURL('image/png');
+// 		const base64Image = dataUrl.replace(/^data:image\/png;base64,/, '');
 
-		if (!response.ok) {
-			const err = await response.text();
-			throw new Error(`[LLAVA] ${response.status}: ${err}`);
-		}
+// 		const response = await fetch('http://localhost:11434/api/generate', {
+// 			method: 'POST',
+// 			headers: { 'Content-Type': 'application/json' },
+// 			body: JSON.stringify({
+// 				model: 'llava:7b',
+// 				prompt: 'What text is written on the whiteboard?',
+// 				images: [base64Image],
+// 				stream: false
+// 			})
+// 		});
 
-		const { response: llavaText } = await response.json();
-		console.log(`[LLAVA] OCR result:`, llavaText);
-		return llavaText.trim();
-	} catch (err) {
-		console.error(`[LLAVA] OCR error:`, err);
-		return '';
-	}
-}
+// 		if (!response.ok) {
+// 			const err = await response.text();
+// 			throw new Error(`[LLAVA] ${response.status}: ${err}`);
+// 		}
+
+// 		const { response: llavaText } = await response.json();
+// 		console.log(`[LLAVA] OCR result:`, llavaText);
+// 		return llavaText.trim();
+// 	} catch (err) {
+// 		console.error(`[LLAVA] OCR error:`, err);
+// 		return '';
+// 	}
+// }
