@@ -352,16 +352,11 @@ async function processUserMessage(message) {
 		document.getElementById('filePreview').innerHTML = '';
 	}
 
-	// Add user message (include file info if files were uploaded)
+	// Prepare user message (include file info if files were uploaded)
 	let userMessage = message.trim();
 	if (processedFiles.length > 0) {
 		const fileNames = processedFiles.map((f) => f.name).join(', ');
 		userMessage = userMessage || `I've uploaded these files: ${fileNames}`;
-
-		// ADD THIS: Only add message locally if not in session (session will handle broadcasting)
-		if (!window.sessionManager || !window.sessionManager.sessionId) {
-			addMessage(userMessage, 'user');
-		}
 
 		// Add file contents to context
 		processedFiles.forEach((file) => {
@@ -370,21 +365,15 @@ async function processUserMessage(message) {
 				content: `File: ${file.name}\nContent: ${file.content}`
 			});
 		});
-	} else if (userMessage) {
-		// ADD THIS: Only add message locally if not in session
-		if (!window.sessionManager || !window.sessionManager.sessionId) {
-			addMessage(userMessage, 'user');
-		}
 	}
 
-	// ADD THIS: If in session, broadcast the user message
+	// Handle message display/broadcasting (only once!)
 	if (window.sessionManager && window.sessionManager.sessionId) {
+		// In session mode, broadcast user message
 		window.sessionManager.broadcastMessage(userMessage, 'user');
 	} else {
-		// Only add message locally if not already added above
-		if (!processedFiles.length && userMessage) {
-			addMessage(userMessage, 'user');
-		}
+		// Not in session, add message locally
+		addMessage(userMessage, 'user');
 	}
 
 	showLoading();
@@ -416,17 +405,22 @@ async function processUserMessage(message) {
 			});
 		}
 
+		// Add user message to context for AI
 		context.push({ role: 'user', content: message });
 
+		// Get AI response
 		let botResponse = await getGeminiResponse(context);
 
+		// Add bot response to context
 		context.push({ role: 'assistant', content: botResponse });
 
+		// Manage context size
 		const maxContextMessages = 18;
 		if (context.length > maxContextMessages) {
 			context = [context[0], ...context.slice(-(maxContextMessages - 1))];
 		}
 
+		// Check for whiteboard actions
 		let whiteboardAction = null;
 		let targetBoard = null;
 		const teacherMatch = botResponse.match(/\[TEACHER_BOARD:\s*(\w+)\]/);
@@ -444,7 +438,7 @@ async function processUserMessage(message) {
 			botResponse += '\n\n[Setting up student whiteboard...]';
 		}
 
-		// ADD THIS: Handle bot response for sessions
+		// Handle bot response display/broadcasting
 		if (window.sessionManager && window.sessionManager.sessionId) {
 			// In session mode, broadcast bot response
 			window.sessionManager.broadcastMessage(botResponse, 'bot');
@@ -453,19 +447,30 @@ async function processUserMessage(message) {
 			addMessage(botResponse, 'bot');
 		}
 
+		// Execute whiteboard action if needed
 		if (whiteboardAction && targetBoard && window.tutorWhiteboard) {
 			setTimeout(() => executeWhiteboardAction(whiteboardAction, targetBoard), 500);
 		}
+
 	} catch (error) {
 		console.error('Error processing message:', error);
+		
+		// Create user-friendly error message
 		let errorMessage = 'I apologize, but I encountered an issue. ';
-		if (error.message.includes('fetch')) {
-			errorMessage += "Unable to connect to the AI server. Please make sure it's running.";
+		
+		if (error.message.includes('Cannot reach the API')) {
+			errorMessage += 'The API endpoint is not responding. Please check your deployment.';
+		} else if (error.message.includes('API endpoint not found')) {
+			errorMessage += 'The API endpoint is missing. Make sure /api/gemini.js exists.';
+		} else if (error.message.includes('API authentication failed')) {
+			errorMessage += 'Please check your GEMINI_API_KEY environment variable.';
+		} else if (error.message.includes('Server error')) {
+			errorMessage += 'Please check your server logs and API configuration.';
 		} else {
-			errorMessage += 'Please try again or check your server logs.';
+			errorMessage += 'Please try again or check the browser console for details.';
 		}
 
-		// ADD THIS: Handle error messages for sessions
+		// Handle error message display/broadcasting
 		if (window.sessionManager && window.sessionManager.sessionId) {
 			window.sessionManager.broadcastMessage(errorMessage, 'bot');
 		} else {
