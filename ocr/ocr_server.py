@@ -14,9 +14,7 @@ CORS(app, supports_credentials=True)
 
 MATHPIX_APP_ID = os.getenv('MATHPIX_APP_ID')
 MATHPIX_APP_KEY = os.getenv('MATHPIX_APP_KEY')
-
 MATHPIX_ENDPOINT = 'https://api.mathpix.com/v3/text'
-
 
 @app.route('/api/ocr', methods=['POST'])
 def ocr():
@@ -38,16 +36,13 @@ def ocr():
             'ocr': ['math', 'text']
         }
 
-        response = requests.post(
-            MATHPIX_ENDPOINT, json=payload, headers=headers)
+        response = requests.post(MATHPIX_ENDPOINT, json=payload, headers=headers)
         result = response.json()
 
         return jsonify(result)
-
     except Exception as e:
         print('[OCR ERROR]', e)
         return jsonify({'error': str(e)}), 500
 
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 10000)))  # Keep for local testing
