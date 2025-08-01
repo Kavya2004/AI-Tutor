@@ -133,6 +133,9 @@ class DiagramRenderer {
             case 'quadratic':
                 this.renderQuadratic(coordinates);
                 break;
+            case 'triangle':
+                this.renderTriangle(coordinates);
+                break;
         }
 
         // Add label if provided
@@ -155,6 +158,15 @@ class DiagramRenderer {
                 this.ctx.lineTo(x * 20, y * 20);
             }
         }
+        this.ctx.stroke();
+    }
+
+    renderTriangle([x1, y1, x2, y2, x3, y3]) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x1 * 20, y1 * 20);
+        this.ctx.lineTo(x2 * 20, y2 * 20);
+        this.ctx.lineTo(x3 * 20, y3 * 20);
+        this.ctx.closePath();
         this.ctx.stroke();
     }
 
