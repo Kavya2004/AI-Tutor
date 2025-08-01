@@ -194,8 +194,19 @@ class DiagramRenderer {
         this.ctx.beginPath();
         this.ctx.moveTo(points[0] * 20, points[1] * 20);
         
-        for (let i = 2; i < points.length; i += 2) {
-            this.ctx.lineTo(points[i] * 20, points[i + 1] * 20);
+        // Handle smooth curves with quadratic bezier
+        if (points.length >= 6) {
+            for (let i = 2; i < points.length - 2; i += 2) {
+                const cpx = points[i] * 20;
+                const cpy = points[i + 1] * 20;
+                const x = points[i + 2] * 20;
+                const y = points[i + 3] * 20;
+                this.ctx.quadraticCurveTo(cpx, cpy, x, y);
+            }
+        } else {
+            for (let i = 2; i < points.length; i += 2) {
+                this.ctx.lineTo(points[i] * 20, points[i + 1] * 20);
+            }
         }
         this.ctx.stroke();
     }
