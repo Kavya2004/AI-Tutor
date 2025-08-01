@@ -565,12 +565,10 @@ function clearWhiteboard(boardType) {
 function toggleDrawing(boardType) {
 	isDrawingMode = !isDrawingMode;
 	
-	// Update cursor for BOTH canvases when drawing mode changes
-	if (teacherCanvas) {
-		teacherCanvas.style.cursor = isDrawingMode ? 'crosshair' : 'default';
-	}
-	if (studentCanvas) {
-		studentCanvas.style.cursor = isDrawingMode ? 'crosshair' : 'default';
+	// Update cursor for the specific canvas
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	if (canvas) {
+		canvas.style.cursor = isDrawingMode ? 'crosshair' : 'default';
 	}
 	
 	updateDrawButtons();
