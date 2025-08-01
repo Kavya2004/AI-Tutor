@@ -532,6 +532,10 @@ function resizeCanvas(canvas, boardType) {
 	const newHeight = Math.floor(containerRect.height - 60); // Account for header
 
 	if (canvas.width !== newWidth || canvas.height !== newHeight) {
+		// Save current canvas content
+		const imageData = canvas.toDataURL();
+		
+		// Resize canvas
 		canvas.width = newWidth;
 		canvas.height = newHeight;
 
@@ -540,6 +544,11 @@ function resizeCanvas(canvas, boardType) {
 		ctx.lineWidth = 4;
 		ctx.lineCap = 'round';
 		ctx.lineJoin = 'round';
+		
+		// Restore canvas content
+		const img = new Image();
+		img.onload = () => ctx.drawImage(img, 0, 0);
+		img.src = imageData;
 	}
 }
 
