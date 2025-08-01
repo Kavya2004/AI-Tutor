@@ -545,14 +545,8 @@ function resizeCanvas(canvas, boardType) {
 		ctx.lineCap = 'round';
 		ctx.lineJoin = 'round';
 		
-		// Restore canvas content
-		if (imageData && imageData !== 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=') {
-			const img = new Image();
-			img.onload = () => {
-				ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height);
-			};
-			img.src = imageData;
-		}
+		// Don't restore - let diagram regenerate cleanly
+		// The diagram system will redraw if needed
 	}
 }
 
@@ -637,9 +631,14 @@ function stopDrawing(boardType) {
 	isDrawing = false;
 	currentPath = [];
 
-	if (isAnythingDrawn) {
+	if (isAnythingDrawn && isDrawingMode) {
 		clearTimeout(recogTimer);
-		recogTimer = setTimeout(() => runOcrAndFillChat(boardType), 800);
+		recogTimer = setTimeout(() => {
+			if (isAnythingDrawn) {
+				runOcrAndFillChat(boardType);
+				isAnythingDrawn = false;
+			}
+		}, 800);
 	}
 }
 
