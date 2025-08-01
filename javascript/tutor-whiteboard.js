@@ -7,6 +7,8 @@ window.studentCanvas = null;
 window.studentCtx = null;
 let isDrawing = false;
 let isDrawingMode = false;
+let teacherDrawingMode = false;
+let studentDrawingMode = false;
 let currentPath = [];
 let isExpanded = false;
 let recogTimer = null;
@@ -76,6 +78,12 @@ async function runOcrAndFillChat(boardType) {
 			width: canvas.width,
 			height: canvas.height
 		});
+
+		// Check canvas dimensions first
+		if (canvas.width === 0 || canvas.height === 0) {
+			console.log(`[OCR] Canvas has zero dimensions: ${canvas.width}x${canvas.height}`);
+			return;
+		}
 
 		// Check if canvas has any content
 		const ctx = canvas.getContext('2d');
@@ -563,18 +571,25 @@ function clearWhiteboard(boardType) {
 }
 
 function toggleDrawing(boardType) {
-	isDrawingMode = !isDrawingMode;
-	
-	// Update cursor for the specific canvas
-	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
-	if (canvas) {
-		canvas.style.cursor = isDrawingMode ? 'crosshair' : 'default';
+	if (boardType === 'teacher') {
+		teacherDrawingMode = !teacherDrawingMode;
+		isDrawingMode = teacherDrawingMode;
+		if (teacherCanvas) {
+			teacherCanvas.style.cursor = teacherDrawingMode ? 'crosshair' : 'default';
+		}
+	} else {
+		studentDrawingMode = !studentDrawingMode;
+		isDrawingMode = studentDrawingMode;
+		if (studentCanvas) {
+			studentCanvas.style.cursor = studentDrawingMode ? 'crosshair' : 'default';
+		}
 	}
 	
 	updateDrawButtons();
 	
 	// Only run OCR when stopping drawing mode
-	if (!isDrawingMode && isAnythingDrawn) {
+	const currentMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
+	if (!currentMode && isAnythingDrawn) {
 		clearTimeout(recogTimer);
 		recogTimer = setTimeout(() => {
 			runOcrAndFillChat(boardType);
@@ -582,7 +597,7 @@ function toggleDrawing(boardType) {
 		}, 500);
 	}
 	
-	console.log(`[DRAW] Drawing mode ${isDrawingMode ? 'ENABLED' : 'DISABLED'} for ${boardType}`);
+	console.log(`[DRAW] Drawing mode ${currentMode ? 'ENABLED' : 'DISABLED'} for ${boardType}`);
 }
 
 function updateDrawButtons() {
@@ -603,7 +618,8 @@ function updateDrawButtons() {
 }
 
 function startDrawing(e, boardType) {
-	if (!isDrawingMode) return;
+	const currentMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
+	if (!currentMode) return;
 
 	isDrawing = true;
 	isAnythingDrawn = true;
@@ -622,7 +638,8 @@ function startDrawing(e, boardType) {
 }
 
 function draw(e, boardType) {
-	if (!isDrawing || !isDrawingMode) return;
+	const currentMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
+	if (!isDrawing || !currentMode) return;
 
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
