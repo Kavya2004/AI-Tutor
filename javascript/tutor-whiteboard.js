@@ -545,8 +545,12 @@ function resizeCanvas(canvas, boardType) {
 		ctx.lineCap = 'round';
 		ctx.lineJoin = 'round';
 		
-		// Don't restore - let diagram regenerate cleanly
-		// The diagram system will redraw if needed
+		// Restore canvas content
+		if (imageData && imageData !== 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=') {
+			const img = new Image();
+			img.onload = () => ctx.drawImage(img, 0, 0);
+			img.src = imageData;
+		}
 	}
 }
 
@@ -570,6 +574,15 @@ function toggleDrawing(boardType) {
 	}
 	
 	updateDrawButtons();
+	
+	// Only run OCR when stopping drawing mode
+	if (!isDrawingMode && isAnythingDrawn) {
+		clearTimeout(recogTimer);
+		recogTimer = setTimeout(() => {
+			runOcrAndFillChat(boardType);
+			isAnythingDrawn = false;
+		}, 500);
+	}
 	
 	console.log(`[DRAW] Drawing mode ${isDrawingMode ? 'ENABLED' : 'DISABLED'} for ${boardType}`);
 }
@@ -630,16 +643,7 @@ function draw(e, boardType) {
 function stopDrawing(boardType) {
 	isDrawing = false;
 	currentPath = [];
-
-	if (isAnythingDrawn && isDrawingMode) {
-		clearTimeout(recogTimer);
-		recogTimer = setTimeout(() => {
-			if (isAnythingDrawn) {
-				runOcrAndFillChat(boardType);
-				isAnythingDrawn = false;
-			}
-		}, 800);
-	}
+	// OCR only triggers when drawing mode is turned OFF, not on every stroke
 }
 
 // Drawing functions that can work on either whiteboard
