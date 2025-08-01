@@ -546,9 +546,13 @@ function resizeCanvas(canvas, boardType) {
 		ctx.lineJoin = 'round';
 		
 		// Restore canvas content
-		const img = new Image();
-		img.onload = () => ctx.drawImage(img, 0, 0);
-		img.src = imageData;
+		if (imageData && imageData !== 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=') {
+			const img = new Image();
+			img.onload = () => {
+				ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height);
+			};
+			img.src = imageData;
+		}
 	}
 }
 

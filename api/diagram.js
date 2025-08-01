@@ -26,30 +26,31 @@ export default async function handler(req, res) {
     }
 
     // Enhanced prompt for diagram generation
-    const diagramPrompt = `You are a creative math diagram generator. You can draw ANYTHING by combining basic shapes and functions. Be creative!
+    const diagramPrompt = `Create a simple diagram using basic shapes. Use ONLY numbers in coordinates - no Math expressions!
 
 Question: ${question}
-${context ? `Context: ${context}` : ''}
 
-Available tools: line, circle, rectangle, point, curve, axis, arrow, quadratic, function
+Available shapes:
+- line: [x1, y1, x2, y2]
+- circle: [centerX, centerY, radius] 
+- rectangle: [x, y, width, height]
+- triangle: [x1, y1, x2, y2, x3, y3]
 
-For ANY mathematical concept, create a visual using these tools:
-- Parabolas: {"type": "quadratic", "coordinates": [a, b, c, xMin, xMax]}
-- Functions: {"type": "function", "coordinates": {"type": "sine|cosine|linear", "coefficients": [a,b,c], "domain": [min,max]}}
-- Shapes: {"type": "circle|rectangle|line", "coordinates": [...]}
-- Axes: {"type": "axis", "coordinates": [xMin, xMax, yMin, yMax]}
+IMPORTANT: Use only simple numbers like 1, 2, 3, etc. NO Math.sqrt() or calculations!
 
-Respond with JSON:
+Example house:
 {
   "needsDiagram": true,
   "instructions": {
-    "title": "Title",
-    "elements": [{"type": "...", "coordinates": [...], "color": "blue|red|green|black"}],
-    "explanation": "What this shows"
+    "title": "Simple House",
+    "elements": [
+      {"type": "rectangle", "coordinates": [0, 0, 4, 3], "color": "black"},
+      {"type": "triangle", "coordinates": [0, 3, 2, 5, 4, 3], "color": "red"}
+    ]
   }
 }
 
-Be creative! You can draw anything - houses, trees, faces, abstract art - using these basic tools.`;
+Respond with valid JSON only!`;
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
@@ -87,16 +88,28 @@ Be creative! You can draw anything - houses, trees, faces, abstract art - using 
     let diagramData;
     try {
       // Extract JSON from response (handle markdown code blocks)
+      let jsonText = generatedText;
       const jsonMatch = generatedText.match(/```json\n([\s\S]*?)\n```/) || 
-                       generatedText.match(/```\n([\s\S]*?)\n```/) ||
-                       [null, generatedText];
+                       generatedText.match(/```\n([\s\S]*?)\n```/);
       
-      diagramData = JSON.parse(jsonMatch[1] || generatedText);
+      if (jsonMatch) {
+        jsonText = jsonMatch[1];
+      }
+      
+      // Clean up common JSON issues
+      jsonText = jsonText
+        .replace(/Math\.sqrt\(3\)/g, '1.732') // Replace Math expressions
+        .replace(/\*Math\.sqrt\(3\)/g, '*1.732')
+        .replace(/,\s*\]/g, ']') // Remove trailing commas
+        .replace(/,\s*\}/g, '}');
+      
+      diagramData = JSON.parse(jsonText);
     } catch (parseError) {
+      console.error('JSON parse error:', parseError);
       // If JSON parsing fails, create a simple response
       diagramData = {
         needsDiagram: false,
-        explanation: generatedText
+        explanation: 'Failed to parse diagram instructions: ' + generatedText
       };
     }
 
