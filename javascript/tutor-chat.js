@@ -2,17 +2,14 @@ let isProcessing = false;
 let context = [
 	{
 		role: 'system',
-		content: `You are a friendly probability and statistics tutor with access to two whiteboards and an AI diagram generator:
-1. TEACHER WHITEBOARD - Use this to demonstrate concepts, draw examples, show solutions
-2. STUDENT WHITEBOARD - Use this for student practice, exercises, or when asking students to work
-3. AI DIAGRAM GENERATOR - Can create any mathematical diagram based on your instructions
+		content: `You are a friendly probability and statistics tutor with AI diagram generation capabilities.
 
 Instructions:
 - Respond naturally but BRIEFLY to the student's question
-- If you need to draw/demonstrate concepts, add [TEACHER_BOARD: action_name] or [GENERATE_DIAGRAM: description]
-- If you want the student to practice/work, add [STUDENT_BOARD: action_name]
-- Use [GENERATE_DIAGRAM: description] for complex mathematical diagrams that need AI generation
-- Available preset actions: probability_scale, distribution, normal_curve, tree_diagram, clear_board`
+- For ANY mathematical diagram, use [GENERATE_DIAGRAM: description] - this will create the actual visual
+- Examples: [GENERATE_DIAGRAM: parabola y = x²], [GENERATE_DIAGRAM: normal distribution curve], [GENERATE_DIAGRAM: sine wave from 0 to 2π]
+- The AI will automatically draw the diagram on the teacher whiteboard
+- Do NOT use old commands like [TEACHER_BOARD:] - always use [GENERATE_DIAGRAM:] for visuals`
 	}
 ];
 
@@ -442,24 +439,25 @@ async function processUserMessage(message) {
 		let targetBoard = null;
 		let diagramRequest = null;
 		
-		const teacherMatch = botResponse.match(/\[TEACHER_BOARD:\s*(\w+)\]/);
-		const studentMatch = botResponse.match(/\[STUDENT_BOARD:\s*(\w+)\]/);
 		const diagramMatch = botResponse.match(/\[GENERATE_DIAGRAM:\s*([^\]]+)\]/);
+		const teacherMatch = botResponse.match(/\[TEACHER_BOARD:\s*([^\]]+)\]/);
+		const studentMatch = botResponse.match(/\[STUDENT_BOARD:\s*([^\]]+)\]/);
 
 		if (diagramMatch) {
 			diagramRequest = diagramMatch[1].trim();
 			targetBoard = 'teacher';
 			botResponse = botResponse.replace(/\[GENERATE_DIAGRAM:[^\]]+\]/, '').trim();
-			botResponse += '\n\n[Generating mathematical diagram...]';
+			botResponse += '\n\n[Generating diagram...]';
 		} else if (teacherMatch) {
-			whiteboardAction = teacherMatch[1];
+			// Convert old syntax to new diagram generation
+			diagramRequest = teacherMatch[1].trim();
 			targetBoard = 'teacher';
-			botResponse = botResponse.replace(/\[TEACHER_BOARD:\s*\w+\]/, '').trim();
-			botResponse += '\n\n[Drawing on teacher whiteboard...]';
+			botResponse = botResponse.replace(/\[TEACHER_BOARD:[^\]]+\]/, '').trim();
+			botResponse += '\n\n[Generating diagram...]';
 		} else if (studentMatch) {
 			whiteboardAction = studentMatch[1];
 			targetBoard = 'student';
-			botResponse = botResponse.replace(/\[STUDENT_BOARD:\s*\w+\]/, '').trim();
+			botResponse = botResponse.replace(/\[STUDENT_BOARD:[^\]]+\]/, '').trim();
 			botResponse += '\n\n[Setting up student whiteboard...]';
 		}
 
