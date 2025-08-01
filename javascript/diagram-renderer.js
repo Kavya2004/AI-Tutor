@@ -130,12 +130,32 @@ class DiagramRenderer {
             case 'function':
                 this.renderFunction(coordinates);
                 break;
+            case 'quadratic':
+                this.renderQuadratic(coordinates);
+                break;
         }
 
         // Add label if provided
         if (label && type !== 'point') {
             this.renderLabel(coordinates, label);
         }
+    }
+
+    renderQuadratic([a, b, c, xMin, xMax]) {
+        this.ctx.beginPath();
+        let first = true;
+        
+        for (let x = xMin || -5; x <= (xMax || 5); x += 0.1) {
+            const y = a * x * x + (b || 0) * x + (c || 0);
+            
+            if (first) {
+                this.ctx.moveTo(x * 20, y * 20);
+                first = false;
+            } else {
+                this.ctx.lineTo(x * 20, y * 20);
+            }
+        }
+        this.ctx.stroke();
     }
 
     renderLine([x1, y1, x2, y2]) {

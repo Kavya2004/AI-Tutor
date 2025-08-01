@@ -26,32 +26,30 @@ export default async function handler(req, res) {
     }
 
     // Enhanced prompt for diagram generation
-    const diagramPrompt = `You are a math diagram generator. Based on the question/problem, determine what type of mathematical diagram would be most helpful and provide specific drawing instructions.
+    const diagramPrompt = `You are a creative math diagram generator. You can draw ANYTHING by combining basic shapes and functions. Be creative!
 
 Question: ${question}
 ${context ? `Context: ${context}` : ''}
 
-Analyze this and respond with a JSON object containing:
+Available tools: line, circle, rectangle, point, curve, axis, arrow, quadratic, function
+
+For ANY mathematical concept, create a visual using these tools:
+- Parabolas: {"type": "quadratic", "coordinates": [a, b, c, xMin, xMax]}
+- Functions: {"type": "function", "coordinates": {"type": "sine|cosine|linear", "coefficients": [a,b,c], "domain": [min,max]}}
+- Shapes: {"type": "circle|rectangle|line", "coordinates": [...]}
+- Axes: {"type": "axis", "coordinates": [xMin, xMax, yMin, yMax]}
+
+Respond with JSON:
 {
-  "needsDiagram": true/false,
-  "diagramType": "graph|geometry|statistics|algebra|calculus|probability|other",
+  "needsDiagram": true,
   "instructions": {
-    "title": "Diagram title",
-    "elements": [
-      {
-        "type": "line|circle|rectangle|point|curve|axis|label|arrow",
-        "coordinates": [x1, y1, x2, y2] or [centerX, centerY, radius],
-        "label": "text label if needed",
-        "color": "color name",
-        "style": "solid|dashed|dotted"
-      }
-    ],
-    "annotations": ["text annotations to add"],
-    "explanation": "Brief explanation of what the diagram shows"
+    "title": "Title",
+    "elements": [{"type": "...", "coordinates": [...], "color": "blue|red|green|black"}],
+    "explanation": "What this shows"
   }
 }
 
-If no diagram is needed, set needsDiagram to false and provide a text explanation instead.`;
+Be creative! You can draw anything - houses, trees, faces, abstract art - using these basic tools.`;
 
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
