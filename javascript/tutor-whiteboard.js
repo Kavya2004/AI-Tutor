@@ -1,4 +1,10 @@
 let teacherCanvas, teacherCtx, studentCanvas, studentCtx;
+
+// Make canvas variables globally accessible for diagram renderer
+window.teacherCanvas = null;
+window.teacherCtx = null;
+window.studentCanvas = null;
+window.studentCtx = null;
 let isDrawing = false;
 let isDrawingMode = false;
 let currentPath = [];
@@ -311,6 +317,9 @@ function initializeWhiteboards() {
 	if (teacherCanvas) {
 		teacherCtx = teacherCanvas.getContext('2d');
 		setupCanvas(teacherCanvas, teacherCtx, 'teacher');
+		// Make globally accessible
+		window.teacherCanvas = teacherCanvas;
+		window.teacherCtx = teacherCtx;
 	}
 
 	// Initialize student whiteboard
@@ -318,6 +327,9 @@ function initializeWhiteboards() {
 	if (studentCanvas) {
 		studentCtx = studentCanvas.getContext('2d');
 		setupCanvas(studentCanvas, studentCtx, 'student');
+		// Make globally accessible
+		window.studentCanvas = studentCanvas;
+		window.studentCtx = studentCtx;
 	}
 
 	if (!teacherCanvas || !studentCanvas) {

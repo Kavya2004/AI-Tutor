@@ -86,6 +86,11 @@ class DiagramRenderer {
         }
 
         this.ctx.restore();
+        
+        // Mark that something was drawn for OCR detection
+        if (typeof window.isAnythingDrawn !== 'undefined') {
+            window.isAnythingDrawn = true;
+        }
     }
 
     async renderElement(element) {
