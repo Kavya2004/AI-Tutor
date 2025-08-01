@@ -1116,7 +1116,7 @@ body {
 
 /* File preview below input */
 .file-preview {
-    display: flex;
+    display: none; /* Hidden by default */
     flex-wrap: wrap;
     gap: 8px;
     padding: 10px 15px;

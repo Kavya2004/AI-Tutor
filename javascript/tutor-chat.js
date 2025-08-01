@@ -2,15 +2,17 @@ let isProcessing = false;
 let context = [
 	{
 		role: 'system',
-		content: `You are a friendly probability and statistics tutor with access to two whiteboards:
+		content: `You are a friendly probability and statistics tutor with access to two whiteboards and an AI diagram generator:
 1. TEACHER WHITEBOARD - Use this to demonstrate concepts, draw examples, show solutions
 2. STUDENT WHITEBOARD - Use this for student practice, exercises, or when asking students to work
+3. AI DIAGRAM GENERATOR - Can create any mathematical diagram based on your instructions
 
 Instructions:
 - Respond naturally but BRIEFLY to the student's question
-- If you need to draw/demonstrate concepts, add [TEACHER_BOARD: action_name]
+- If you need to draw/demonstrate concepts, add [TEACHER_BOARD: action_name] or [GENERATE_DIAGRAM: description]
 - If you want the student to practice/work, add [STUDENT_BOARD: action_name]
-- Available actions: probability_scale, distribution, normal_curve, tree_diagram, clear_board`
+- Use [GENERATE_DIAGRAM: description] for complex mathematical diagrams that need AI generation
+- Available preset actions: probability_scale, distribution, normal_curve, tree_diagram, clear_board`
 	}
 ];
 
@@ -89,6 +91,7 @@ async function getGeminiResponse(messages) {
 
 function handleFileSelect(event) {
 	const files = Array.from(event.target.files);
+	const filePreview = document.getElementById('filePreview');
 
 	files.forEach((file) => {
 		if (isValidFileType(file)) {
@@ -101,6 +104,11 @@ function handleFileSelect(event) {
 			);
 		}
 	});
+
+	// Show file preview container if files are uploaded
+	if (uploadedFiles.length > 0) {
+		filePreview.style.display = 'flex';
+	}
 
 	event.target.value = '';
 }
@@ -148,6 +156,12 @@ function removeFile(fileName) {
 	const fileItem = document.querySelector(`.file-item[data-file-name="${fileName}"]`);
 	if (fileItem) {
 		fileItem.remove();
+	}
+	
+	// Hide file preview container if no files remain
+	const filePreview = document.getElementById('filePreview');
+	if (uploadedFiles.length === 0) {
+		filePreview.style.display = 'none';
 	}
 }
 
@@ -198,7 +212,6 @@ function fileToBase64(file) {
 
 async function getOcrFromImage(base64Image) {
 	try {
-		// UPDATE THIS URL to match your Render deployment:
 		const response = await fetch('https://ai-tutor-53f1.onrender.com/api/ocr', {
 			method: 'POST',
 			headers: {
@@ -351,7 +364,9 @@ async function processUserMessage(message) {
 		processedFiles = await processFilesForTutor(uploadedFiles);
 		// Clear uploaded files after processing
 		uploadedFiles = [];
-		document.getElementById('filePreview').innerHTML = '';
+		const filePreview = document.getElementById('filePreview');
+		filePreview.innerHTML = '';
+		filePreview.style.display = 'none';
 	}
 
 	// Prepare user message (include file info if files were uploaded)
@@ -422,13 +437,21 @@ async function processUserMessage(message) {
 			context = [context[0], ...context.slice(-(maxContextMessages - 1))];
 		}
 
-		// Check for whiteboard actions
+		// Check for whiteboard actions and diagram generation
 		let whiteboardAction = null;
 		let targetBoard = null;
+		let diagramRequest = null;
+		
 		const teacherMatch = botResponse.match(/\[TEACHER_BOARD:\s*(\w+)\]/);
 		const studentMatch = botResponse.match(/\[STUDENT_BOARD:\s*(\w+)\]/);
+		const diagramMatch = botResponse.match(/\[GENERATE_DIAGRAM:\s*([^\]]+)\]/);
 
-		if (teacherMatch) {
+		if (diagramMatch) {
+			diagramRequest = diagramMatch[1].trim();
+			targetBoard = 'teacher';
+			botResponse = botResponse.replace(/\[GENERATE_DIAGRAM:[^\]]+\]/, '').trim();
+			botResponse += '\n\n[Generating mathematical diagram...]';
+		} else if (teacherMatch) {
 			whiteboardAction = teacherMatch[1];
 			targetBoard = 'teacher';
 			botResponse = botResponse.replace(/\[TEACHER_BOARD:\s*\w+\]/, '').trim();
@@ -449,8 +472,10 @@ async function processUserMessage(message) {
 			addMessage(botResponse, 'bot');
 		}
 
-		// Execute whiteboard action if needed
-		if (whiteboardAction && targetBoard && window.tutorWhiteboard) {
+		// Execute whiteboard action or generate diagram
+		if (diagramRequest && targetBoard) {
+			setTimeout(() => generateAIDiagram(diagramRequest, targetBoard), 500);
+		} else if (whiteboardAction && targetBoard && window.tutorWhiteboard) {
 			setTimeout(() => executeWhiteboardAction(whiteboardAction, targetBoard), 500);
 		}
 
@@ -543,6 +568,46 @@ function handleDiceResult(result) {
 	const message = `I rolled a ${result}! What does this tell us about probability?`;
 	processUserMessage(message);
 }
+// AI Diagram Generation Function
+async function generateAIDiagram(description, targetBoard = 'teacher') {
+	try {
+		if (!window.diagramRenderer) {
+			console.error('Diagram renderer not available');
+			return;
+		}
+
+		const result = await window.diagramRenderer.generateDiagram(description, targetBoard);
+		
+		if (result.success) {
+			// Switch to the target whiteboard
+			if (window.switchWhiteboard) {
+				window.switchWhiteboard(targetBoard);
+			}
+			
+			// Broadcast diagram action to session if in session mode
+			if (window.sessionManager && window.sessionManager.sessionId) {
+				window.sessionManager.ws.send(
+					JSON.stringify({
+						type: 'diagram_generated',
+						description: description,
+						targetBoard: targetBoard,
+						userName: window.sessionManager.userName
+					})
+				);
+			}
+			
+			console.log('Diagram generated successfully:', result.message);
+		} else {
+			console.warn('Diagram generation failed:', result.message);
+			// Fallback to text explanation
+			addMessage(`Diagram note: ${result.message}`, 'bot');
+		}
+	} catch (error) {
+		console.error('Error generating AI diagram:', error);
+		addMessage('Sorry, I encountered an issue generating the diagram. Let me explain in text instead.', 'bot');
+	}
+}
+
 // Global function for whiteboard OCR integration
 window.addOcrMessageToChat = function(ocrText, boardType) {
     const message = `I wrote on the ${boardType} whiteboard: "${ocrText}"`;
