@@ -385,7 +385,7 @@ body {
 }
 .tutor-header {
     background: linear-gradient(135deg, #0d5a47);
-    color: rgb(186, 249, 186);
+    color: #ffffff;
     padding: 20px;
     text-align: center;
     box-shadow: 0 2px 10px rgba(237, 234, 234, 0.2);
@@ -395,11 +395,14 @@ body {
 .tutor-header h1 {
     font-size: 2.5em;
     margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(116, 203, 129, 0.3);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    color: #ffffff;
+    font-weight: bold;
 }
 .tutor-header p {
     font-size: 1.2em;
-    opacity: 0.9;
+    color: #e8f5e8;
+    font-weight: 500;
 }
 .close-button {
     position: absolute;
@@ -963,6 +966,9 @@ body {
     color: #333;
     z-index: 2;
     overflow-y: auto;
+    vertical-align: top;
+    text-align: left;
+    padding-top: 30px; /* Align with first line */
 }
 
 #studentNotes::placeholder {
