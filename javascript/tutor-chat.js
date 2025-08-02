@@ -502,7 +502,13 @@ async function processUserMessage(message) {
 
 	// Process uploaded files if any
 	let processedFiles = [];
+	let fileData = [];
 	if (uploadedFiles.length > 0) {
+		// Store file data for display
+		for (const file of uploadedFiles) {
+			const base64 = await fileToBase64(file);
+			fileData.push({ name: file.name, type: file.type, data: base64 });
+		}
 		processedFiles = await processFilesForTutor(uploadedFiles);
 		// Clear uploaded files after processing
 		uploadedFiles = [];
@@ -527,7 +533,6 @@ async function processUserMessage(message) {
 	}
 
 	// Handle message display/broadcasting (only once!)
-	const fileData = processedFiles.map(f => ({ name: f.name, type: f.type || 'unknown', data: f.data }));
 	if (window.sessionManager && window.sessionManager.sessionId) {
 		// In session mode, broadcast user message
 		window.sessionManager.broadcastMessage(userMessage, 'user', fileData);
