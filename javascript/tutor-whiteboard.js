@@ -587,6 +587,16 @@ function clearWhiteboard(boardType) {
 		);
 	}
 }
+function broadcastDiagramAction(diagramName, boardType = 'teacher') {
+	if (window.sessionManager && window.sessionManager.sessionId) {
+		window.sessionManager.ws.send(JSON.stringify({
+			type: "whiteboard_action",
+			action: diagramName, 
+			targetBoard: boardType,
+			userName: window.sessionManager.userName
+		}));
+	}
+}
 
 function toggleDrawing(boardType) {
 	if (boardType === 'teacher') {
@@ -666,12 +676,21 @@ function draw(e, boardType) {
 	const x = e.clientX - rect.left;
 	const y = e.clientY - rect.top;
 
-	console.log(`[DRAW] ${boardType} board drawing at`, x, y); // <--- Add this line
-
 	currentPath.push({ x, y });
 	ctx.lineTo(x, y);
 	ctx.stroke();
+
+	// Broadcast this point to other participants
+	if (window.sessionManager && window.sessionManager.sessionId) {
+		window.sessionManager.ws.send(JSON.stringify({
+			type: 'whiteboard_draw',
+			boardType,
+			x, y,
+			userName: window.sessionManager.userName
+		}));
+	}
 }
+
 
 function stopDrawing(boardType) {
 	isDrawing = false;
@@ -825,6 +844,7 @@ function drawSampleDistribution(boardType = 'teacher') {
 }
 
 function drawNormalCurve(boardType = 'teacher') {
+	broadcastDiagramAction("drawNormalCurve", boardType);
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	if (!ctx || !canvas) return;

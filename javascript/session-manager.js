@@ -576,6 +576,22 @@ class SessionManager {
       case "diagram_generated":
         this.handleSharedDiagram(data);
         break;
+      case "whiteboard_draw":
+        const canvas = data.boardType === "teacher" ? window.teacherCanvas : window.studentCanvas;
+        const ctx = data.boardType === "teacher" ? window.teacherCtx : window.studentCtx;
+      
+        if (canvas && ctx) {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+      
+          const x = data.x * scaleX;
+          const y = data.y * scaleY;
+      
+          ctx.lineTo(x, y);
+          ctx.stroke();
+        }
+        break;        
       case "whiteboard_clear":
         this.handleSharedWhiteboardClear(data);
         break;
