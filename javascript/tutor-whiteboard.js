@@ -563,11 +563,29 @@ function resizeCanvas(canvas, boardType) {
 }
 
 function clearWhiteboard(boardType) {
+	// In sessions, only host can clear teacher whiteboard
+	if (window.sessionManager && window.sessionManager.sessionId && 
+		boardType === 'teacher' && !window.sessionManager.isHost) {
+		alert('Only the session host can clear the teacher whiteboard');
+		return;
+	}
+
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	if (!ctx || !canvas) return;
 
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	
+	// Broadcast clear action to session
+	if (window.sessionManager && window.sessionManager.sessionId) {
+		window.sessionManager.ws.send(
+			JSON.stringify({
+				type: 'whiteboard_clear',
+				targetBoard: boardType,
+				userName: window.sessionManager.userName
+			})
+		);
+	}
 }
 
 function toggleDrawing(boardType) {

@@ -573,6 +573,12 @@ class SessionManager {
       case "whiteboard_action":
         this.handleSharedWhiteboardAction(data);
         break;
+      case "diagram_generated":
+        this.handleSharedDiagram(data);
+        break;
+      case "whiteboard_clear":
+        this.handleSharedWhiteboardClear(data);
+        break;
       case "profile_update":
         if (data.userName && this.participants.has(data.userName)) {
           const participant = this.participants.get(data.userName);
@@ -899,6 +905,73 @@ class SessionManager {
   broadcastMessage(message, sender) {
     if (this.sessionId) {
       this.shareMessage(message, sender);
+    }
+  }
+
+  handleSharedWhiteboardAction(data) {
+    // Execute the whiteboard action for other participants
+    if (window.tutorWhiteboard && data.action && data.targetBoard) {
+      setTimeout(() => {
+        if (window.switchWhiteboard) {
+          window.switchWhiteboard(data.targetBoard);
+        }
+        
+        switch (data.action) {
+          case 'probability_scale':
+            if (window.tutorWhiteboard.drawProbabilityScale) {
+              window.tutorWhiteboard.drawProbabilityScale(data.targetBoard);
+            }
+            break;
+          case 'distribution':
+            if (window.tutorWhiteboard.drawSampleDistribution) {
+              window.tutorWhiteboard.drawSampleDistribution(data.targetBoard);
+            }
+            break;
+          case 'normal_curve':
+            if (window.tutorWhiteboard.drawNormalCurve) {
+              window.tutorWhiteboard.drawNormalCurve(data.targetBoard);
+            }
+            break;
+          case 'tree_diagram':
+            if (window.tutorWhiteboard.drawTreeDiagram) {
+              window.tutorWhiteboard.drawTreeDiagram(data.targetBoard);
+            }
+            break;
+          case 'clear_board':
+            if (window.tutorWhiteboard.clearWhiteboard) {
+              window.tutorWhiteboard.clearWhiteboard(data.targetBoard);
+            }
+            break;
+        }
+      }, 100);
+    }
+  }
+
+  handleSharedDiagram(data) {
+    // Generate the same diagram for other participants
+    if (window.diagramRenderer && data.description && data.targetBoard) {
+      setTimeout(async () => {
+        if (window.switchWhiteboard) {
+          window.switchWhiteboard(data.targetBoard);
+        }
+        
+        try {
+          await window.diagramRenderer.generateDiagram(data.description, data.targetBoard);
+        } catch (error) {
+          console.error('Error generating shared diagram:', error);
+        }
+      }, 100);
+    }
+  }
+
+  handleSharedWhiteboardClear(data) {
+    // Clear the whiteboard for other participants
+    if (window.tutorWhiteboard && data.targetBoard) {
+      setTimeout(() => {
+        if (window.tutorWhiteboard.clearWhiteboard) {
+          window.tutorWhiteboard.clearWhiteboard(data.targetBoard);
+        }
+      }, 100);
     }
   }
 }

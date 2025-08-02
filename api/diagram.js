@@ -117,9 +117,11 @@ Respond with valid JSON only!`;
 
   } catch (error) {
     console.error('Error in diagram API:', error);
+    console.error('Stack:', error.stack);
     res.status(500).json({ 
       error: 'Failed to generate diagram instructions',
-      details: error.message 
+      details: error.message,
+      stack: error.stack
     });
   }
 }
