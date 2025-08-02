@@ -193,12 +193,21 @@ class SessionManager {
         <div class="modal-body">
             <input type="text" id="userNameInput" placeholder="Your name..." maxlength="20">
             <input type="text" id="sessionIdInput" placeholder="Session ID (optional)" style="display: none;">
-            <input type="text" id="sessionTitleInput" placeholder="Session title (e.g., 'Probability Basics')" maxlength="50" style="display: none;">
+            <input type="text" id="sessionTitleInput" placeholder="Session title (e.g., 'Probability Basics')" maxlength="50" style="display: none;" required>
             <div class="session-privacy" id="sessionPrivacy" style="display: none;">
-                <label>
-                    <input type="checkbox" id="publicSessionCheckbox" checked> Make this session public
-                </label>
-                <small>Public sessions can be joined by anyone</small>
+                <h4>Session Privacy</h4>
+                <div class="privacy-options">
+                    <label class="privacy-option">
+                        <input type="radio" name="sessionPrivacy" value="public" checked> 
+                        <span class="privacy-label">🌐 Public Session</span>
+                        <small>Anyone can find and join this session</small>
+                    </label>
+                    <label class="privacy-option">
+                        <input type="radio" name="sessionPrivacy" value="private"> 
+                        <span class="privacy-label">🔒 Private Session</span>
+                        <small>Only people with the session ID can join</small>
+                    </label>
+                </div>
             </div>
             
             <div class="customization-section">
@@ -250,7 +259,9 @@ class SessionManager {
       const userName = document.getElementById("userNameInput").value.trim();
       const sessionId = document.getElementById("sessionIdInput").value.trim();
       const sessionTitle = document.getElementById("sessionTitleInput").value.trim();     
-      const isPublic = document.getElementById("publicSessionCheckbox").checked;
+      const privacyRadio = document.querySelector('input[name="sessionPrivacy"]:checked');
+      const isPublic = privacyRadio ? privacyRadio.value === 'public' : true;
+      
       if (!userName) {
         alert("Please enter your name");
         return;
@@ -336,7 +347,7 @@ class SessionManager {
       this.showNameModal("create");
       return;
     }
-    this.createNewSession();
+    this.showSessionCreationModal();
   }
 
   async createNewSession() {
@@ -455,6 +466,43 @@ class SessionManager {
     modal.style.display = "flex";
     document.getElementById("userNameInput").focus();
     this.setupCustomization();
+  }
+
+  showSessionCreationModal() {
+    const modal = document.getElementById("sessionModal");
+    const title = document.getElementById("modalTitle");
+    const confirmBtn = document.getElementById("confirmSessionBtn");
+    const sessionInput = document.getElementById("sessionIdInput");
+    const titleInput = document.getElementById("sessionTitleInput");
+    const privacyDiv = document.getElementById("sessionPrivacy");
+    const nameInput = document.getElementById("userNameInput");
+
+    title.textContent = "Create New Session";
+    confirmBtn.textContent = "Create Session";
+    sessionInput.style.display = "none";
+    titleInput.style.display = "block";
+    privacyDiv.style.display = "block";
+    
+    nameInput.value = this.userName;
+    nameInput.style.display = "none";
+    titleInput.focus();
+    
+    modal.style.display = "flex";
+    this.setupCustomization();
+
+    confirmBtn.onclick = () => {
+      const sessionTitle = titleInput.value.trim();
+      const privacyRadio = document.querySelector('input[name="sessionPrivacy"]:checked');
+      const isPublic = privacyRadio ? privacyRadio.value === 'public' : true;
+      
+      if (!sessionTitle) {
+        alert("Please enter a session title");
+        return;
+      }
+      
+      this.createNewSessionWithParams(sessionTitle, isPublic);
+      modal.style.display = "none";
+    };
   }
 
   async joinSession(sessionId) {
