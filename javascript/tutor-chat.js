@@ -583,7 +583,8 @@ async function generateAIDiagram(description, targetBoard = 'teacher') {
 			}
 			
 			// Broadcast diagram action to session if in session mode
-			if (window.sessionManager && window.sessionManager.sessionId) {
+			if (window.sessionManager && window.sessionManager.sessionId && window.sessionManager.ws) {
+				console.log('Broadcasting diagram to session:', description);
 				window.sessionManager.ws.send(
 					JSON.stringify({
 						type: 'diagram_generated',
@@ -592,6 +593,8 @@ async function generateAIDiagram(description, targetBoard = 'teacher') {
 						userName: window.sessionManager.userName
 					})
 				);
+			} else {
+				console.log('Not in session or WebSocket not ready');
 			}
 			
 			console.log('Diagram generated successfully:', result.message);

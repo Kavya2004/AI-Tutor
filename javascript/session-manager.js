@@ -948,19 +948,28 @@ class SessionManager {
   }
 
   handleSharedDiagram(data) {
+    console.log('Received shared diagram:', data);
     // Generate the same diagram for other participants
     if (window.diagramRenderer && data.description && data.targetBoard) {
       setTimeout(async () => {
+        console.log('Generating shared diagram:', data.description);
         if (window.switchWhiteboard) {
           window.switchWhiteboard(data.targetBoard);
         }
         
         try {
           await window.diagramRenderer.generateDiagram(data.description, data.targetBoard);
+          console.log('Shared diagram generated successfully');
         } catch (error) {
           console.error('Error generating shared diagram:', error);
         }
       }, 100);
+    } else {
+      console.log('Missing requirements for shared diagram:', {
+        diagramRenderer: !!window.diagramRenderer,
+        description: data.description,
+        targetBoard: data.targetBoard
+      });
     }
   }
 
