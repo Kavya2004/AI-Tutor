@@ -213,17 +213,17 @@ class SessionManager {
             <div class="customization-section">
                 <h4>Choose Your Avatar</h4>
                 <div class="avatar-selection" id="avatarSelection">
-                    <div class="avatar-option" data-avatar="👨‍🎓">👨‍🎓</div>
-                    <div class="avatar-option" data-avatar="👩‍🎓">👩‍🎓</div>
+                    <div class="avatar-option" data-avatar="🥑 ">🥑</div>
+                    <div class="avatar-option" data-avatar="🍩">🍩</div>
                     <div class="avatar-option" data-avatar="🧑‍💻">🧑‍💻</div>
-                    <div class="avatar-option" data-avatar="👨‍💻">👨‍💻</div>
+                    <div class="avatar-option" data-avatar="🐢">🐢</div>
                     <div class="avatar-option" data-avatar="👩‍💻">👩‍💻</div>
-                    <div class="avatar-option" data-avatar="🧑‍🔬">🧑‍🔬</div>
-                    <div class="avatar-option" data-avatar="👨‍🔬">👨‍🔬</div>
-                    <div class="avatar-option" data-avatar="👩‍🔬">👩‍🔬</div>
-                    <div class="avatar-option" data-avatar="🧑‍🏫">🧑‍🏫</div>
-                    <div class="avatar-option" data-avatar="👨‍🏫">👨‍🏫</div>
-                    <div class="avatar-option" data-avatar="👩‍🏫">👩‍🏫</div>
+                    <div class="avatar-option" data-avatar="🎲">🎲</div>
+                    <div class="avatar-option" data-avatar="🍵">🍵</div>
+                    <div class="avatar-option" data-avatar="🧋">🧋</div>
+                    <div class="avatar-option" data-avatar="☕">☕</div>
+                    <div class="avatar-option" data-avatar="🧠">🧠</div>
+                    <div class="avatar-option" data-avatar="🥧">🥧</div>
                     <div class="avatar-option" data-avatar="🤓">🤓</div>
                 </div>
                 
