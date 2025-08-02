@@ -603,6 +603,7 @@ class SessionManager {
           data.sender,
           data.timestamp,
           data.userName,
+          data.files,
         );
         break;
       case "participant_joined":
@@ -661,7 +662,7 @@ class SessionManager {
     }
   }
 
-  shareMessage(message, sender = "user") {
+  shareMessage(message, sender = "user", files = []) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(
         JSON.stringify({
@@ -670,12 +671,13 @@ class SessionManager {
           sender: sender,
           userName: this.userName,
           timestamp: new Date().toISOString(),
+          files: files,
         }),
       );
     }
   }
 
-  addSharedMessage(message, sender, timestamp, userName) {
+  addSharedMessage(message, sender, timestamp, userName, files = []) {
     const chatMessages = document.getElementById("chatMessages");
     const messageDiv = document.createElement("div");
     messageDiv.className = `message ${sender}-message shared-message slide-in`;
@@ -698,18 +700,96 @@ class SessionManager {
 
     const time = new Date(timestamp).toLocaleTimeString();
 
+    let filesHtml = '';
+    if (files && files.length > 0) {
+      filesHtml = '<div class="message-files" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;">';
+      files.forEach(file => {
+        const icon = this.getFileIcon(file.type);
+        filesHtml += `<span class="message-file" style="background: #e3f2fd; padding: 4px 8px; border-radius: 12px; font-size: 12px; cursor: pointer; color: #1976d2;" onclick="window.sessionManager.viewSharedFile('${file.name}', '${file.type}', '${file.data}')">${icon} ${file.name}</span>`;
+      });
+      filesHtml += '</div>';
+    }
+
     content.innerHTML = `
             <div class="message-header">
                 <span class="message-author">${userName}</span>
                 <span class="message-time">${time}</span>
             </div>
             <div class="message-text">${message.replace(/\n/g, "<br>")}</div>
+            ${filesHtml}
         `;
 
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(content);
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  getFileIcon(fileType) {
+    if (fileType === 'application/pdf') return '📄';
+    if (fileType && fileType.startsWith('image/')) return '🖼️';
+    return '📎';
+  }
+
+  viewSharedFile(name, type, data) {
+    const modal = document.createElement('div');
+    modal.className = 'file-viewer-modal';
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+
+    const content = document.createElement('div');
+    content.style.cssText = `
+      background: white;
+      border-radius: 8px;
+      max-width: 90%;
+      max-height: 90%;
+      overflow: auto;
+      position: relative;
+    `;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '×';
+    closeBtn.style.cssText = `
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      z-index: 1;
+    `;
+    closeBtn.onclick = () => modal.remove();
+
+    if (type && type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.src = data;
+      img.style.cssText = 'max-width: 100%; max-height: 100%; display: block;';
+      content.appendChild(img);
+    } else if (type === 'application/pdf') {
+      const iframe = document.createElement('iframe');
+      iframe.src = data;
+      iframe.style.cssText = 'width: 80vw; height: 80vh; border: none;';
+      content.appendChild(iframe);
+    }
+
+    content.appendChild(closeBtn);
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.remove();
+    };
   }
 
   addSystemMessage(message) {
@@ -966,9 +1046,9 @@ class SessionManager {
     });
   }
 
-  broadcastMessage(message, sender) {
+  broadcastMessage(message, sender, files = []) {
     if (this.sessionId) {
-      this.shareMessage(message, sender);
+      this.shareMessage(message, sender, files);
     }
   }
 

@@ -92,13 +92,14 @@ class TutorSession {
     this.lastActivity = new Date();
   }
 
-  addMessage(message, sender, userName) {
+  addMessage(message, sender, userName, files = []) {
     const messageObj = {
       id: uuidv4(),
       message,
       sender,
       userName,
       timestamp: new Date().toISOString(),
+      files: files || [],
     };
     this.messages.push(messageObj);
     this.lastActivity = new Date();
@@ -340,6 +341,7 @@ wss.on("connection", (ws, req) => {
               message.message,
               message.sender,
               userName,
+              message.files,
             );
 
             broadcastToSession(sessionId, {
@@ -348,6 +350,7 @@ wss.on("connection", (ws, req) => {
               sender: message.sender,
               userName: userName,
               timestamp: messageObj.timestamp,
+              files: message.files || [],
             });
 
             console.log(

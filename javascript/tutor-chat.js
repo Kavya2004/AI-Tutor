@@ -135,7 +135,7 @@ function addFileToPreview(file) {
 
 	fileItem.innerHTML = `
         <span class="file-icon">${fileIcon}</span>
-        <span class="file-name" title="${file.name}">${fileName}</span>
+        <span class="file-name" title="${file.name}" onclick="viewFile('${file.name}')" style="cursor: pointer; color: #007bff;">${fileName}</span>
         <button class="remove-file" onclick="removeFile('${file.name}')">×</button>
     `;
 
@@ -162,24 +162,89 @@ function removeFile(fileName) {
 	}
 }
 
+function viewFile(fileName) {
+	const file = uploadedFiles.find(f => f.name === fileName);
+	if (!file) return;
+
+	const modal = document.createElement('div');
+	modal.className = 'file-viewer-modal';
+	modal.style.cssText = `
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0,0,0,0.8);
+		z-index: 10000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	`;
+
+	const content = document.createElement('div');
+	content.style.cssText = `
+		background: white;
+		border-radius: 8px;
+		max-width: 90%;
+		max-height: 90%;
+		overflow: auto;
+		position: relative;
+	`;
+
+	const closeBtn = document.createElement('button');
+	closeBtn.innerHTML = '×';
+	closeBtn.style.cssText = `
+		position: absolute;
+		top: 10px;
+		right: 15px;
+		background: none;
+		border: none;
+		font-size: 24px;
+		cursor: pointer;
+		z-index: 1;
+	`;
+	closeBtn.onclick = () => modal.remove();
+
+	if (file.type.startsWith('image/')) {
+		const img = document.createElement('img');
+		img.src = URL.createObjectURL(file);
+		img.style.cssText = 'max-width: 100%; max-height: 100%; display: block;';
+		content.appendChild(img);
+	} else if (file.type === 'application/pdf') {
+		const iframe = document.createElement('iframe');
+		iframe.src = URL.createObjectURL(file);
+		iframe.style.cssText = 'width: 80vw; height: 80vh; border: none;';
+		content.appendChild(iframe);
+	}
+
+	content.appendChild(closeBtn);
+	modal.appendChild(content);
+	document.body.appendChild(modal);
+
+	modal.onclick = (e) => {
+		if (e.target === modal) modal.remove();
+	};
+}
+
 async function processFilesForTutor(files) {
 	const processedFiles = [];
 
 	for (const file of files) {
 		try {
+			const base64 = await fileToBase64(file);
 			if (file.type === 'application/pdf') {
-				const base64 = await fileToBase64(file);
 				processedFiles.push({
 					name: file.name,
 					type: 'pdf',
+					data: base64,
 					content: `PDF file uploaded: ${file.name}. Please describe what you'd like me to help you with from this document.`
 				});
 			} else if (file.type.startsWith('image/')) {
-				const base64 = await fileToBase64(file);
 				const ocrText = await getOcrFromImage(base64);
 				processedFiles.push({
 					name: file.name,
-					type: 'image',
+					type: file.type,
+					data: base64,
 					content:
 						ocrText ||
 						`Image uploaded: ${file.name}. No text was detected, but I can help explain any probability concepts you see in the image.`
@@ -274,7 +339,7 @@ function handleSendMessage() {
 	}
 }
 
-function addMessage(text, sender) {
+function addMessage(text, sender, files = []) {
 	const chatMessages = document.getElementById('chatMessages');
 	const messageDiv = document.createElement('div');
 	messageDiv.className = `message ${sender}-message slide-in`;
@@ -287,17 +352,97 @@ function addMessage(text, sender) {
 	content.className = 'message-content';
 	content.innerHTML = text.replace(/\n/g, '<br>');
 
+	if (files && files.length > 0) {
+		const filesDiv = document.createElement('div');
+		filesDiv.className = 'message-files';
+		filesDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;';
+		
+		files.forEach(file => {
+			const fileSpan = document.createElement('span');
+			fileSpan.className = 'message-file';
+			fileSpan.style.cssText = 'background: #e3f2fd; padding: 4px 8px; border-radius: 12px; font-size: 12px; cursor: pointer; color: #1976d2;';
+			fileSpan.innerHTML = `${getFileIcon(file.type)} ${file.name}`;
+			fileSpan.onclick = () => viewUploadedFile(file);
+			filesDiv.appendChild(fileSpan);
+		});
+		
+		content.appendChild(filesDiv);
+	}
+
 	messageDiv.appendChild(avatar);
 	messageDiv.appendChild(content);
 	chatMessages.appendChild(messageDiv);
 	chatMessages.scrollTop = chatMessages.scrollHeight;
 
 	if (window.sessionManager && window.sessionManager.sessionId) {
-		window.sessionManager.broadcastMessage(text, sender);
+		window.sessionManager.broadcastMessage(text, sender, files);
 	}
 
 	if (sender === 'bot' && window.voiceTutor && voiceEnabled) {
 		window.voiceTutor.handleBotResponse(text);
+	}
+}
+
+function viewUploadedFile(file) {
+	if (file.data) {
+		const modal = document.createElement('div');
+		modal.className = 'file-viewer-modal';
+		modal.style.cssText = `
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0,0,0,0.8);
+			z-index: 10000;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		`;
+
+		const content = document.createElement('div');
+		content.style.cssText = `
+			background: white;
+			border-radius: 8px;
+			max-width: 90%;
+			max-height: 90%;
+			overflow: auto;
+			position: relative;
+		`;
+
+		const closeBtn = document.createElement('button');
+		closeBtn.innerHTML = '×';
+		closeBtn.style.cssText = `
+			position: absolute;
+			top: 10px;
+			right: 15px;
+			background: none;
+			border: none;
+			font-size: 24px;
+			cursor: pointer;
+			z-index: 1;
+		`;
+		closeBtn.onclick = () => modal.remove();
+
+		if (file.type.startsWith('image/')) {
+			const img = document.createElement('img');
+			img.src = file.data;
+			img.style.cssText = 'max-width: 100%; max-height: 100%; display: block;';
+			content.appendChild(img);
+		} else if (file.type === 'application/pdf') {
+			const iframe = document.createElement('iframe');
+			iframe.src = file.data;
+			iframe.style.cssText = 'width: 80vw; height: 80vh; border: none;';
+			content.appendChild(iframe);
+		}
+
+		content.appendChild(closeBtn);
+		modal.appendChild(content);
+		document.body.appendChild(modal);
+
+		modal.onclick = (e) => {
+			if (e.target === modal) modal.remove();
+		};
 	}
 }
 
@@ -382,12 +527,13 @@ async function processUserMessage(message) {
 	}
 
 	// Handle message display/broadcasting (only once!)
+	const fileData = processedFiles.map(f => ({ name: f.name, type: f.type || 'unknown', data: f.data }));
 	if (window.sessionManager && window.sessionManager.sessionId) {
 		// In session mode, broadcast user message
-		window.sessionManager.broadcastMessage(userMessage, 'user');
+		window.sessionManager.broadcastMessage(userMessage, 'user', fileData);
 	} else {
 		// Not in session, add message locally
-		addMessage(userMessage, 'user');
+		addMessage(userMessage, 'user', fileData);
 	}
 
 	showLoading();
