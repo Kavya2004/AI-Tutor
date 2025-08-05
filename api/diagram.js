@@ -67,14 +67,33 @@ Respond with valid JSON only!`;
       }
     };
 
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
+    // Retry logic for 503 errors
+    let response;
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      try {
+        response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+        
+        if (response.ok) break;
+        
+        if (response.status === 503 && attempts < maxAttempts - 1) {
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+          continue;
+        }
+        
+        throw new Error(`Gemini API error: ${response.status}`);
+      } catch (error) {
+        if (attempts === maxAttempts - 1) throw error;
+        attempts++;
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+      }
     }
 
     const data = await response.json();
