@@ -18,10 +18,15 @@ class DiagramRenderer {
             });
 
             if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
+                const errorText = await response.text().catch(() => 'Unknown error');
+                console.error('Diagram API error:', response.status, errorText);
+                throw new Error(`API error: ${response.status} - ${errorText}`);
             }
 
-            const diagramData = await response.json();
+            const diagramData = await response.json().catch(err => {
+                console.error('Failed to parse diagram response:', err);
+                throw new Error('Invalid response from diagram API');
+            });
             
             if (!diagramData.needsDiagram) {
                 return { success: false, message: diagramData.explanation || 'No diagram needed' };
