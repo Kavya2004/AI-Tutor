@@ -576,10 +576,23 @@ async function processUserMessage(message) {
 
 		// Add file contents to context
 		processedFiles.forEach((file) => {
-			context.push({
-				role: 'user',
-				content: `File: ${file.name}\nContent: ${file.content}`
-			});
+			if (
+				file.type.startsWith('image/') &&
+				file.content &&
+				file.content !== '' &&
+				!file.content.startsWith('Image uploaded')
+			) {
+				context.push({
+					role: 'user',
+					content: `Image uploaded. Recognized text: ${file.content}`
+				});
+			}
+			if (file.type === 'pdf') {
+				context.push({
+					role: 'user',
+					content: `PDF uploaded: ${file.name}.`
+				});
+			}
 		});
 	}
 
