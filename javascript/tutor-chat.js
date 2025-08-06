@@ -595,12 +595,12 @@ async function processUserMessage(message) {
 	showLoading();
 
 	try {
-		let boardToCheck = 'student'; //hard-coded to student board only.
-		// if (/student board|student whiteboard/i.test(message)) {
-		// 	boardToCheck = 'student';
-		// } else if (/teacher board|teacher whiteboard/i.test(message)) {
-		// 	boardToCheck = 'teacher';
-		// }
+		let boardToCheck = null;
+		if (/student board|student whiteboard/i.test(message)) {
+			boardToCheck = 'student';
+		} else if (/teacher board|teacher whiteboard/i.test(message)) {
+			boardToCheck = 'teacher';
+		}
 
 		let ocrText = null;
 		if (boardToCheck) {
@@ -616,8 +616,21 @@ async function processUserMessage(message) {
 			}
 		}
 
+		let processedFiles = [];
+		if (uploadedFiles.length > 0) {
+			processedFiles = await processFilesForTutor(uploadedFiles);
+			uploadedFiles = [];
+			const filePreview = document.getElementById('filePreview');
+			if (filePreview) {
+				filePreview.innerHTML = '';
+				filePreview.style.display = 'none';
+			}
+		}
+
 		// Add user message to context for AI
-		context.push({ role: 'user', content: message });
+		if (message && message.trim() !== '') {
+			context.push({ role: 'user', content: message });
+		}
 
 		// Get AI response
 		let botResponse = await getGeminiResponse(context);
