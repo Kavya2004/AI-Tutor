@@ -604,18 +604,18 @@ async function processUserMessage(message) {
 			diagramRequest = diagramMatch[1].trim();
 			targetBoard = 'teacher';
 			botResponse = botResponse.replace(/\[GENERATE_DIAGRAM:[^\]]+\]/, '').trim();
-			botResponse += '\n\n[Generating diagram...]';
+			//botResponse += '\n\n[Generating diagram...]';
 		} else if (teacherMatch) {
 			// Convert old syntax to new diagram generation
 			diagramRequest = teacherMatch[1].trim();
 			targetBoard = 'teacher';
 			botResponse = botResponse.replace(/\[TEACHER_BOARD:[^\]]+\]/, '').trim();
-			botResponse += '\n\n[Generating diagram...]';
+			//botResponse += '\n\n[Generating diagram...]';
 		} else if (studentMatch) {
 			whiteboardAction = studentMatch[1];
 			targetBoard = 'student';
 			botResponse = botResponse.replace(/\[STUDENT_BOARD:[^\]]+\]/, '').trim();
-			botResponse += '\n\n[Setting up student whiteboard...]';
+			//botResponse += '\n\n[Setting up student whiteboard...]';
 		}
 
 		// Handle bot response display/broadcasting
