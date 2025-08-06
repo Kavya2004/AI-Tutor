@@ -290,15 +290,23 @@ async function processFilesForTutor(files) {
 					data: base64,
 					content: `PDF file uploaded: ${file.name}. Please describe what you'd like me to help you with from this document.`
 				});
+				context.push({
+					role: 'user',
+					content: `PDF uploaded: ${file.name}.`
+				});
 			} else if (file.type.startsWith('image/')) {
 				const ocrText = await getOcrFromImage(base64);
 				processedFiles.push({
 					name: file.name,
 					type: file.type,
 					data: base64,
-					content:
-						ocrText ||
-						`Image uploaded: ${file.name}. No text was detected, but I can help explain any probability concepts you see in the image.`
+					content: ocrText || `No recognizable text found in image.`
+				});
+				context.push({
+					role: 'user',
+					content: ocrText
+						? `Image uploaded. Recognized text: ${ocrText}`
+						: `Image uploaded, but no recognizable text was found.`
 				});
 			}
 		} catch (error) {
@@ -307,6 +315,10 @@ async function processFilesForTutor(files) {
 				name: file.name,
 				type: 'error',
 				content: `Error processing ${file.name}. Please try uploading the file again.`
+			});
+			context.push({
+				role: 'user',
+				content: `Error processing file: ${file.name}.`
 			});
 		}
 	}
@@ -576,23 +588,10 @@ async function processUserMessage(message) {
 
 		// Add file contents to context
 		processedFiles.forEach((file) => {
-			if (
-				file.type.startsWith('image/') &&
-				file.content &&
-				file.content !== '' &&
-				!file.content.startsWith('Image uploaded')
-			) {
-				context.push({
-					role: 'user',
-					content: `Image uploaded. Recognized text: ${file.content}`
-				});
-			}
-			if (file.type === 'pdf') {
-				context.push({
-					role: 'user',
-					content: `PDF uploaded: ${file.name}.`
-				});
-			}
+			context.push({
+				role: 'user',
+				content: `File: ${file.name}\nContent: ${file.content}`
+			});
 		});
 	}
 
