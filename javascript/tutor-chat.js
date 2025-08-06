@@ -63,50 +63,9 @@ function initializeFileUpload() {
 		fileInput.addEventListener('change', handleFileSelect);
 	}
 }
-
-const chatInput = document.getElementById('chatInput');
-chatInput.addEventListener('paste', handlePasteInChat);
-
-function handlePasteInChat(e) {
-	if (e.clipboardData) {
-		const items = e.clipboardData.items;
-		for (let i = 0; i < items.length; i++) {
-			if (items[i].type.indexOf('image') !== -1) {
-				const blob = items[i].getAsFile();
-				const reader = new FileReader();
-				reader.onload = function (event) {
-					addFileToPreviewFromPaste(blob, event.target.result);
-				};
-				reader.readAsDataURL(blob);
-				e.preventDefault();
-				break;
-			}
-		}
-	}
-}
-
-function addFileToPreviewFromPaste(file, dataUrl) {
-	file.name = file.name || 'PastedImage.png';
-	uploadedFiles.push(file);
-
-	const filePreview = document.getElementById('filePreview');
-	filePreview.style.display = 'flex';
-
-	const fileItem = document.createElement('div');
-	fileItem.className = 'file-item';
-	fileItem.dataset.fileName = file.name;
-
-	fileItem.innerHTML = `
-			<span class="file-icon">🖼️</span>
-			<span class="file-name" title="${file.name}" style="color: #007bff;">${file.name}</span>
-			<img src="${dataUrl}" style="max-width:100px; max-height:100px; display:block; margin-top:5px;">
-			<button class="remove-file" onclick="removeFile('${file.name}')">×</button>
-	`;
-	filePreview.appendChild(fileItem);
-}
-
 async function getGeminiResponse(messages) {
 	try {
+		// Use your Vercel API endpoint instead of direct Gemini call
 		const response = await fetch('/api/gemini', {
 			method: 'POST',
 			headers: {
@@ -125,6 +84,7 @@ async function getGeminiResponse(messages) {
 	} catch (error) {
 		console.error('Error calling Gemini API:', error);
 
+		// Provide user-friendly error messages
 		if (error.message.includes('fetch')) {
 			throw new Error('Unable to connect to the AI service. Please check your internet connection.');
 		} else if (error.message.includes('429')) {
@@ -290,23 +250,15 @@ async function processFilesForTutor(files) {
 					data: base64,
 					content: `PDF file uploaded: ${file.name}. Please describe what you'd like me to help you with from this document.`
 				});
-				context.push({
-					role: 'user',
-					content: `PDF uploaded: ${file.name}.`
-				});
 			} else if (file.type.startsWith('image/')) {
 				const ocrText = await getOcrFromImage(base64);
 				processedFiles.push({
 					name: file.name,
 					type: file.type,
 					data: base64,
-					content: ocrText || `No recognizable text found in image.`
-				});
-				context.push({
-					role: 'user',
-					content: ocrText
-						? `Image uploaded. Recognized text: ${ocrText}`
-						: `Image uploaded, but no recognizable text was found.`
+					content:
+						ocrText ||
+						`Image uploaded: ${file.name}. No text was detected, but I can help explain any probability concepts you see in the image.`
 				});
 			}
 		} catch (error) {
@@ -315,10 +267,6 @@ async function processFilesForTutor(files) {
 				name: file.name,
 				type: 'error',
 				content: `Error processing ${file.name}. Please try uploading the file again.`
-			});
-			context.push({
-				role: 'user',
-				content: `Error processing file: ${file.name}.`
 			});
 		}
 	}
@@ -607,12 +555,12 @@ async function processUserMessage(message) {
 	showLoading();
 
 	try {
-		let boardToCheck = null;
-		if (/student board|student whiteboard/i.test(message)) {
-			boardToCheck = 'student';
-		} else if (/teacher board|teacher whiteboard/i.test(message)) {
-			boardToCheck = 'teacher';
-		}
+		let boardToCheck = 'student'; //hard-coded to student board only.
+		// if (/student board|student whiteboard/i.test(message)) {
+		// 	boardToCheck = 'student';
+		// } else if (/teacher board|teacher whiteboard/i.test(message)) {
+		// 	boardToCheck = 'teacher';
+		// }
 
 		let ocrText = null;
 		if (boardToCheck) {
@@ -628,21 +576,8 @@ async function processUserMessage(message) {
 			}
 		}
 
-		let processedFiles = [];
-		if (uploadedFiles.length > 0) {
-			processedFiles = await processFilesForTutor(uploadedFiles);
-			uploadedFiles = [];
-			const filePreview = document.getElementById('filePreview');
-			if (filePreview) {
-				filePreview.innerHTML = '';
-				filePreview.style.display = 'none';
-			}
-		}
-
 		// Add user message to context for AI
-		if (message && message.trim() !== '') {
-			context.push({ role: 'user', content: message });
-		}
+		context.push({ role: 'user', content: message });
 
 		// Get AI response
 		let botResponse = await getGeminiResponse(context);
