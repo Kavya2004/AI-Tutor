@@ -48,7 +48,9 @@ function setupWhiteboardControls() {
 	}
 
 	if (drawStudentButton) {
-		drawStudentButton.addEventListener('click', () => toggleDrawing('student'));
+		drawStudentButton.addEventListener('click', () => {
+			resizeCanvas(studentCanvas, 'student');
+		});
 	}
 
 	if (expandStudentButton) {
@@ -59,13 +61,13 @@ function setupWhiteboardControls() {
 }
 
 function getOcrServerUrl() {
-    return ''; // ✅ Use same origin (your Vercel app)
+	return ''; // ✅ Use same origin (your Vercel app)
 }
 
 async function runOcrAndFillChat(boardType) {
 	try {
 		console.log(`[OCR] Starting OCR for ${boardType} whiteboard...`);
-		
+
 		// Get the correct canvas using the global variables from your whiteboard code
 		const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 		if (!canvas) {
@@ -91,10 +93,10 @@ async function runOcrAndFillChat(boardType) {
 		let hasContent = false;
 		for (let i = 0; i < imageData.data.length; i += 4) {
 			const r = imageData.data[i];
-			const g = imageData.data[i + 1]; 
+			const g = imageData.data[i + 1];
 			const b = imageData.data[i + 2];
 			const a = imageData.data[i + 3];
-			
+
 			// Check for any non-white, non-transparent pixels
 			if (a > 0 && (r < 250 || g < 250 || b < 250)) {
 				hasContent = true;
@@ -110,16 +112,16 @@ async function runOcrAndFillChat(boardType) {
 		// Convert canvas to base64 image
 		const dataUrl = canvas.toDataURL('image/png', 0.8);
 		console.log(`[OCR] Canvas data URL length:`, dataUrl.length);
-		
+
 		// Get the correct server URL
 		const serverUrl = getOcrServerUrl();
 		console.log(`[OCR] Using server URL:`, serverUrl);
-		
+
 		// Send to your OCR server
 		const response = await fetch('/api/ocr', {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/json',
+				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({
 				image: dataUrl
@@ -135,22 +137,22 @@ async function runOcrAndFillChat(boardType) {
 		console.log('[OCR] Raw result:', result);
 
 		// Extract the recognized text from Mathpix response
-// Extract the recognized text from Mathpix response
-let ocrText = '';
-if (result.text) {
-    ocrText = result.text;
-} else if (result.latex_styled) {
-    ocrText = result.latex_styled;
-} else if (result.data && Array.isArray(result.data)) {
-    ocrText = result.data.map(item => item.value || '').join(' ');
-} else if (result.error) {
-    console.error('[OCR] Server returned error:', result.error);
-    showOcrError(`OCR Error: ${result.error}`);
-    return;
-} else {
-    console.log('[OCR] Unexpected response format:', result);
-    ocrText = JSON.stringify(result); // Fallback to see what we got
-}
+		// Extract the recognized text from Mathpix response
+		let ocrText = '';
+		if (result.text) {
+			ocrText = result.text;
+		} else if (result.latex_styled) {
+			ocrText = result.latex_styled;
+		} else if (result.data && Array.isArray(result.data)) {
+			ocrText = result.data.map((item) => item.value || '').join(' ');
+		} else if (result.error) {
+			console.error('[OCR] Server returned error:', result.error);
+			showOcrError(`OCR Error: ${result.error}`);
+			return;
+		} else {
+			console.log('[OCR] Unexpected response format:', result);
+			ocrText = JSON.stringify(result); // Fallback to see what we got
+		}
 
 		if (ocrText.trim()) {
 			console.log('[OCR] Recognized text:', ocrText);
@@ -158,7 +160,6 @@ if (result.text) {
 		} else {
 			console.log('[OCR] No text recognized');
 		}
-
 	} catch (error) {
 		console.error('[OCR] Error:', error);
 		showOcrError(`Failed to process whiteboard: ${error.message}`);
@@ -168,29 +169,31 @@ if (result.text) {
 // Send OCR result to chat system
 async function sendOcrToChat(ocrText, boardType) {
 	const message = `I wrote on the ${boardType} whiteboard: "${ocrText}"`;
-	
+
 	console.log('[OCR->CHAT]', message);
-	
-	const chatInput = document.querySelector('#chatInput') || // This matches your HTML
-	document.querySelector('#messageInput') ||
-	document.querySelector('[data-testid="chat-input"]') ||
-	document.querySelector('textarea[placeholder*="message"]') ||
-	document.querySelector('input[type="text"]') ||
-	document.querySelector('textarea');
+
+	const chatInput =
+		document.querySelector('#chatInput') || // This matches your HTML
+		document.querySelector('#messageInput') ||
+		document.querySelector('[data-testid="chat-input"]') ||
+		document.querySelector('textarea[placeholder*="message"]') ||
+		document.querySelector('input[type="text"]') ||
+		document.querySelector('textarea');
 	if (chatInput) {
 		// Add the OCR text to the chat input
 		const currentValue = chatInput.value || '';
 		const newValue = currentValue ? `${currentValue}\n\n${message}` : message;
 		chatInput.value = newValue;
-		
+
 		// Trigger input events to notify React/Vue/etc if needed
 		chatInput.dispatchEvent(new Event('input', { bubbles: true }));
 		chatInput.dispatchEvent(new Event('change', { bubbles: true }));
-		
-		const sendButton = document.querySelector('#sendButton') || 
-		document.querySelector('[data-testid="send-button"]') ||
-		document.querySelector('button[type="submit"]') ||
-		document.querySelector('.send-button');
+
+		const sendButton =
+			document.querySelector('#sendButton') ||
+			document.querySelector('[data-testid="send-button"]') ||
+			document.querySelector('button[type="submit"]') ||
+			document.querySelector('.send-button');
 		if (sendButton && !sendButton.disabled) {
 			console.log('[OCR] Auto-sending message...');
 			setTimeout(() => sendButton.click(), 100);
@@ -201,7 +204,7 @@ async function sendOcrToChat(ocrText, boardType) {
 		}
 	} else {
 		console.log('[OCR] Chat input not found, trying to call global functions...');
-		
+
 		// Try to call global functions that might exist in your chat system
 		if (typeof window.addOcrMessageToChat === 'function') {
 			window.addOcrMessageToChat(ocrText, boardType);
@@ -216,27 +219,27 @@ async function sendOcrToChat(ocrText, boardType) {
 	}
 }
 // Global function for whiteboard OCR integration
-window.addOcrMessageToChat = function(ocrText, boardType) {
-    const message = `I wrote on the ${boardType} whiteboard: "${ocrText}"`;
-    
-    // Add to chat input
-    const chatInput = document.getElementById('chatInput');
-    if (chatInput) {
-        const currentValue = chatInput.value || '';
-        const newValue = currentValue ? `${currentValue}\n\n${message}` : message;
-        chatInput.value = newValue;
-        
-        // Trigger events
-        chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-        chatInput.dispatchEvent(new Event('change', { bubbles: true }));
-        
-        // Auto-send if possible
-        setTimeout(() => {
-            if (!isProcessing) {
-                handleSendMessage();
-            }
-        }, 100);
-    }
+window.addOcrMessageToChat = function (ocrText, boardType) {
+	const message = `I wrote on the ${boardType} whiteboard: "${ocrText}"`;
+
+	// Add to chat input
+	const chatInput = document.getElementById('chatInput');
+	if (chatInput) {
+		const currentValue = chatInput.value || '';
+		const newValue = currentValue ? `${currentValue}\n\n${message}` : message;
+		chatInput.value = newValue;
+
+		// Trigger events
+		chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+		chatInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+		// Auto-send if possible
+		setTimeout(() => {
+			if (!isProcessing) {
+				handleSendMessage();
+			}
+		}, 100);
+	}
 };
 // Show success notification
 function showOcrSuccess(message) {
@@ -255,9 +258,9 @@ function showOcrSuccess(message) {
 		box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 	`;
 	notification.textContent = message;
-	
+
 	document.body.appendChild(notification);
-	
+
 	// Remove after 4 seconds
 	setTimeout(() => {
 		if (notification.parentNode) {
@@ -283,9 +286,9 @@ function showOcrError(message) {
 		box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 	`;
 	errorDiv.textContent = message;
-	
+
 	document.body.appendChild(errorDiv);
-	
+
 	// Remove after 5 seconds
 	setTimeout(() => {
 		if (errorDiv.parentNode) {
@@ -301,13 +304,13 @@ function debugWhiteboardOcr() {
 	console.log('studentCanvas:', studentCanvas);
 	console.log('isDrawingMode:', isDrawingMode);
 	console.log('isAnythingDrawn:', isAnythingDrawn);
-	
+
 	// Test OCR on both canvases
 	if (teacherCanvas) {
 		console.log('Testing teacher canvas OCR...');
 		runOcrAndFillChat('teacher');
 	}
-	
+
 	if (studentCanvas) {
 		console.log('Testing student canvas OCR...');
 		runOcrAndFillChat('student');
@@ -388,8 +391,11 @@ function switchWhiteboard(boardType) {
 		activeWhiteboard = 'student';
 	}
 
-	// Resize canvases after switching
-	setTimeout(resizeCanvases, 100);
+	if (boardType === 'teacher') {
+		resizeCanvas(teacherCanvas, 'teacher');
+	} else {
+		resizeCanvas(studentCanvas, 'student');
+	}
 }
 
 function setupResizeHandle() {
@@ -542,7 +548,7 @@ function resizeCanvas(canvas, boardType) {
 	if (canvas.width !== newWidth || canvas.height !== newHeight) {
 		// Save current canvas content
 		const imageData = canvas.toDataURL();
-		
+
 		// Resize canvas
 		canvas.width = newWidth;
 		canvas.height = newHeight;
@@ -552,9 +558,13 @@ function resizeCanvas(canvas, boardType) {
 		ctx.lineWidth = 4;
 		ctx.lineCap = 'round';
 		ctx.lineJoin = 'round';
-		
+
 		// Restore canvas content
-		if (imageData && imageData !== 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII=') {
+		if (
+			imageData &&
+			imageData !==
+				'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQIHWNgAAIAAAUAAY27m/MAAAAASUVORK5CYII='
+		) {
 			const img = new Image();
 			img.onload = () => ctx.drawImage(img, 0, 0);
 			img.src = imageData;
@@ -564,8 +574,12 @@ function resizeCanvas(canvas, boardType) {
 
 function clearWhiteboard(boardType) {
 	// In sessions, only host can clear teacher whiteboard
-	if (window.sessionManager && window.sessionManager.sessionId && 
-		boardType === 'teacher' && !window.sessionManager.isHost) {
+	if (
+		window.sessionManager &&
+		window.sessionManager.sessionId &&
+		boardType === 'teacher' &&
+		!window.sessionManager.isHost
+	) {
 		alert('Only the session host can clear the teacher whiteboard');
 		return;
 	}
@@ -575,7 +589,7 @@ function clearWhiteboard(boardType) {
 	if (!ctx || !canvas) return;
 
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	
+
 	// Broadcast clear action to session
 	if (window.sessionManager && window.sessionManager.sessionId) {
 		window.sessionManager.ws.send(
@@ -589,12 +603,14 @@ function clearWhiteboard(boardType) {
 }
 function broadcastDiagramAction(diagramName, boardType = 'teacher') {
 	if (window.sessionManager && window.sessionManager.sessionId) {
-		window.sessionManager.ws.send(JSON.stringify({
-			type: "whiteboard_action",
-			action: diagramName, 
-			targetBoard: boardType,
-			userName: window.sessionManager.userName
-		}));
+		window.sessionManager.ws.send(
+			JSON.stringify({
+				type: 'whiteboard_action',
+				action: diagramName,
+				targetBoard: boardType,
+				userName: window.sessionManager.userName
+			})
+		);
 	}
 }
 
@@ -612,9 +628,9 @@ function toggleDrawing(boardType) {
 			studentCanvas.style.cursor = studentDrawingMode ? 'crosshair' : 'default';
 		}
 	}
-	
+
 	updateDrawButtons();
-	
+
 	// Only run OCR when stopping drawing mode
 	const currentMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
 	if (!currentMode && isAnythingDrawn) {
@@ -624,7 +640,7 @@ function toggleDrawing(boardType) {
 			isAnythingDrawn = false;
 		}, 500);
 	}
-	
+
 	console.log(`[DRAW] Drawing mode ${currentMode ? 'ENABLED' : 'DISABLED'} for ${boardType}`);
 }
 
@@ -682,15 +698,17 @@ function draw(e, boardType) {
 
 	// Broadcast this point to other participants
 	if (window.sessionManager && window.sessionManager.sessionId) {
-		window.sessionManager.ws.send(JSON.stringify({
-			type: 'whiteboard_draw',
-			boardType,
-			x, y,
-			userName: window.sessionManager.userName
-		}));
+		window.sessionManager.ws.send(
+			JSON.stringify({
+				type: 'whiteboard_draw',
+				boardType,
+				x,
+				y,
+				userName: window.sessionManager.userName
+			})
+		);
 	}
 }
-
 
 function stopDrawing(boardType) {
 	isDrawing = false;
@@ -844,7 +862,7 @@ function drawSampleDistribution(boardType = 'teacher') {
 }
 
 function drawNormalCurve(boardType = 'teacher') {
-	broadcastDiagramAction("drawNormalCurve", boardType);
+	broadcastDiagramAction('drawNormalCurve', boardType);
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	if (!ctx || !canvas) return;
@@ -1030,4 +1048,3 @@ window.tutorWhiteboard = {
 
 // Make switchWhiteboard globally available
 window.switchWhiteboard = switchWhiteboard;
-
