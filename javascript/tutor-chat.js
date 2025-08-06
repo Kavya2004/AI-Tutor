@@ -63,6 +63,34 @@ function initializeFileUpload() {
 		fileInput.addEventListener('change', handleFileSelect);
 	}
 }
+
+const studentBoard = document.getElementById('studentWhiteboard');
+
+studentBoard.addEventListener('paste', handlePasteImage);
+
+function handlePasteImage(e) {
+	if (e.clipboardData) {
+		const items = e.clipboardData.items;
+		for (let i = 0; i < items.length; i++) {
+			if (items[i].type.indexOf('image') !== -1) {
+				const blob = items[i].getAsFile();
+				const reader = new FileReader();
+				reader.onload = function (event) {
+					const img = new Image();
+					img.onload = function () {
+						const ctx = studentBoard.getContext('2d');
+						ctx.drawImage(img, 0, 0, studentBoard.width, studentBoard.height);
+					};
+					img.src = event.target.result;
+				};
+				reader.readAsDataURL(blob);
+				e.preventDefault(); // Prevent default paste
+				break;
+			}
+		}
+	}
+}
+
 async function getGeminiResponse(messages) {
 	try {
 		// Use your Vercel API endpoint instead of direct Gemini call
