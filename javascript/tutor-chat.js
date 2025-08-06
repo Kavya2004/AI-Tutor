@@ -572,10 +572,7 @@ async function processUserMessage(message) {
 					role: 'user',
 					content: `${boardToCheck} has the text: ${ocrText}`
 				});
-
-				addMessage(`(Whiteboard OCR: <b>${ocrText}</b>)`, 'bot');
 			} else {
-				addMessage('(No recognizable text found on the whiteboard.)', 'bot');
 			}
 		}
 
