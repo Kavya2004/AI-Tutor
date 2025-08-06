@@ -31,6 +31,27 @@ document.addEventListener('DOMContentLoaded', function () {
 	initializeChat();
 });
 
+function handlePasteEvent(event) {
+	const activeElement = document.activeElement;
+	const chatInput = document.getElementById('chatInput');
+	if (activeElement !== chatInput) return;
+
+	const items = event.clipboardData?.items;
+	if (!items) return;
+
+	for (const item of items) {
+		if (item.type.indexOf('image') === 0) {
+			const file = item.getAsFile();
+			if (file) {
+				uploadedFiles.push(file);
+				addFileToPreview(file);
+				const filePreview = document.getElementById('filePreview');
+				filePreview.style.display = 'flex';
+			}
+		}
+	}
+}
+
 function initializeChat() {
 	window.processUserMessage = processUserMessage;
 	const sendButton = document.getElementById('sendButton');
@@ -51,6 +72,7 @@ function initializeChat() {
 	voiceEnabled = localStorage.getItem('autoSpeech') !== 'false';
 
 	setTimeout(createVoiceToggle, 1500);
+	document.addEventListener('paste', handlePasteEvent);
 }
 let uploadedFiles = [];
 
