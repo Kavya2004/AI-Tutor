@@ -555,30 +555,28 @@ async function processUserMessage(message) {
 	showLoading();
 
 	try {
-		let boardToCheck = null;
-		if (/student board|student whiteboard/i.test(message)) {
-			boardToCheck = 'student';
-		} else if (/teacher board|teacher whiteboard/i.test(message)) {
-			boardToCheck = 'teacher';
-		}
+		let boardToCheck = 'student'; //hard-coded to student board only.
+		// if (/student board|student whiteboard/i.test(message)) {
+		// 	boardToCheck = 'student';
+		// } else if (/teacher board|teacher whiteboard/i.test(message)) {
+		// 	boardToCheck = 'teacher';
+		// }
 
 		let ocrText = null;
 		if (boardToCheck) {
 			ocrText = await getOcrTextFromWhiteboardImage(boardToCheck);
 			console.log(`[DEBUG] OCR result from ${boardToCheck} board:`, ocrText);
 
-			const latestOcrSummary = ocrText
-				? `The ${boardToCheck} whiteboard contains: "${ocrText}"`
-				: `The ${boardToCheck} whiteboard is currently blank.`;
+			if (ocrText && ocrText.trim() && ocrText.trim().toLowerCase() !== 'error reading image text.') {
+				context.push({
+					role: 'user',
+					content: `${boardToCheck} has the text: ${ocrText}`
+				});
 
-			context = context.filter(
-				(entry) => !(entry.role === 'system' && entry.content.startsWith(`The ${boardToCheck} whiteboard`))
-			);
-
-			context.splice(1, 0, {
-				role: 'system',
-				content: latestOcrSummary
-			});
+				addMessage(`(Whiteboard OCR: <b>${ocrText}</b>)`, 'bot');
+			} else {
+				addMessage('(No recognizable text found on the whiteboard.)', 'bot');
+			}
 		}
 
 		// Add user message to context for AI
