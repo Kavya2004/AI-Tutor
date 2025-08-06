@@ -64,11 +64,10 @@ function initializeFileUpload() {
 	}
 }
 
-const studentBoard = document.getElementById('studentWhiteboard');
+const chatInput = document.getElementById('chatInput');
+chatInput.addEventListener('paste', handlePasteInChat);
 
-studentBoard.addEventListener('paste', handlePasteImage);
-
-function handlePasteImage(e) {
+function handlePasteInChat(e) {
 	if (e.clipboardData) {
 		const items = e.clipboardData.items;
 		for (let i = 0; i < items.length; i++) {
@@ -76,24 +75,38 @@ function handlePasteImage(e) {
 				const blob = items[i].getAsFile();
 				const reader = new FileReader();
 				reader.onload = function (event) {
-					const img = new Image();
-					img.onload = function () {
-						const ctx = studentBoard.getContext('2d');
-						ctx.drawImage(img, 0, 0, studentBoard.width, studentBoard.height);
-					};
-					img.src = event.target.result;
+					addFileToPreviewFromPaste(blob, event.target.result);
 				};
 				reader.readAsDataURL(blob);
-				e.preventDefault(); // Prevent default paste
+				e.preventDefault();
 				break;
 			}
 		}
 	}
 }
 
+function addFileToPreviewFromPaste(file, dataUrl) {
+	file.name = file.name || 'PastedImage.png';
+	uploadedFiles.push(file);
+
+	const filePreview = document.getElementById('filePreview');
+	filePreview.style.display = 'flex';
+
+	const fileItem = document.createElement('div');
+	fileItem.className = 'file-item';
+	fileItem.dataset.fileName = file.name;
+
+	fileItem.innerHTML = `
+			<span class="file-icon">🖼️</span>
+			<span class="file-name" title="${file.name}" style="color: #007bff;">${file.name}</span>
+			<img src="${dataUrl}" style="max-width:100px; max-height:100px; display:block; margin-top:5px;">
+			<button class="remove-file" onclick="removeFile('${file.name}')">×</button>
+	`;
+	filePreview.appendChild(fileItem);
+}
+
 async function getGeminiResponse(messages) {
 	try {
-		// Use your Vercel API endpoint instead of direct Gemini call
 		const response = await fetch('/api/gemini', {
 			method: 'POST',
 			headers: {
@@ -112,7 +125,6 @@ async function getGeminiResponse(messages) {
 	} catch (error) {
 		console.error('Error calling Gemini API:', error);
 
-		// Provide user-friendly error messages
 		if (error.message.includes('fetch')) {
 			throw new Error('Unable to connect to the AI service. Please check your internet connection.');
 		} else if (error.message.includes('429')) {
