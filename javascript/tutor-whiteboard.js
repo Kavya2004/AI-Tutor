@@ -50,6 +50,7 @@ function setupWhiteboardControls() {
 	if (drawStudentButton) {
 		drawStudentButton.addEventListener('click', () => {
 			resizeCanvas(studentCanvas, 'student');
+			toggleDrawing('student');
 		});
 	}
 
