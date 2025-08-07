@@ -69,7 +69,7 @@ function initializeChat() {
 
 	addMessage("Hi there! I'm your probability tutor! Ask me anything about probability and statistics!", 'bot');
 
-	voiceEnabled = localStorage.getItem('autoSpeech') !== 'false';
+	voiceEnabled = localStorage.getItem('autoSpeech') === 'true';
 
 	setTimeout(createVoiceToggle, 1500);
 	document.addEventListener('paste', handlePasteEvent);

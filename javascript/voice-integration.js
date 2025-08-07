@@ -8,8 +8,8 @@ class VoiceTutor {
         this.voices = [];
         this.preferredVoice = null;
         this.speechSettings = {
-            pitch: parseFloat(localStorage.getItem('speechPitch')) || 0.95,
-            rate: parseFloat(localStorage.getItem('speechRate')) || 0.85,
+            pitch: parseFloat(localStorage.getItem('speechPitch')) || 0.8,
+            rate: parseFloat(localStorage.getItem('speechRate')) || 0.75,
             volume: parseFloat(localStorage.getItem('speechVolume')) || 0.9
         };
         
