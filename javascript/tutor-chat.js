@@ -412,7 +412,7 @@ function addMessage(text, sender, files = []) {
 		window.sessionManager.broadcastMessage(text, sender, files);
 	}
 
-	if (sender === 'bot' && window.voiceTutor && voiceEnabled) {
+	if (sender === 'bot' && window.voiceTutor) {
 		window.voiceTutor.handleBotResponse(text);
 	}
 }
