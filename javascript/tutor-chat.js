@@ -2,14 +2,26 @@ let isProcessing = false;
 let context = [
 	{
 		role: 'system',
-		content: `You are a friendly probability and statistics tutor with AI diagram generation capabilities.
+		content: `You are an AI tutor specializing in introductory probability and statistics. You have been extensively trained on university-level question-answer pairs in this subject area.Your role is to guide students through concepts interactively, using both whiteboards and conversation. You are supportive, brief, and thoughtful in your responses.
+
+You have access to two whiteboards:
+
+- TEACHER WHITEBOARD: for explanations, visual examples, and demonstrations
+- STUDENT WHITEBOARD: for student practice or when prompting them to work out problems
+- If you need to draw/demonstrate concepts, add [TEACHER_BOARD: action_name]
+- If you want the student to practice/work, add [STUDENT_BOARD: action_name]
 
 Instructions:
+
 - Respond naturally but BRIEFLY to the student's question
-- For ANY mathematical diagram, use [GENERATE_DIAGRAM: description] - this will create the actual visual
-- Examples: [GENERATE_DIAGRAM: parabola y = x²], [GENERATE_DIAGRAM: normal distribution curve], [GENERATE_DIAGRAM: sine wave from 0 to 2π]
-- The AI will automatically draw the diagram on the teacher whiteboard
-- Do NOT use old commands like [TEACHER_BOARD:] - always use [GENERATE_DIAGRAM:] for visuals`
+- Start each response naturally. Use whiteboards only when helpful. Your goal is to build understanding step-by-step.
+- You are allowed to ask follow-up questions, give hints, or use metaphors to support learning.
+- Follow a guided discovery approach: encourage students to think critically and solve problems themselves before providing full explanations.
+- Be visual whenever helpful: use whiteboard tools to draw distributions, curves, diagrams, or scales.
+- Avoid going beyond the course syllabus unless asked directly. Focus on core introductory topics.
+- Adjust your tone based on the student’s language. You can be warm and casual, or clear and direct, depending on their mood.
+- Respond briefly. Keep replies short and focused. Avoid overwhelming the student with information all at once.
+- Do not simply recite full answers as you’ve seen in training. Instead, help the student understand by prompting them with questions, offering hints, and explaining only as needed. Prioritize understanding over correctness.`
 	}
 ];
 
@@ -18,6 +30,27 @@ let voiceEnabled = true;
 document.addEventListener('DOMContentLoaded', function () {
 	initializeChat();
 });
+
+function handlePasteEvent(event) {
+	const activeElement = document.activeElement;
+	const chatInput = document.getElementById('chatInput');
+	if (activeElement !== chatInput) return;
+
+	const items = event.clipboardData?.items;
+	if (!items) return;
+
+	for (const item of items) {
+		if (item.type.indexOf('image') === 0) {
+			const file = item.getAsFile();
+			if (file) {
+				uploadedFiles.push(file);
+				addFileToPreview(file);
+				const filePreview = document.getElementById('filePreview');
+				filePreview.style.display = 'flex';
+			}
+		}
+	}
+}
 
 function initializeChat() {
 	window.processUserMessage = processUserMessage;
@@ -39,6 +72,7 @@ function initializeChat() {
 	voiceEnabled = localStorage.getItem('autoSpeech') !== 'false';
 
 	setTimeout(createVoiceToggle, 1500);
+	document.addEventListener('paste', handlePasteEvent);
 }
 let uploadedFiles = [];
 
@@ -53,38 +87,37 @@ function initializeFileUpload() {
 }
 async function getGeminiResponse(messages) {
 	try {
-	  // Use your Vercel API endpoint instead of direct Gemini call
-	  const response = await fetch('/api/gemini', {
-		method: 'POST',
-		headers: {
-		  'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({ messages })
-	  });
-  
-	  if (!response.ok) {
-		const errorData = await response.json().catch(() => ({}));
-		throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-	  }
-  
-	  const data = await response.json();
-	  return data.response || 'No response received from Gemini.';
-  
+		// Use your Vercel API endpoint instead of direct Gemini call
+		const response = await fetch('/api/gemini', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({ messages })
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({}));
+			throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+		}
+
+		const data = await response.json();
+		return data.response || 'No response received from Gemini.';
 	} catch (error) {
-	  console.error('Error calling Gemini API:', error);
-	  
-	  // Provide user-friendly error messages
-	  if (error.message.includes('fetch')) {
-		throw new Error('Unable to connect to the AI service. Please check your internet connection.');
-	  } else if (error.message.includes('429')) {
-		throw new Error('Too many requests. Please wait a moment and try again.');
-	  } else if (error.message.includes('401')) {
-		throw new Error('API authentication failed. Please check your configuration.');
-	  } else {
-		throw new Error('AI service is temporarily unavailable. Please try again.');
-	  }
+		console.error('Error calling Gemini API:', error);
+
+		// Provide user-friendly error messages
+		if (error.message.includes('fetch')) {
+			throw new Error('Unable to connect to the AI service. Please check your internet connection.');
+		} else if (error.message.includes('429')) {
+			throw new Error('Too many requests. Please wait a moment and try again.');
+		} else if (error.message.includes('401')) {
+			throw new Error('API authentication failed. Please check your configuration.');
+		} else {
+			throw new Error('AI service is temporarily unavailable. Please try again.');
+		}
 	}
-  }
+}
 
 function handleFileSelect(event) {
 	const files = Array.from(event.target.files);
@@ -154,7 +187,7 @@ function removeFile(fileName) {
 	if (fileItem) {
 		fileItem.remove();
 	}
-	
+
 	// Hide file preview container if no files remain
 	const filePreview = document.getElementById('filePreview');
 	if (uploadedFiles.length === 0) {
@@ -163,7 +196,7 @@ function removeFile(fileName) {
 }
 
 function viewFile(fileName) {
-	const file = uploadedFiles.find(f => f.name === fileName);
+	const file = uploadedFiles.find((f) => f.name === fileName);
 	if (!file) return;
 
 	const modal = document.createElement('div');
@@ -356,16 +389,17 @@ function addMessage(text, sender, files = []) {
 		const filesDiv = document.createElement('div');
 		filesDiv.className = 'message-files';
 		filesDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;';
-		
-		files.forEach(file => {
+
+		files.forEach((file) => {
 			const fileSpan = document.createElement('span');
 			fileSpan.className = 'message-file';
-			fileSpan.style.cssText = 'background: #e3f2fd; padding: 4px 8px; border-radius: 12px; font-size: 12px; cursor: pointer; color: #1976d2;';
+			fileSpan.style.cssText =
+				'background: #e3f2fd; padding: 4px 8px; border-radius: 12px; font-size: 12px; cursor: pointer; color: #1976d2;';
 			fileSpan.innerHTML = `${getFileIcon(file.type)} ${file.name}`;
 			fileSpan.onclick = () => viewUploadedFile(file);
 			filesDiv.appendChild(fileSpan);
 		});
-		
+
 		content.appendChild(filesDiv);
 	}
 
@@ -478,9 +512,8 @@ function toggleVoiceResponse() {
 
 async function getOcrTextFromWhiteboardImage(board) {
 	try {
-		const canvas = board === 'teacher' ? 
-		document.getElementById('teacherWhiteboard') : 
-		document.getElementById('studentWhiteboard');
+		const canvas =
+			board === 'teacher' ? document.getElementById('teacherWhiteboard') : document.getElementById('studentWhiteboard');
 		if (!canvas) {
 			console.warn(`Canvas not found for ${board} board.`);
 			return null;
@@ -544,30 +577,25 @@ async function processUserMessage(message) {
 	showLoading();
 
 	try {
-		let boardToCheck = null;
-		if (/student board|student whiteboard/i.test(message)) {
-			boardToCheck = 'student';
-		} else if (/teacher board|teacher whiteboard/i.test(message)) {
-			boardToCheck = 'teacher';
-		}
+		let boardToCheck = 'student'; //hard-coded to student board only.
+		// if (/student board|student whiteboard/i.test(message)) {
+		// 	boardToCheck = 'student';
+		// } else if (/teacher board|teacher whiteboard/i.test(message)) {
+		// 	boardToCheck = 'teacher';
+		// }
 
 		let ocrText = null;
 		if (boardToCheck) {
 			ocrText = await getOcrTextFromWhiteboardImage(boardToCheck);
 			console.log(`[DEBUG] OCR result from ${boardToCheck} board:`, ocrText);
 
-			const latestOcrSummary = ocrText
-				? `The ${boardToCheck} whiteboard contains: "${ocrText}"`
-				: `The ${boardToCheck} whiteboard is currently blank.`;
-
-			context = context.filter(
-				(entry) => !(entry.role === 'system' && entry.content.startsWith(`The ${boardToCheck} whiteboard`))
-			);
-
-			context.splice(1, 0, {
-				role: 'system',
-				content: latestOcrSummary
-			});
+			if (ocrText && ocrText.trim() && ocrText.trim().toLowerCase() !== 'error reading image text.') {
+				context.push({
+					role: 'user',
+					content: `${boardToCheck} has the text: ${ocrText}`
+				});
+			} else {
+			}
 		}
 
 		// Add user message to context for AI
@@ -589,7 +617,7 @@ async function processUserMessage(message) {
 		let whiteboardAction = null;
 		let targetBoard = null;
 		let diagramRequest = null;
-		
+
 		const diagramMatch = botResponse.match(/\[GENERATE_DIAGRAM:\s*([^\]]+)\]/);
 		const teacherMatch = botResponse.match(/\[TEACHER_BOARD:\s*([^\]]+)\]/);
 		const studentMatch = botResponse.match(/\[STUDENT_BOARD:\s*([^\]]+)\]/);
@@ -598,18 +626,18 @@ async function processUserMessage(message) {
 			diagramRequest = diagramMatch[1].trim();
 			targetBoard = 'teacher';
 			botResponse = botResponse.replace(/\[GENERATE_DIAGRAM:[^\]]+\]/, '').trim();
-			botResponse += '\n\n[Generating diagram...]';
+			//botResponse += '\n\n[Generating diagram...]';
 		} else if (teacherMatch) {
 			// Convert old syntax to new diagram generation
 			diagramRequest = teacherMatch[1].trim();
 			targetBoard = 'teacher';
 			botResponse = botResponse.replace(/\[TEACHER_BOARD:[^\]]+\]/, '').trim();
-			botResponse += '\n\n[Generating diagram...]';
+			//botResponse += '\n\n[Generating diagram...]';
 		} else if (studentMatch) {
 			whiteboardAction = studentMatch[1];
 			targetBoard = 'student';
 			botResponse = botResponse.replace(/\[STUDENT_BOARD:[^\]]+\]/, '').trim();
-			botResponse += '\n\n[Setting up student whiteboard...]';
+			//botResponse += '\n\n[Setting up student whiteboard...]';
 		}
 
 		// Handle bot response display/broadcasting
@@ -627,13 +655,11 @@ async function processUserMessage(message) {
 		} else if (whiteboardAction && targetBoard && window.tutorWhiteboard) {
 			setTimeout(() => executeWhiteboardAction(whiteboardAction, targetBoard), 500);
 		}
-
 	} catch (error) {
 		console.error('Error processing message:', error);
-		
-		// Create user-friendly error message
+
 		let errorMessage = 'I apologize, but I encountered an issue. ';
-		
+
 		if (error.message.includes('Cannot reach the API')) {
 			errorMessage += 'The API endpoint is not responding. Please check your deployment.';
 		} else if (error.message.includes('API endpoint not found')) {
@@ -726,13 +752,13 @@ async function generateAIDiagram(description, targetBoard = 'teacher') {
 		}
 
 		const result = await window.diagramRenderer.generateDiagram(description, targetBoard);
-		
+
 		if (result.success) {
 			// Switch to the target whiteboard
 			if (window.switchWhiteboard) {
 				window.switchWhiteboard(targetBoard);
 			}
-			
+
 			// Broadcast diagram action to session if in session mode
 			if (window.sessionManager && window.sessionManager.sessionId && window.sessionManager.ws) {
 				console.log('Broadcasting diagram to session:', description);
@@ -747,7 +773,7 @@ async function generateAIDiagram(description, targetBoard = 'teacher') {
 			} else {
 				console.log('Not in session or WebSocket not ready');
 			}
-			
+
 			console.log('Diagram generated successfully:', result.message);
 		} else {
 			console.warn('Diagram generation failed:', result.message);
@@ -761,25 +787,25 @@ async function generateAIDiagram(description, targetBoard = 'teacher') {
 }
 
 // Global function for whiteboard OCR integration
-window.addOcrMessageToChat = function(ocrText, boardType) {
-    const message = `I wrote on the ${boardType} whiteboard: "${ocrText}"`;
-    
-    // Add to chat input
-    const chatInput = document.getElementById('chatInput');
-    if (chatInput) {
-        const currentValue = chatInput.value || '';
-        const newValue = currentValue ? `${currentValue}\n\n${message}` : message;
-        chatInput.value = newValue;
-        
-        // Trigger events
-        chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-        chatInput.dispatchEvent(new Event('change', { bubbles: true }));
-        
-        // Auto-send if possible
-        setTimeout(() => {
-            if (!isProcessing) {
-                handleSendMessage();
-            }
-        }, 100);
-    }
+window.addOcrMessageToChat = function (ocrText, boardType) {
+	const message = `I wrote on the ${boardType} whiteboard: "${ocrText}"`;
+
+	// Add to chat input
+	const chatInput = document.getElementById('chatInput');
+	if (chatInput) {
+		const currentValue = chatInput.value || '';
+		const newValue = currentValue ? `${currentValue}\n\n${message}` : message;
+		chatInput.value = newValue;
+
+		// Trigger events
+		chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+		chatInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+		// Auto-send if possible
+		setTimeout(() => {
+			if (!isProcessing) {
+				handleSendMessage();
+			}
+		}, 100);
+	}
 };

@@ -1,232 +1,589 @@
-html, body 		{ margin: 0; padding: 0; }
-		body 			{ /*background-color: #d9d0c2; */  background: url(//www.probabilitycourse.com/images/Template/newbackground.png); color: #333; font: 16px "Myriad Pro", Verdana, Geneva, Arial, sans-serif; line-height: 24px;}
-		h1				{ color: #333; left: 20px; text-align: center; }
-		a				{ color: #337810;}
-		
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+body {
+	/*background-color: #d9d0c2; */
+	background: url(//www.probabilitycourse.com/images/Template/newbackground.png);
+	color: #333;
+	font: 16px 'Myriad Pro', Verdana, Geneva, Arial, sans-serif;
+	line-height: 24px;
+}
+h1 {
+	color: #333;
+	left: 20px;
+	text-align: center;
+}
+a {
+	color: #337810;
+}
 
-		 p				{ margin: 0 0 18px; }  
-        .left           { float:left; text-align: left; }
-        .right          { float:right; text-align: right; }
-        .clear          { clear: both; }
-		#container		{ width: 1175px; margin: 0 auto; background-color: #f6f4f2; }
-        #printcontainer { width: 1175px; margin: 0 auto; padding: 50px;}
-		
-		
-		@media only screen 
-		and (min-device-width : 320px) 
-		and (max-device-width : 480px) {
-			#content { word-wrap: break-word; }
-			#wrapper { word-wrap: break-word; }
-			img	{ 	text-decoration:none; 
-					border:0;
-					outline:none; }
-		}
-		
-		
-		
-		/* Header */
-		#header_wrapper		{height: 119px; margin: 0; padding: 0; top:0px; }
-		
-		#header			{ background: url(//www.probabilitycourse.com/images/Template/HeaderBg.png) repeat-x; height: 119px; /*width: 1100px; */ margin: 0; padding: 0; position:relative; display: inline-block;}
-		#header p		{ color: #f2fcf7; font-size: 18px; font-weight:300; padding: 32px 0 0 48px; }
-		#header h1  	{ color: #73c3f6; font-size: 23px; font-weight:400; margin: -27px 10px 0 18px; line-height: 24px; text-align: left; }
-		/* This line needs to be fixed */
+p {
+	margin: 0 0 18px;
+}
+.left {
+	float: left;
+	text-align: left;
+}
+.right {
+	float: right;
+	text-align: right;
+}
+.clear {
+	clear: both;
+}
+#container {
+	width: 1175px;
+	margin: 0 auto;
+	background-color: #f6f4f2;
+}
+#printcontainer {
+	width: 1175px;
+	margin: 0 auto;
+	padding: 50px;
+}
 
-		#header font	{color: #f2fcf7; font-size: 18px;}
-		
-		/*google search bar*/
-		#google_search		{width:400px; float:right; top:0px;}
-		#google_bar			{display: inline-block;  float: right;}
-		/* Header elements */
-		#bigp 	{ font-size: 52px; font-weight:300; letter-spacing: -10px; color: #73c3f6; }
-		#diceimg		{ width: 120px; height: 91px; margin: -40px 0 -20px -40px;} 
-		#robability		{ color: #73c3f6; }
-		a.nostyle		{ text-decoration: none; }
-		#logo_image		{ margin-left:20px; margin-top:7px; float:left; width: 570px;}
-		
-		
-		#wrapper		{ margin-top: 29px; background-image: url(//www.probabilitycourse.com/images/Template/container.jpg); background-repeat: repeat-x;}
-		#wrapper		{ background-image:url(//www.probabilitycourse.com/images/Template/container.jpg); background-repeat: repeat-x;}
-		/* Content Style */
-		#content		{ background-image:url(//www.probabilitycourse.com/images/Template/container.jpg); background-repeat: repeat-x;  text-align: justify;  min-height:250px; padding-right: 70px; padding-top: 14px;
-		}
-		#content p      { background-attachment: fixed;}
-        
-		
-		
-		/*#navigation_wrapper     { height: 36px; background: #014148; clear: both;  font-size: 16px;  margin-bottom: 0; top: 0; position:relative;}*/
-		
-        #navigation     { height: 36px; background: #014148; clear: both;  font-size: 16px; font-family: sans-serif; font-weight: bold; width: 1175px; margin-bottom: 0 auto; z-index:9999; margin-top: 0px;} 
-		#navigation a   { color: #f2fcf7; text-decoration:none;}
-		#navigation a:hover { COLOR: #73c3f6;  font-family: sans-serif; font-weight: bold; }
+@media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
+	#content {
+		word-wrap: break-word;
+	}
+	#wrapper {
+		word-wrap: break-word;
+	}
+	img {
+		text-decoration: none;
+		border: 0;
+		outline: none;
+	}
+}
 
-		#navigation ul  { list-style: none; margin: 0 0 0 28px; padding: 5px 0 0 0; }
-		#navigation li  { display: inline; padding: 0 20px 0 0; }
-		
-        #nameuser 		{ color: #88ffff; font-family: cursive; font-size: 18px; }
-		
-        #right     { display:inline; float: right;  }
-		#right p:hover     { COLOR: #73c3f6;  font-family: sans-serif; font-weight: bold;  }
+/* Header */
+#header_wrapper {
+	height: 119px;
+	margin: 0;
+	padding: 0;
+	top: 0px;
+}
 
-        #left     { display:inline; float: left;  }
-		
+#header {
+	background: url(//www.probabilitycourse.com/images/Template/HeaderBg.png) repeat-x;
+	height: 119px; /*width: 1100px; */
+	margin: 0;
+	padding: 0;
+	position: relative;
+	display: inline-block;
+}
+#header p {
+	color: #f2fcf7;
+	font-size: 18px;
+	font-weight: 300;
+	padding: 32px 0 0 48px;
+}
+#header h1 {
+	color: #73c3f6;
+	font-size: 23px;
+	font-weight: 400;
+	margin: -27px 10px 0 18px;
+	line-height: 24px;
+	text-align: left;
+}
+/* This line needs to be fixed */
 
+#header font {
+	color: #f2fcf7;
+	font-size: 18px;
+}
 
-        .container     { margin: 0 auto; padding: 0px;}
+/*google search bar*/
+#google_search {
+	width: 400px;
+	float: right;
+	top: 0px;
+}
+#google_bar {
+	display: inline-block;
+	float: right;
+}
+/* Header elements */
+#bigp {
+	font-size: 52px;
+	font-weight: 300;
+	letter-spacing: -10px;
+	color: #73c3f6;
+}
+#diceimg {
+	width: 120px;
+	height: 91px;
+	margin: -40px 0 -20px -40px;
+}
+#robability {
+	color: #73c3f6;
+}
+a.nostyle {
+	text-decoration: none;
+}
+#logo_image {
+	margin-left: 20px;
+	margin-top: 7px;
+	float: left;
+	width: 570px;
+}
 
-        .login_container     { margin: 0 auto; width: 100px; height: 25px; line-height: 25px;cursor: pointer; }
+#wrapper {
+	margin-top: 29px;
+	background-image: url(//www.probabilitycourse.com/images/Template/container.jpg);
+	background-repeat: repeat-x;
+}
+#wrapper {
+	background-image: url(//www.probabilitycourse.com/images/Template/container.jpg);
+	background-repeat: repeat-x;
+}
+/* Content Style */
+#content {
+	background-image: url(//www.probabilitycourse.com/images/Template/container.jpg);
+	background-repeat: repeat-x;
+	text-align: justify;
+	min-height: 250px;
+	padding-right: 70px;
+	padding-top: 14px;
+}
+#content p {
+	background-attachment: fixed;
+}
 
-        .login_container     { color: #fff;}
+/*#navigation_wrapper     { height: 36px; background: #014148; clear: both;  font-size: 16px;  margin-bottom: 0; top: 0; position:relative;}*/
 
-        .login_extended     { width: 170px; height: 150px; display: none; background-color: #014148; position: absolute; color: #f2fcf7; margin-top: 5px; right: 0px; text-align:center;border-bottom-right-radius: 10% 10%; border-bottom-left-radius: 10% 10%; font-weight: bold; font-size: 15px; font-family: serif; z-index: 9999;}
-		.login_extended a	{ position: relative; bottom:5px; }
-		
-		
-		.instructor_container     { margin: 0 auto; width: 100px; height: 25px; line-height: 25px;cursor: pointer;  }
-        .instructor_extended     { width: 160px; height: 100px; display: none; background-color: #014148; position: absolute; color: #f2fcf7; margin-top: 1px; right: 594px; text-align:center;border-bottom-right-radius: 10% 10%; border-bottom-left-radius: 10% 10%; font-weight: bold; font-size: 15px; font-family: serif; }
-		.instructor_extended a	{ position: relative; margin-left: 5px; margin-right:5px; padding-top: 10px; line-height: 2%;}		
-		.instructor_extended span	{ position: relative; top: 10px; margin-bottom:5px; line-height: 25px; display: inline-block;}
-		
-		
-		
-		#menu_button{display:none;}
-		#mobile_menu {display:none;}
-		
-		#menu           {font-size: 15px; line-height: 18px; margin-top: 45px; margin-left: 20px; border: 4px outset; border-color: black #73c3f6 ; margin-bottom: 10px;}
-        #menu ul	    { cursor:pointer; list-style: none; margin:0px; padding: 0px}
-        #menu ul a      { background: #d9d0c2; color: #000; display: block; line-height: 18px; padding: 7px 5px; }
-        #menu ul ul     { display:none;}
-        #menu ul ul a   { background: #416e8b; color: #000; padding: 7px 15px; }
-        #menu ul ul ul a { background: #d9e5eb; color: #353535; padding: 7px 7px 7px 25px; }
-        #menu a:hover   { background: #014148; color: #eee; }
-        #menu .active   { font-weight:bold; }
-        
-        #menu_risk           {font-size: 15px; line-height: 18px; margin-top: 45px; margin-left: 20px; border: 4px outset; border-color: black #73c3f6 ; margin-bottom: 10px;}
-        #menu_risk ul	    { cursor:pointer; list-style: none; margin:0px; padding: 0px}
-        #menu_risk ul a      { background: #1a4e36; color: #FFF; display: block; line-height: 18px; padding: 7px 5px; }
-        #menu_risk ul ul     { display:none;}
-        #menu_risk ul ul a   { background: #f3ebdb; color: #000; padding: 7px 15px; }
-        #menu_risk ul ul ul a { background: #d9e5eb; color: #353535; padding: 7px 7px 7px 25px; }
-        #menu_risk a:hover   { background: #014148; color: #eee; }
-        #menu_risk .active   { font-weight:bold; }
-        
-        #footer			{ background: url(//www.probabilitycourse.com/images/Template/HeaderBg.png) repeat-x; /*background: #014148; border-bottom: 2px solid #999; */ clear: both; font-size: 13px;}
-		#footer a		{ color: #eee; }
-		#footer	p		{ color: #ccc; margin: 0; padding: 10px 18px 10px; }
-        
-		#sticker {
-			padding:20px;
-			margin:100px 0;
-			background:#AAA;
-			width:190px;
-			max-height: 50%;
-			
-		}
-		
-		@media only screen 
-		and (min-width : 1400px) {	
-			.stick {
-				position:fixed;
-				top:0px;
-			}
-			#menu {
-				overflow : auto;
-				max-height: 525px;
-			}
-			#menu_risk {
-				overflow : auto;
-				max-height: 525px;
-			}
-		}
-		
+#navigation {
+	height: 36px;
+	background: #014148;
+	clear: both;
+	font-size: 16px;
+	font-family: sans-serif;
+	font-weight: bold;
+	width: 1175px;
+	margin-bottom: 0 auto;
+	z-index: 9999;
+	margin-top: 0px;
+}
+#navigation a {
+	color: #f2fcf7;
+	text-decoration: none;
+}
+#navigation a:hover {
+	color: #73c3f6;
+	font-family: sans-serif;
+	font-weight: bold;
+}
 
-		::-webkit-scrollbar {
-			width: 12px;
-		}
- 
-		::-webkit-scrollbar-track {
-			-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3); 
-			border-radius: 10px;
-		}
- 
-		::-webkit-scrollbar-thumb {
-			border-radius: 10px;
-			-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5); 
-		}
-		
-        .thinblock       { padding: 10px 0 10px; }
-        
-        .solvedprob     { }
-        .solvedprob ul  { cursor:pointer; list-style: none; margin-bottom: 30px; padding: 0px;}
-        .solvedprob ul ul { display:none; margin-top: 30px}
-        .solvedprob ul a { /*background: #F4F4F4;*/ background: #d9e5eb; color: green; /*color: #353535;*/ padding: 7px 15px; border: 1px solid #8E8E8E}
-        
-        .extendlist           { line-height: 33px; text-decoration:underline}
-        .extendlist ul		  { cursor:pointer; list-style: none; margin:0px; padding: 0px}
-        .extendlist ul a      { padding: 7px 5px; }
-        .extendlist ul ul     { display:none;}
-        .extendlist ul ul a   { padding: 7px 40px; }
-        
-        .video          { }
-        .video ul       { cursor:pointer; list-style: none; padding: 0px}
-        .video ul ul    { display:none; margin-top: 20px; }
-       		
-		/* Content Positioning and Size */
-		#menu            { float: left; width: 250px;  }
-		#menu_risk       { float: left; width: 250px;  }
-		#content		 { float: right; width: 800px; }
-	   	#no_menu_content {width:90%; }
-        
-        .demo-container {
-        	box-sizing: border-box;
-        	width: 600px;
-        	height: 450px;
-        	padding: 20px 15px 15px 15px;
-        	margin: 15px auto 30px auto;
-        	border: 1px solid #ddd;
-        	background: #fff;
-        	background: linear-gradient(#f6f6f6 0, #fff 50px);
-        	background: -o-linear-gradient(#f6f6f6 0, #fff 50px);
-        	background: -ms-linear-gradient(#f6f6f6 0, #fff 50px);
-        	background: -moz-linear-gradient(#f6f6f6 0, #fff 50px);
-        	background: -webkit-linear-gradient(#f6f6f6 0, #fff 50px);
-        	box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-        	-o-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        	-ms-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        	-moz-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        	-webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-        }
+#navigation ul {
+	list-style: none;
+	margin: 0 0 0 28px;
+	padding: 5px 0 0 0;
+}
+#navigation li {
+	display: inline;
+	padding: 0 20px 0 0;
+}
 
-        .demo-placeholder {width: 100%; height: 100%;; font-size: 14px; line-height: 1.2em; }
-        
-        #placeholder .button { position: absolute; cursor: pointer; }
+#nameuser {
+	color: #88ffff;
+	font-family: cursive;
+	font-size: 18px;
+}
 
-	    #placeholder div.button { padding: 0px; }
+#right {
+	display: inline;
+	float: right;
+}
+#right p:hover {
+	color: #73c3f6;
+	font-family: sans-serif;
+	font-weight: bold;
+}
 
-        .legend table { border-spacing: 5px; }
-		
-        .link_button { background:none; color:#337810; border: none; cursor: pointer;}
+#left {
+	display: inline;
+	float: left;
+}
 
-        label {display: inline-block; width: 5em; }
-		
-		/*Youtube window styles in video section  */
-		#youtube {width:640px; height:360px;}
-		
-		
-		/*Sign up form from book request page*/
-		#signup_form      { width: 600px; margin: 0 auto;  padding-bottom: 10px; }
-		fieldset {width: 550px;}
-		label {display: inline;  text-align: left; width: 250px; margin-right: 50px;}
-		
-		
-		
-		
-		
-		
-#printButton { cursor: pointer; }
-.mobile { display: none; }
-.no_mobile { display: block; }
+.container {
+	margin: 0 auto;
+	padding: 0px;
+}
 
+.login_container {
+	margin: 0 auto;
+	width: 100px;
+	height: 25px;
+	line-height: 25px;
+	cursor: pointer;
+}
+
+.login_container {
+	color: #fff;
+}
+
+.login_extended {
+	width: 170px;
+	height: 150px;
+	display: none;
+	background-color: #014148;
+	position: absolute;
+	color: #f2fcf7;
+	margin-top: 5px;
+	right: 0px;
+	text-align: center;
+	border-bottom-right-radius: 10% 10%;
+	border-bottom-left-radius: 10% 10%;
+	font-weight: bold;
+	font-size: 15px;
+	font-family: serif;
+	z-index: 9999;
+}
+.login_extended a {
+	position: relative;
+	bottom: 5px;
+}
+
+.instructor_container {
+	margin: 0 auto;
+	width: 100px;
+	height: 25px;
+	line-height: 25px;
+	cursor: pointer;
+}
+.instructor_extended {
+	width: 160px;
+	height: 100px;
+	display: none;
+	background-color: #014148;
+	position: absolute;
+	color: #f2fcf7;
+	margin-top: 1px;
+	right: 594px;
+	text-align: center;
+	border-bottom-right-radius: 10% 10%;
+	border-bottom-left-radius: 10% 10%;
+	font-weight: bold;
+	font-size: 15px;
+	font-family: serif;
+}
+.instructor_extended a {
+	position: relative;
+	margin-left: 5px;
+	margin-right: 5px;
+	padding-top: 10px;
+	line-height: 2%;
+}
+.instructor_extended span {
+	position: relative;
+	top: 10px;
+	margin-bottom: 5px;
+	line-height: 25px;
+	display: inline-block;
+}
+
+#menu_button {
+	display: none;
+}
+#mobile_menu {
+	display: none;
+}
+
+#menu {
+	font-size: 15px;
+	line-height: 18px;
+	margin-top: 45px;
+	margin-left: 20px;
+	border: 4px outset;
+	border-color: black #73c3f6;
+	margin-bottom: 10px;
+}
+#menu ul {
+	cursor: pointer;
+	list-style: none;
+	margin: 0px;
+	padding: 0px;
+}
+#menu ul a {
+	background: #d9d0c2;
+	color: #000;
+	display: block;
+	line-height: 18px;
+	padding: 7px 5px;
+}
+#menu ul ul {
+	display: none;
+}
+#menu ul ul a {
+	background: #416e8b;
+	color: #000;
+	padding: 7px 15px;
+}
+#menu ul ul ul a {
+	background: #d9e5eb;
+	color: #353535;
+	padding: 7px 7px 7px 25px;
+}
+#menu a:hover {
+	background: #014148;
+	color: #eee;
+}
+#menu .active {
+	font-weight: bold;
+}
+
+#menu_risk {
+	font-size: 15px;
+	line-height: 18px;
+	margin-top: 45px;
+	margin-left: 20px;
+	border: 4px outset;
+	border-color: black #73c3f6;
+	margin-bottom: 10px;
+}
+#menu_risk ul {
+	cursor: pointer;
+	list-style: none;
+	margin: 0px;
+	padding: 0px;
+}
+#menu_risk ul a {
+	background: #1a4e36;
+	color: #fff;
+	display: block;
+	line-height: 18px;
+	padding: 7px 5px;
+}
+#menu_risk ul ul {
+	display: none;
+}
+#menu_risk ul ul a {
+	background: #f3ebdb;
+	color: #000;
+	padding: 7px 15px;
+}
+#menu_risk ul ul ul a {
+	background: #d9e5eb;
+	color: #353535;
+	padding: 7px 7px 7px 25px;
+}
+#menu_risk a:hover {
+	background: #014148;
+	color: #eee;
+}
+#menu_risk .active {
+	font-weight: bold;
+}
+
+#footer {
+	background: url(//www.probabilitycourse.com/images/Template/HeaderBg.png) repeat-x; /*background: #014148; border-bottom: 2px solid #999; */
+	clear: both;
+	font-size: 13px;
+}
+#footer a {
+	color: #eee;
+}
+#footer p {
+	color: #ccc;
+	margin: 0;
+	padding: 10px 18px 10px;
+}
+
+#sticker {
+	padding: 20px;
+	margin: 100px 0;
+	background: #aaa;
+	width: 190px;
+	max-height: 50%;
+}
+
+@media only screen and (min-width: 1400px) {
+	.stick {
+		position: fixed;
+		top: 0px;
+	}
+	#menu {
+		overflow: auto;
+		max-height: 525px;
+	}
+	#menu_risk {
+		overflow: auto;
+		max-height: 525px;
+	}
+}
+
+::-webkit-scrollbar {
+	width: 12px;
+}
+
+::-webkit-scrollbar-track {
+	-webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+	border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+	border-radius: 10px;
+	-webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+}
+
+.thinblock {
+	padding: 10px 0 10px;
+}
+
+.solvedprob {
+}
+.solvedprob ul {
+	cursor: pointer;
+	list-style: none;
+	margin-bottom: 30px;
+	padding: 0px;
+}
+.solvedprob ul ul {
+	display: none;
+	margin-top: 30px;
+}
+.solvedprob ul a {
+	/*background: #F4F4F4;*/
+	background: #d9e5eb;
+	color: green; /*color: #353535;*/
+	padding: 7px 15px;
+	border: 1px solid #8e8e8e;
+}
+
+.extendlist {
+	line-height: 33px;
+	text-decoration: underline;
+}
+.extendlist ul {
+	cursor: pointer;
+	list-style: none;
+	margin: 0px;
+	padding: 0px;
+}
+.extendlist ul a {
+	padding: 7px 5px;
+}
+.extendlist ul ul {
+	display: none;
+}
+.extendlist ul ul a {
+	padding: 7px 40px;
+}
+
+.video {
+}
+.video ul {
+	cursor: pointer;
+	list-style: none;
+	padding: 0px;
+}
+.video ul ul {
+	display: none;
+	margin-top: 20px;
+}
+
+/* Content Positioning and Size */
+#menu {
+	float: left;
+	width: 250px;
+}
+#menu_risk {
+	float: left;
+	width: 250px;
+}
+#content {
+	float: right;
+	width: 800px;
+}
+#no_menu_content {
+	width: 90%;
+}
+
+.demo-container {
+	box-sizing: border-box;
+	width: 600px;
+	height: 450px;
+	padding: 20px 15px 15px 15px;
+	margin: 15px auto 30px auto;
+	border: 1px solid #ddd;
+	background: #fff;
+	background: linear-gradient(#f6f6f6 0, #fff 50px);
+	background: -o-linear-gradient(#f6f6f6 0, #fff 50px);
+	background: -ms-linear-gradient(#f6f6f6 0, #fff 50px);
+	background: -moz-linear-gradient(#f6f6f6 0, #fff 50px);
+	background: -webkit-linear-gradient(#f6f6f6 0, #fff 50px);
+	box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+	-o-box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+	-ms-box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+	-moz-box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+	-webkit-box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.demo-placeholder {
+	width: 100%;
+	height: 100%;
+	font-size: 14px;
+	line-height: 1.2em;
+}
+
+#placeholder .button {
+	position: absolute;
+	cursor: pointer;
+}
+
+#placeholder div.button {
+	padding: 0px;
+}
+
+.legend table {
+	border-spacing: 5px;
+}
+
+.link_button {
+	background: none;
+	color: #337810;
+	border: none;
+	cursor: pointer;
+}
+
+label {
+	display: inline-block;
+	width: 5em;
+}
+
+/*Youtube window styles in video section  */
+#youtube {
+	width: 640px;
+	height: 360px;
+}
+
+/*Sign up form from book request page*/
+#signup_form {
+	width: 600px;
+	margin: 0 auto;
+	padding-bottom: 10px;
+}
+fieldset {
+	width: 550px;
+}
+label {
+	display: inline;
+	text-align: left;
+	width: 250px;
+	margin-right: 50px;
+}
+
+#printButton {
+	cursor: pointer;
+}
+.mobile {
+	display: none;
+}
+.no_mobile {
+	display: block;
+}
 
 /* Content Boxes */
 .cbox {
@@ -241,955 +598,961 @@ html, body 		{ margin: 0; padding: 0; }
 }
 
 #floating-dice {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 60px;
-    height: 60px;
-    background: var(--dice-bg-color, #337810);
-    border-radius: 50%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    cursor: pointer;
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    border: 3px solid #fff;
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	width: 60px;
+	height: 60px;
+	background: var(--dice-bg-color, #337810);
+	border-radius: 50%;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+	cursor: pointer;
+	z-index: 9999;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.3s ease;
+	border: 3px solid #fff;
 }
 
-
 #floating-dice:hover {
-    transform: scale(1.1) rotate(5deg);
-    background: var(--dice-hover-color, #2a6209);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+	transform: scale(1.1) rotate(5deg);
+	background: var(--dice-hover-color, #2a6209);
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 #floating-dice img {
-    width: 35px;
-    height: 35px;
-    filter: var(--dice-icon-filter, invert(1) brightness(2));
-    transition: transform 0.3s ease;
+	width: 35px;
+	height: 35px;
+	filter: var(--dice-icon-filter, invert(1) brightness(2));
+	transition: transform 0.3s ease;
 }
 
 #floating-dice:hover img {
-    transform: rotate(-5deg);
+	transform: rotate(-5deg);
 }
 
 #settings-trigger {
-    position: fixed;
-    bottom: 90px;
-    right: 20px;
-    width: 40px;
-    height: 40px;
-    background: #666;
-    border-radius: 50%;
-    cursor: pointer;
-    z-index: 9998;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    color: white;
-    transition: all 0.3s ease;
+	position: fixed;
+	bottom: 90px;
+	right: 20px;
+	width: 40px;
+	height: 40px;
+	background: #666;
+	border-radius: 50%;
+	cursor: pointer;
+	z-index: 9998;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 18px;
+	color: white;
+	transition: all 0.3s ease;
 }
 
 #dice-settings {
-    position: fixed;
-    bottom: 90px;
-    right: 20px;
-    width: 280px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-    padding: 20px;
-    z-index: 10000;
-    display: none;
-    border: 1px solid #ddd;
+	position: fixed;
+	bottom: 90px;
+	right: 20px;
+	width: 280px;
+	background: white;
+	border-radius: 12px;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+	padding: 20px;
+	z-index: 10000;
+	display: none;
+	border: 1px solid #ddd;
 }
 
 #dice-settings.show {
-    display: block;
+	display: block;
 }
 
 .setting-group {
-    margin-bottom: 15px;
+	margin-bottom: 15px;
 }
 
 .setting-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+	display: block;
+	margin-bottom: 5px;
+	font-weight: bold;
 }
 
-.setting-group input, .setting-group button {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+.setting-group input,
+.setting-group button {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
 }
 /* ADD these new styles - don't replace anything */
 .setting-group button {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin-bottom: 5px;
-    background: #f5f5f5;
-    cursor: pointer;
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	margin-bottom: 5px;
+	background: #f5f5f5;
+	cursor: pointer;
 }
 
 .setting-group button:hover {
-    background: #e0e0e0;
+	background: #e0e0e0;
 }
 
 #reset-all {
-    background: #ff6b6b;
-    color: white;
+	background: #ff6b6b;
+	color: white;
 }
 
 #reset-all:hover {
-    background: #ff5252;
+	background: #ff5252;
 }
 @media only screen and (max-device-width: 750px) {
-    #floating-dice {
-        width: 50px;
-        height: 50px;
-        bottom: 15px;
-        right: 15px;
-    }
-    
-    #floating-dice img {
-        width: 28px;
-        height: 28px;
-    }
+	#floating-dice {
+		width: 50px;
+		height: 50px;
+		bottom: 15px;
+		right: 15px;
+	}
+
+	#floating-dice img {
+		width: 28px;
+		height: 28px;
+	}
 }
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
 }
 body {
-    background: url(//www.probabilitycourse.com/images/Template/newbackground.png);
-    font-family: "Myriad Pro", Verdana, Geneva, Arial, sans-serif;
-    color: #333;
-    height: 100vh;
-    overflow: hidden;
+	background: url(//www.probabilitycourse.com/images/Template/newbackground.png);
+	font-family: 'Myriad Pro', Verdana, Geneva, Arial, sans-serif;
+	color: #333;
+	height: 100vh;
+	overflow: hidden;
 }
 .tutor-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    background-color: #649847;
-    position: relative;
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	background-color: #649847;
+	position: relative;
 }
 .tutor-header {
-    background: linear-gradient(135deg, #0d5a47);
-    color: #ffffff;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0 2px 10px rgba(237, 234, 234, 0.2);
-    position: relative;
-    z-index: 100;
+	background: linear-gradient(135deg, #0d5a47);
+	color: #ffffff;
+	padding: 20px;
+	text-align: center;
+	box-shadow: 0 2px 10px rgba(237, 234, 234, 0.2);
+	position: relative;
+	z-index: 100;
 }
 .tutor-header h1 {
-    font-size: 2.5em;
-    margin-bottom: 10px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-    color: #ffffff;
-    font-weight: bold;
+	font-size: 2.5em;
+	margin-bottom: 10px;
+	text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+	color: #ffffff;
+	font-weight: bold;
 }
 .tutor-header p {
-    font-size: 1.2em;
-    color: #e8f5e8;
-    font-weight: 500;
+	font-size: 1.2em;
+	color: #e8f5e8;
+	font-weight: 500;
 }
 .close-button {
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    background: rgba(255,255,255,0.2);
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1.1em;
-    transition: background 0.3s ease;
+	position: absolute;
+	top: 15px;
+	right: 20px;
+	background: rgba(255, 255, 255, 0.2);
+	color: white;
+	border: none;
+	padding: 8px 12px;
+	border-radius: 5px;
+	cursor: pointer;
+	font-size: 1.1em;
+	transition: background 0.3s ease;
 }
 .close-button:hover {
-    background: rgba(255,255,255,0.3);
+	background: rgba(255, 255, 255, 0.3);
 }
 .main-content {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
+	display: flex;
+	flex: 1;
+	overflow: hidden;
 }
 .chat-section {
-    width: 400px;
-    background: white;
-    border-right: 2px solid #ddd;
-    display: flex;
-    flex-direction: column;
+	width: 400px;
+	background: white;
+	border-right: 2px solid #ddd;
+	display: flex;
+	flex-direction: column;
 }
 .chat-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
 }
 .chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    background: #fafafa;
+	flex: 1;
+	overflow-y: auto;
+	padding: 20px;
+	background: #fafafa;
 }
 .message {
-    display: flex;
-    margin-bottom: 20px;
-    align-items: flex-start;
+	display: flex;
+	margin-bottom: 20px;
+	align-items: flex-start;
 }
 .bot-message {
-    justify-content: flex-start;
+	justify-content: flex-start;
 }
 .user-message {
-    justify-content: flex-end;
+	justify-content: flex-end;
 }
 .message-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2em;
-    margin: 0 10px;
-    flex-shrink: 0;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.2em;
+	margin: 0 10px;
+	flex-shrink: 0;
 }
 .bot-message .message-avatar {
-    background: #014148;
+	background: #014148;
 }
 .user-message .message-avatar {
-    background: #337810;
-    order: 2;
+	background: #337810;
+	order: 2;
 }
 .message-content {
-    max-width: 280px;
-    padding: 12px 16px;
-    border-radius: 18px;
-    line-height: 1.4;
+	max-width: 280px;
+	padding: 12px 16px;
+	border-radius: 18px;
+	line-height: 1.4;
 }
 .bot-message .message-content {
-    background: #e8f4fd;
-    border-bottom-left-radius: 4px;
+	background: #e8f4fd;
+	border-bottom-left-radius: 4px;
 }
 .user-message .message-content {
-    background: #337810;
-    color: white;
-    border-bottom-right-radius: 4px;
-    order: 1;
+	background: #337810;
+	color: white;
+	border-bottom-right-radius: 4px;
+	order: 1;
 }
 .typing-animation {
-    animation: fadeIn 1s ease-in;
+	animation: fadeIn 1s ease-in;
 }
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
 .message-content ul {
-    margin: 10px 0;
-    padding-left: 20px;
+	margin: 10px 0;
+	padding-left: 20px;
 }
 .message-content li {
-    margin: 5px 0;
+	margin: 5px 0;
 }
 .chat-input-container {
-    display: flex;
-    gap: 10px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-top: 1px solid #e9ecef;
-    align-items: center; /* Add this */
-    flex-shrink: 0; /* Add this */
+	display: flex;
+	gap: 10px;
+	padding: 15px;
+	background: #f8f9fa;
+	border-top: 1px solid #e9ecef;
+	align-items: center; /* Add this */
+	flex-shrink: 0; /* Add this */
 }
 .chat-input-container input {
-    flex: 1; /* Make input flexible */
-    padding: 12px 15px;
-    border: 1px solid #ddd;
-    border-radius: 25px;
-    outline: none;
-    min-width: 0; /* Add this for proper flex behavior */
+	flex: 1; /* Make input flexible */
+	padding: 12px 15px;
+	border: 1px solid #ddd;
+	border-radius: 25px;
+	outline: none;
+	min-width: 0; /* Add this for proper flex behavior */
 }
 .chat-input-container button {
-    flex-shrink: 0; /* Prevent button from shrinking */
-    padding: 12px 20px;
-    background: #007bff;
-    color: white;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    white-space: nowrap; /* Prevent text wrapping */
+	flex-shrink: 0; /* Prevent button from shrinking */
+	padding: 12px 20px;
+	background: #007bff;
+	color: white;
+	border: none;
+	border-radius: 25px;
+	cursor: pointer;
+	white-space: nowrap; /* Prevent text wrapping */
 }
 #chatInput {
-    flex: 1;
-    padding: 12px 16px;
-    border: 2px solid #ddd;
-    border-radius: 25px;
-    font-size: 14px;
-    outline: none;
-    transition: border-color 0.3s ease;
+	flex: 1;
+	padding: 12px 16px;
+	border: 2px solid #ddd;
+	border-radius: 25px;
+	font-size: 14px;
+	outline: none;
+	transition: border-color 0.3s ease;
 }
 #chatInput:focus {
-    border-color: #337810;
+	border-color: #337810;
 }
 #sendButton {
-    margin-left: 10px;
-    padding: 12px 20px;
-    background: #337810;
-    color: white;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background 0.3s ease;
+	margin-left: 10px;
+	padding: 12px 20px;
+	background: #337810;
+	color: white;
+	border: none;
+	border-radius: 25px;
+	cursor: pointer;
+	font-weight: bold;
+	transition: background 0.3s ease;
 }
 #sendButton:hover {
-    background: #2a6209;
+	background: #2a6209;
 }
 .whiteboard-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background: white;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	background: white;
 }
 .whiteboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #ddd;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 15px 20px;
+	background: #f8f9fa;
+	border-bottom: 1px solid #ddd;
 }
 .whiteboard-header h3 {
-    color: #333;
-    font-size: 1.3em;
+	color: #333;
+	font-size: 1.3em;
 }
 .whiteboard-controls {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap; /* Add this */
-    align-items: center; /* Add this */
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap; /* Add this */
+	align-items: center; /* Add this */
 }
 
 .whiteboard-controls button {
-    padding: 8px 15px;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    flex-shrink: 0; /* Prevent shrinking */
-    white-space: nowrap; /* Prevent text wrapping */
+	padding: 8px 15px;
+	border: 1px solid #ddd;
+	background: white;
+	border-radius: 5px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	flex-shrink: 0; /* Prevent shrinking */
+	white-space: nowrap; /* Prevent text wrapping */
 }
 .whiteboard-controls button:hover {
-    background: #014148;
-    color: white;
+	background: #014148;
+	color: white;
 }
 .whiteboard-container {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
+	flex: 1;
+	position: relative;
+	overflow: hidden;
 }
 #whiteboard {
-    width: 100%;
-    height: 100%;
-    cursor: crosshair;
-    background: white;
+	width: 100%;
+	height: 100%;
+	cursor: crosshair;
+	background: white;
 }
 #chartContainer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: white;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: white;
 }
 .loading-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 10px;
-    position: fixed; /* Change from absolute to fixed */
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1000;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    flex-shrink: 0; /* Add this */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	padding: 20px;
+	background: rgba(255, 255, 255, 0.95);
+	border-radius: 10px;
+	position: fixed; /* Change from absolute to fixed */
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 1000;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+	flex-shrink: 0; /* Add this */
 }
 .spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #337810;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+	width: 20px;
+	height: 20px;
+	border: 2px solid #f3f3f3;
+	border-top: 2px solid #337810;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
 }
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
 }
 .chat-messages::-webkit-scrollbar {
-    width: 6px;
+	width: 6px;
 }
 .chat-messages::-webkit-scrollbar-track {
-    background: #f1f1f1;
+	background: #f1f1f1;
 }
 .chat-messages::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 3px;
+	background: #ccc;
+	border-radius: 3px;
 }
 .chat-messages::-webkit-scrollbar-thumb:hover {
-    background: #999;
+	background: #999;
 }
 @media (max-width: 900px) {
-    .main-content {
-        flex-direction: column;
-    }
-    .chat-section {
-        width: 100%;
-        height: 40%;
-    }
-    .whiteboard-section {
-        height: 60%;
-    }
-    .tutor-header h1 {
-        font-size: 2em;
-    }
+	.main-content {
+		flex-direction: column;
+	}
+	.chat-section {
+		width: 100%;
+		height: 40%;
+	}
+	.whiteboard-section {
+		height: 60%;
+	}
+	.tutor-header h1 {
+		font-size: 2em;
+	}
 }
 .slide-in {
-    animation: slideIn 0.5s ease-out;
+	animation: slideIn 0.5s ease-out;
 }
 @keyframes slideIn {
-    from {
-        transform: translateY(20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+	from {
+		transform: translateY(20px);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
 }
 
 /* Resize handle for chat section */
 .resize-handle {
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 8px;
-    height: 100%;
-    background: #ddd;
-    cursor: col-resize;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    color: #999;
-    z-index: 1000;
-    transition: background 0.2s ease;
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 8px;
+	height: 100%;
+	background: #ddd;
+	cursor: col-resize;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	color: #999;
+	z-index: 1000;
+	transition: background 0.2s ease;
 }
 
 .resize-handle:hover {
-    background: #bbb;
-    color: #666;
+	background: #bbb;
+	color: #666;
 }
 
 .resize-handle:active {
-    background: #337810;
-    color: white;
+	background: #337810;
+	color: white;
 }
 
 /* Make chat section position relative to contain the resize handle */
 .chat-section {
-    position: relative;
+	position: relative;
 }
 
 /* Ensure main content uses flexbox properly for resizing */
 .main-content {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
+	display: flex;
+	flex: 1;
+	overflow: hidden;
 }
 
 .chat-section {
-    flex: 0 0 400px; /* Keep this as default */
-    position: relative;
-    min-width: 200px;
-    max-width: calc(100vw - 300px);
+	flex: 0 0 400px; /* Keep this as default */
+	position: relative;
+	min-width: 200px;
+	max-width: calc(100vw - 300px);
 }
 
 /* Whiteboard Tabs Styling */
 .whiteboard-tabs {
-    display: flex;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e9ecef;
-    flex-wrap: wrap; /* Add this for small screens */
-    gap: 2px; /* Add small gap */
+	display: flex;
+	background: #f8f9fa;
+	border-bottom: 1px solid #e9ecef;
+	flex-wrap: wrap; /* Add this for small screens */
+	gap: 2px; /* Add small gap */
 }
 
 .tab-button {
-    flex: 1; /* Make tabs flexible */
-    padding: 12px 20px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    white-space: nowrap; /* Prevent text wrapping */
-    min-width: 0; /* Allow shrinking if needed */
+	flex: 1; /* Make tabs flexible */
+	padding: 12px 20px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	white-space: nowrap; /* Prevent text wrapping */
+	min-width: 0; /* Allow shrinking if needed */
 }
 
 .tab-button:last-child {
-    border-right: none;
+	border-right: none;
 }
 
 .tab-button:hover {
-    background: #dee2e6;
+	background: #dee2e6;
 }
 
 .tab-button.active {
-    background: #014148;
-    color: white;
-    font-weight: bold;
+	background: #014148;
+	color: white;
+	font-weight: bold;
 }
 
 /* Whiteboard Panel Styling */
 .whiteboard-panel {
-    display: none;
-    flex-direction: column;
-    height: 100%;
+	display: none;
+	flex-direction: column;
+	height: 100%;
 }
 
 .whiteboard-panel.active {
-    display: flex;
+	display: flex;
 }
 
 .whiteboard-canvas {
-    width: 100%;
-    height: 100%;
-    cursor: crosshair;
-    background: white;
+	width: 100%;
+	height: 100%;
+	cursor: crosshair;
+	background: white;
 }
 
 /* Whiteboard Panel Styling */
 .whiteboard-panel {
-    display: none;
-    flex-direction: column;
-    height: 100%;
+	display: none;
+	flex-direction: column;
+	height: 100%;
 }
 
 .whiteboard-panel.active {
-    display: flex;
+	display: flex;
 }
 
 .whiteboard-canvas {
-    width: 100%;
-    height: 100%;
-    cursor: crosshair;
-    background: white;
+	width: 100%;
+	height: 100%;
+	cursor: crosshair;
+	background: white;
 }
 
 /* Notes Panel Styling */
 .notes-container {
-    flex: 1;
-    padding: 20px;
-    background: white;
-    overflow: hidden;
+	flex: 1;
+	padding: 20px;
+	background: white;
+	overflow: hidden;
 }
 
 #studentNotes {
-    width: 100%;
-    height: 100%;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 16px;
-    font-family: "Myriad Pro", Verdana, Geneva, Arial, sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
-    resize: none;
-    outline: none;
-    background: #fafafa;
-    transition: border-color 0.3s ease, background-color 0.3s ease;
+	width: 100%;
+	height: 100%;
+	border: 2px solid #e0e0e0;
+	border-radius: 8px;
+	padding: 16px;
+	font-family: 'Myriad Pro', Verdana, Geneva, Arial, sans-serif;
+	font-size: 14px;
+	line-height: 1.6;
+	resize: none;
+	outline: none;
+	background: #fafafa;
+	transition: border-color 0.3s ease, background-color 0.3s ease;
 }
 
 #studentNotes:focus {
-    border-color: #337810;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(51, 120, 16, 0.1);
+	border-color: #337810;
+	background: white;
+	box-shadow: 0 0 0 3px rgba(51, 120, 16, 0.1);
 }
 
 #studentNotes::placeholder {
-    color: #999;
-    font-style: italic;
+	color: #999;
+	font-style: italic;
 }
 
 /* Scrollbar styling for notes */
 #studentNotes::-webkit-scrollbar {
-    width: 8px;
+	width: 8px;
 }
 
 #studentNotes::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
+	background: #f1f1f1;
+	border-radius: 4px;
 }
 
 #studentNotes::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 4px;
+	background: #ccc;
+	border-radius: 4px;
 }
 
 #studentNotes::-webkit-scrollbar-thumb:hover {
-    background: #999;
+	background: #999;
 }
 
 /* Whiteboard Panel Styling */
 .whiteboard-panel {
-    display: none;
-    flex-direction: column;
-    height: 100%;
+	display: none;
+	flex-direction: column;
+	height: 100%;
 }
 
 .whiteboard-panel.active {
-    display: flex;
+	display: flex;
 }
 
 .whiteboard-canvas {
-    width: 100%;
-    height: 100%;
-    cursor: crosshair;
-    background: white;
+	width: 100%;
+	height: 100%;
+	cursor: crosshair;
+	background: white;
 }
 
 /* Notes Panel Styling - Notebook Design */
 .notebook-container {
-    flex: 1;
-    padding: 20px;
-    background: #f5f5f5;
-    background-image: 
-        linear-gradient(90deg, #e8e8e8 1px, transparent 1px),
-        linear-gradient(#e8e8e8 1px, transparent 1px);
-    background-size: 20px 20px;
-    overflow: hidden;
+	flex: 1;
+	padding: 20px;
+	background: #f5f5f5;
+	background-image: linear-gradient(90deg, #e8e8e8 1px, transparent 1px), linear-gradient(#e8e8e8 1px, transparent 1px);
+	background-size: 20px 20px;
+	overflow: hidden;
 }
 
 .notebook-paper {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 
-        0 4px 8px rgba(0,0,0,0.1),
-        inset 0 0 0 1px #e0e0e0;
-    overflow: hidden;
-    /* Add the red margin line */
-    background-image: 
-        linear-gradient(to right, #ff6b6b 40px, transparent 40px),
-        repeating-linear-gradient(
-            transparent,
-            transparent 29px,
-            #e8f4f8 29px,
-            #e8f4f8 30px
-        );
-    background-size: 100% 100%, 100% 30px;
+	position: relative;
+	width: 100%;
+	height: 100%;
+	background: white;
+	border-radius: 8px;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), inset 0 0 0 1px #e0e0e0;
+	overflow: hidden;
+	/* Add the red margin line */
+	background-image: linear-gradient(to right, #ff6b6b 40px, transparent 40px),
+		repeating-linear-gradient(transparent, transparent 29px, #e8f4f8 29px, #e8f4f8 30px);
+	background-size: 100% 100%, 100% 30px;
 }
 
 .notebook-paper::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 40px;
-    background: linear-gradient(to right, 
-        rgba(255,107,107,0.1) 0%, 
-        rgba(255,107,107,0.05) 100%
-    );
-    border-right: 2px solid #ff6b6b;
-    z-index: 1;
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 40px;
+	background: linear-gradient(to right, rgba(255, 107, 107, 0.1) 0%, rgba(255, 107, 107, 0.05) 100%);
+	border-right: 2px solid #ff6b6b;
+	z-index: 1;
 }
 
 /* Notebook mode toggle */
 .notebook-mode-toggle {
-    display: flex;
-    background: #f0f0f0;
-    border-radius: 20px;
-    overflow: hidden;
-    flex-shrink: 0; /* Add this */
+	display: flex;
+	background: #f0f0f0;
+	border-radius: 20px;
+	overflow: hidden;
+	flex-shrink: 0; /* Add this */
 }
 .mode-btn {
-    padding: 8px 16px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    flex: 1; /* Make buttons equal width */
-    white-space: nowrap; /* Prevent text wrapping */
+	padding: 8px 16px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	flex: 1; /* Make buttons equal width */
+	white-space: nowrap; /* Prevent text wrapping */
 }
 
 .mode-btn:hover {
-    background: #f0f8ff;
-    transform: translateY(-1px);
+	background: #f0f8ff;
+	transform: translateY(-1px);
 }
 
 .mode-btn.active {
-    background: #014148;
-    color: white;
-    box-shadow: 0 2px 4px rgba(1,65,72,0.3);
+	background: #014148;
+	color: white;
+	box-shadow: 0 2px 4px rgba(1, 65, 72, 0.3);
 }
 
 #studentNotes {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
-    padding: 15px 20px 15px 50px; /* Left padding for margin line */
-    font-family: "Courier New", monospace;
-    font-size: 14px;
-    line-height: 30px; /* Match the ruled lines */
-    resize: none;
-    outline: none;
-    background: transparent;
-    color: #333;
-    z-index: 2;
-    overflow-y: auto;
-    vertical-align: top;
-    text-align: left;
-    padding-top: 30px; /* Align with first line */
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	border: none;
+	padding: 15px 20px 15px 50px; /* Left padding for margin line */
+	font-family: 'Courier New', monospace;
+	font-size: 14px;
+	line-height: 30px; /* Match the ruled lines */
+	resize: none;
+	outline: none;
+	background: transparent;
+	color: #333;
+	z-index: 2;
+	overflow-y: auto;
+	vertical-align: top;
+	text-align: left;
+	padding-top: 30px; /* Align with first line */
 }
 
 #studentNotes::placeholder {
-    color: #999;
-    font-style: italic;
-    line-height: 30px;
+	color: #999;
+	font-style: italic;
+	line-height: 30px;
 }
 
 .notes-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    cursor: crosshair;
-    z-index: 3;
-    display: none;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	cursor: crosshair;
+	z-index: 3;
+	display: none;
 }
 
 /* Scrollbar styling for notes */
 #studentNotes::-webkit-scrollbar {
-    width: 8px;
+	width: 8px;
 }
 
 #studentNotes::-webkit-scrollbar-track {
-    background: rgba(255,255,255,0.1);
-    border-radius: 4px;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
 }
 
 #studentNotes::-webkit-scrollbar-thumb {
-    background: rgba(1,65,72,0.3);
-    border-radius: 4px;
+	background: rgba(1, 65, 72, 0.3);
+	border-radius: 4px;
 }
 
 #studentNotes::-webkit-scrollbar-thumb:hover {
-    background: rgba(1,65,72,0.5);
+	background: rgba(1, 65, 72, 0.5);
 }
 
 /* Expanded notebook view */
 .whiteboard-panel.expanded {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 10000;
-    background: white;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	z-index: 10000;
+	background: white;
 }
 
 .expanded .notebook-container {
-    padding: 40px;
+	padding: 40px;
 }
 
 .expanded .notebook-paper {
-    max-width: 800px;
-    margin: 0 auto;
-    height: calc(100vh - 140px);
+	max-width: 800px;
+	margin: 0 auto;
+	height: calc(100vh - 140px);
 }
 
 /* Notebook spiral binding effect */
 .notebook-paper::after {
-    content: '';
-    position: absolute;
-    left: 15px;
-    top: 20px;
-    bottom: 20px;
-    width: 10px;
-    background: repeating-linear-gradient(
-        to bottom,
-        transparent 0px,
-        transparent 25px,
-        #ddd 25px,
-        #ddd 30px
-    );
-    border-radius: 5px;
-    z-index: 1;
+	content: '';
+	position: absolute;
+	left: 15px;
+	top: 20px;
+	bottom: 20px;
+	width: 10px;
+	background: repeating-linear-gradient(to bottom, transparent 0px, transparent 25px, #ddd 25px, #ddd 30px);
+	border-radius: 5px;
+	z-index: 1;
 }
 
 /* Voice control styles */
 #voiceControls button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+	transform: translateY(-1px);
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 #voiceInputBtn.listening {
-    animation: pulse 1.5s infinite;
+	animation: pulse 1.5s infinite;
 }
 
 @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
+	0% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.05);
+	}
+	100% {
+		transform: scale(1);
+	}
 }
 
 .voice-status-active {
-    background: #e8f5e8 !important;
-    color: #337810 !important;
+	background: #e8f5e8 !important;
+	color: #337810 !important;
 }
 
 .voice-status-error {
-    background: #ffe8e8 !important;
-    color: #ff6b6b !important;
+	background: #ffe8e8 !important;
+	color: #ff6b6b !important;
 }
 
 /* Add some paper texture */
 .notebook-paper {
-    background-color: #fefefe;
-    background-image: 
-        radial-gradient(circle at 1px 1px, rgba(0,0,0,0.02) 1px, transparent 0),
-        linear-gradient(to right, #ff6b6b 40px, transparent 40px),
-        repeating-linear-gradient(
-            transparent,
-            transparent 29px,
-            #e8f4f8 29px,
-            #e8f4f8 30px
-        );
+	background-color: #fefefe;
+	background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.02) 1px, transparent 0),
+		linear-gradient(to right, #ff6b6b 40px, transparent 40px),
+		repeating-linear-gradient(transparent, transparent 29px, #e8f4f8 29px, #e8f4f8 30px);
 }
 /* Chat input container with inline upload button */
 .chat-input-container {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 15px;
-    background: white;
-    border-top: 1px solid #e0e0e0;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 15px;
+	background: white;
+	border-top: 1px solid #e0e0e0;
 }
 
 /* Upload button inline with input */
 .upload-btn {
-    background: linear-gradient(45deg, #4CAF50, #45a049);
-    color: white;
-    border: none;
-    padding: 10px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    min-width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+	background: linear-gradient(45deg, #4caf50, #45a049);
+	color: white;
+	border: none;
+	padding: 10px 12px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 16px;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	min-width: 44px;
+	height: 44px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .upload-btn:hover {
-    background: linear-gradient(45deg, #45a049, #4CAF50);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+	background: linear-gradient(45deg, #45a049, #4caf50);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* File preview below input */
 .file-preview {
-    display: none; /* Hidden by default */
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 10px 15px;
-    background: #f9f9f9;
-    border-top: 1px solid #e0e0e0;
+	display: none; /* Hidden by default */
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 10px 15px;
+	background: #f9f9f9;
+	border-top: 1px solid #e0e0e0;
 }
 
 .file-item {
-    display: flex;
-    align-items: center;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 15px;
-    padding: 6px 12px;
-    font-size: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	background: white;
+	border: 1px solid #ddd;
+	border-radius: 15px;
+	padding: 6px 12px;
+	font-size: 12px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+	transition: all 0.2s ease;
 }
 
 .file-name {
-    margin: 0 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 150px;
+	margin: 0 4px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 150px;
 }
 
 .file-icon {
-    margin-right: 4px;
-    font-size: 12px;
+	margin-right: 4px;
+	font-size: 12px;
 }
 
 .remove-file {
-    background: #ff4444;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    margin-left: 4px;
+	background: #ff4444;
+	color: white;
+	border: none;
+	border-radius: 50%;
+	width: 18px;
+	height: 18px;
+	cursor: pointer;
+	font-size: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s ease;
+	margin-left: 4px;
 }
 
 .remove-file:hover {
-    background: #cc0000;
-    transform: scale(1.1);
+	background: #cc0000;
+	transform: scale(1.1);
 }
 .whiteboard-section {
-    flex: 1; /* Take remaining space */
-    min-width: 300px;
+	flex: 1; /* Take remaining space */
+	min-width: 300px;
 }
 /* Chapter images */
-#chapter_image{width:65%; display: block; margin-left: auto; margin-right: auto; padding-top:20px; padding-bottom:20px;}
-figure { display: inline-block;}
-figure figcaption { text-align: center;}
+#chapter_image {
+	width: 65%;
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+	padding-top: 20px;
+	padding-bottom: 20px;
+}
+figure {
+	display: inline-block;
+}
+figure figcaption {
+	text-align: center;
+}
 
 /* Chapter table */
-.table_formula tr td:LAST-CHILD{padding-left:75px; }
+.table_formula tr td:last-child {
+	padding-left: 75px;
+}
 
 /* This is to stop spam attacks */
 #username_comments {
-	display: none ;
-}	
+	display: none;
+}
 
-#chapterpdf	{color: black; font-size: 21px; font-weight:300;}
+#chapterpdf {
+	color: black;
+	font-size: 21px;
+	font-weight: 300;
+}
