@@ -8,9 +8,9 @@ class VoiceTutor {
         this.voices = [];
         this.preferredVoice = null;
         this.speechSettings = {
-            pitch: parseFloat(localStorage.getItem('speechPitch')) || 1.0,
-            rate: parseFloat(localStorage.getItem('speechRate')) || 0.9,
-            volume: parseFloat(localStorage.getItem('speechVolume')) || 0.8
+            pitch: parseFloat(localStorage.getItem('speechPitch')) || 0.95,
+            rate: parseFloat(localStorage.getItem('speechRate')) || 0.85,
+            volume: parseFloat(localStorage.getItem('speechVolume')) || 0.9
         };
         
         this.initializeVoiceRecognition();
@@ -80,13 +80,45 @@ class VoiceTutor {
         const loadVoices = () => {
             this.voices = this.synthesis.getVoices();
             
-            this.preferredVoice = this.voices.find(voice => 
-                voice.lang.startsWith('en') && 
-                (voice.name.includes('Female') || voice.name.includes('Samantha') || voice.name.includes('Karen'))
-            ) || this.voices.find(voice => voice.lang.startsWith('en')) || this.voices[0];
+            // Priority order for more natural-sounding voices
+            const preferredVoiceNames = [
+                'Samantha', 'Karen', 'Victoria', 'Allison', 'Ava', 'Susan', 'Joanna', 'Salli',
+                'Google US English', 'Microsoft Zira', 'Microsoft Hazel', 'Alex',
+                'Natural', 'Premium', 'Enhanced'
+            ];
+            
+            // Find the best available voice
+            this.preferredVoice = null;
+            
+            // First, try to find premium/natural voices
+            for (const voiceName of preferredVoiceNames) {
+                const voice = this.voices.find(v => 
+                    v.lang.startsWith('en') && 
+                    (v.name.includes(voiceName) || v.name.toLowerCase().includes(voiceName.toLowerCase()))
+                );
+                if (voice) {
+                    this.preferredVoice = voice;
+                    break;
+                }
+            }
+            
+            // Fallback to any English voice that sounds natural
+            if (!this.preferredVoice) {
+                this.preferredVoice = this.voices.find(voice => 
+                    voice.lang.startsWith('en') && 
+                    (voice.name.toLowerCase().includes('female') || 
+                     voice.name.toLowerCase().includes('woman') ||
+                     voice.localService === false) // Often higher quality
+                );
+            }
+            
+            // Final fallback
+            if (!this.preferredVoice) {
+                this.preferredVoice = this.voices.find(voice => voice.lang.startsWith('en')) || this.voices[0];
+            }
             
             console.log('Available voices:', this.voices.length);
-            console.log('Selected voice:', this.preferredVoice?.name);
+            console.log('Selected voice:', this.preferredVoice?.name, '| Local:', this.preferredVoice?.localService);
         };
 
         loadVoices();
@@ -168,7 +200,7 @@ class VoiceTutor {
 
         const autoSpeechBtn = document.createElement('button');
         autoSpeechBtn.id = 'autoSpeechBtn';
-        const autoSpeechEnabled = localStorage.getItem('autoSpeech') !== 'false';
+        const autoSpeechEnabled = localStorage.getItem('autoSpeech') === 'true';
         autoSpeechBtn.innerHTML = autoSpeechEnabled ? '🔊' : '🔇';
         autoSpeechBtn.title = autoSpeechEnabled ? 'Auto-speech ON (click to disable)' : 'Auto-speech OFF (click to enable)';
         autoSpeechBtn.style.cssText = `
@@ -263,7 +295,10 @@ class VoiceTutor {
             valueDisplay.textContent = value.toFixed(1);
             
             slider.addEventListener('input', () => {
-                valueDisplay.textContent = slider.value;
+                const displayValue = label === 'Pitch:' || label === 'Speed:' ? 
+                    parseFloat(slider.value).toFixed(2) : 
+                    parseFloat(slider.value).toFixed(1);
+                valueDisplay.textContent = displayValue;
                 onChange(slider.value);
                 console.log(`${label} set to ${slider.value}`);
             });
@@ -277,9 +312,9 @@ class VoiceTutor {
         const pitchSlider = createSlider(
             'pitchSlider',
             'Pitch:',
-            0.5,
-            2.0,
-            0.1,
+            0.7,
+            1.3,
+            0.05,
             this.speechSettings.pitch,
             (value) => {
                 this.speechSettings.pitch = parseFloat(value);
@@ -290,9 +325,9 @@ class VoiceTutor {
         const rateSlider = createSlider(
             'rateSlider',
             'Speed:',
-            0.5,
-            2.0,
-            0.1,
+            0.6,
+            1.4,
+            0.05,
             this.speechSettings.rate,
             (value) => {
                 this.speechSettings.rate = parseFloat(value);
@@ -478,32 +513,119 @@ class VoiceTutor {
             return;
         }
 
-        const cleanText = text
+        const processedText = this.preprocessTextForSpeech(text);
+        if (!processedText) return;
+
+        // Split long text into chunks for more natural delivery
+        const chunks = this.splitTextIntoChunks(processedText);
+        this.speakChunks(chunks, 0);
+    }
+
+    preprocessTextForSpeech(text) {
+        let cleanText = text
+            // Remove markdown and formatting
             .replace(/\[.*?\]/g, '')
-            .replace(/\n+/g, ' ')
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/\*(.*?)\*/g, '$1')
+            .replace(/`(.*?)`/g, '$1')
+            .replace(/#{1,6}\s/g, '')
+            
+            // Improve mathematical expressions
+            .replace(/\b(\d+)\/(\d+)\b/g, '$1 over $2')
+            .replace(/\b(\d+)\^(\d+)\b/g, '$1 to the power of $2')
+            .replace(/\bx\^2\b/g, 'x squared')
+            .replace(/\bx\^3\b/g, 'x cubed')
+            .replace(/\b√(\d+)\b/g, 'square root of $1')
+            
+            // Add natural pauses
+            .replace(/([.!?])\s+/g, '$1... ')
+            .replace(/([,;:])\s+/g, '$1, ')
+            .replace(/\n+/g, '... ')
+            
+            // Improve number reading
+            .replace(/\b(\d{4})\b/g, (match) => {
+                const num = parseInt(match);
+                if (num >= 1000 && num <= 9999) {
+                    const thousands = Math.floor(num / 1000);
+                    const remainder = num % 1000;
+                    if (remainder === 0) return `${thousands} thousand`;
+                    if (remainder < 100) return `${thousands} thousand ${remainder}`;
+                    return `${thousands} thousand ${remainder}`;
+                }
+                return match;
+            })
+            
+            // Clean up spacing
             .replace(/\s+/g, ' ')
             .trim();
 
-        if (!cleanText) return;
+        // Add emphasis to important words
+        cleanText = cleanText
+            .replace(/\b(important|note|remember|key|crucial|essential)\b/gi, (match) => `${match.toLowerCase()},`)
+            .replace(/\b(however|but|although|therefore|thus|consequently)\b/gi, (match) => `, ${match.toLowerCase()},`);
 
-        this.currentUtterance = new SpeechSynthesisUtterance(cleanText);
+        return cleanText;
+    }
+
+    splitTextIntoChunks(text, maxLength = 200) {
+        if (text.length <= maxLength) return [text];
+        
+        const sentences = text.split(/([.!?]\s+)/);
+        const chunks = [];
+        let currentChunk = '';
+        
+        for (let i = 0; i < sentences.length; i++) {
+            const sentence = sentences[i];
+            if (currentChunk.length + sentence.length <= maxLength) {
+                currentChunk += sentence;
+            } else {
+                if (currentChunk.trim()) chunks.push(currentChunk.trim());
+                currentChunk = sentence;
+            }
+        }
+        
+        if (currentChunk.trim()) chunks.push(currentChunk.trim());
+        return chunks.filter(chunk => chunk.length > 0);
+    }
+
+    speakChunks(chunks, index) {
+        if (index >= chunks.length) {
+            this.hideStopButton();
+            this.currentUtterance = null;
+            return;
+        }
+
+        const chunk = chunks[index];
+        this.currentUtterance = new SpeechSynthesisUtterance(chunk);
         
         if (this.preferredVoice) {
             this.currentUtterance.voice = this.preferredVoice;
         }
-        this.currentUtterance.rate = this.speechSettings.rate;
-        this.currentUtterance.pitch = this.speechSettings.pitch;
+        
+        // Slightly randomize speech parameters for more natural sound
+        const baseRate = this.speechSettings.rate;
+        const basePitch = this.speechSettings.pitch;
+        
+        this.currentUtterance.rate = baseRate + (Math.random() - 0.5) * 0.1;
+        this.currentUtterance.pitch = basePitch + (Math.random() - 0.5) * 0.1;
         this.currentUtterance.volume = this.speechSettings.volume;
 
-        this.currentUtterance.onstart = () => {
-            console.log('Started speaking');
-            this.showStopButton();
-        };
+        if (index === 0) {
+            this.currentUtterance.onstart = () => {
+                console.log('Started speaking');
+                this.showStopButton();
+            };
+        }
 
         this.currentUtterance.onend = () => {
-            console.log('Finished speaking');
-            this.hideStopButton();
-            this.currentUtterance = null;
+            console.log(`Finished chunk ${index + 1}/${chunks.length}`);
+            
+            // Add a small pause between chunks for natural flow
+            setTimeout(() => {
+                if (this.currentUtterance) { // Check if not cancelled
+                    this.speakChunks(chunks, index + 1);
+                }
+            }, 200);
         };
 
         this.currentUtterance.onerror = (event) => {
@@ -588,7 +710,7 @@ class VoiceTutor {
     }
 
     handleBotResponse(text) {
-        const autoSpeech = localStorage.getItem('autoSpeech') !== 'false';
+        const autoSpeech = localStorage.getItem('autoSpeech') === 'true';
         if (autoSpeech) {
             setTimeout(() => {
                 this.speakText(text);
