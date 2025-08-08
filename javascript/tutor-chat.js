@@ -381,9 +381,15 @@ function addMessage(text, sender, files = []) {
 	avatar.className = 'message-avatar';
 	avatar.innerHTML = sender === 'bot' ? '🤖' : '👤';
 
+	// Convert LaTeX to Unicode for bot messages
+	let displayText = text;
+	if (sender === 'bot' && window.convertLatexToUnicode) {
+		displayText = window.convertLatexToUnicode(text);
+	}
+
 	const content = document.createElement('div');
 	content.className = 'message-content';
-	content.innerHTML = text.replace(/\n/g, '<br>');
+	content.innerHTML = displayText.replace(/\n/g, '<br>');
 
 	if (files && files.length > 0) {
 		const filesDiv = document.createElement('div');
