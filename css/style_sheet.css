@@ -783,7 +783,7 @@ body {
 	overflow: hidden;
 }
 .chat-section {
-	width: 400px;
+	width: 600px;
 	background: white;
 	border-right: 2px solid #ddd;
 	display: flex;
@@ -1089,7 +1089,7 @@ body {
 }
 
 .chat-section {
-	flex: 0 0 400px; /* Keep this as default */
+	flex: 0 0 600px; /* Keep this as default */
 	position: relative;
 	min-width: 200px;
 	max-width: calc(100vw - 300px);
