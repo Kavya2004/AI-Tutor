@@ -353,6 +353,55 @@ function createVoiceToggle() {
 	toggleBtn.addEventListener('click', toggleVoiceResponse);
 
 	chatHeader.appendChild(toggleBtn);
+	createChatControls();
+}
+
+function createChatControls() {
+	const chatContainer = document.querySelector('.chat-container');
+	if (!chatContainer || document.getElementById('chatControls')) return;
+
+	const controlsDiv = document.createElement('div');
+	controlsDiv.id = 'chatControls';
+	controlsDiv.style.cssText = `
+		display: flex;
+		gap: 8px;
+		padding: 10px 15px;
+		background: #f8f9fa;
+		border-bottom: 1px solid #e0e0e0;
+		flex-shrink: 0;
+	`;
+
+	const saveBtn = document.createElement('button');
+	saveBtn.innerHTML = '💾 Save Chat';
+	saveBtn.style.cssText = `
+		padding: 6px 12px;
+		border: 1px solid #ddd;
+		border-radius: 15px;
+		background: #337810;
+		color: white;
+		cursor: pointer;
+		font-size: 12px;
+		transition: all 0.3s ease;
+	`;
+	saveBtn.addEventListener('click', saveChatHistory);
+
+	const summaryBtn = document.createElement('button');
+	summaryBtn.innerHTML = '📝 Generate Summary';
+	summaryBtn.style.cssText = `
+		padding: 6px 12px;
+		border: 1px solid #ddd;
+		border-radius: 15px;
+		background: #014148;
+		color: white;
+		cursor: pointer;
+		font-size: 12px;
+		transition: all 0.3s ease;
+	`;
+	summaryBtn.addEventListener('click', generateChatSummary);
+
+	controlsDiv.appendChild(saveBtn);
+	controlsDiv.appendChild(summaryBtn);
+	chatContainer.insertBefore(controlsDiv, chatContainer.firstChild);
 }
 
 function handleKeyPress(event) {
@@ -790,6 +839,65 @@ async function generateAIDiagram(description, targetBoard = 'teacher') {
 		console.error('Error generating AI diagram:', error);
 		addMessage('Sorry, I encountered an issue generating the diagram. Let me explain in text instead.', 'bot');
 	}
+}
+
+function saveChatHistory() {
+	const messages = document.querySelectorAll('.message');
+	let chatHistory = 'Probability Tutor Chat History\n';
+	chatHistory += '================================\n\n';
+
+	messages.forEach((message, index) => {
+		const isBot = message.classList.contains('bot-message');
+		const content = message.querySelector('.message-content').textContent;
+		const sender = isBot ? 'Tutor' : 'Student';
+		chatHistory += `${sender}: ${content}\n\n`;
+	});
+
+	const blob = new Blob([chatHistory], { type: 'text/plain' });
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = `tutor-chat-${new Date().toISOString().slice(0, 10)}.txt`;
+	a.click();
+	URL.revokeObjectURL(url);
+}
+
+async function generateChatSummary() {
+	if (isProcessing) return;
+
+	const messages = document.querySelectorAll('.message');
+	if (messages.length <= 1) {
+		addMessage('No chat history to summarize yet!', 'bot');
+		return;
+	}
+
+	isProcessing = true;
+	showLoading();
+
+	try {
+		let chatContent = '';
+		messages.forEach((message) => {
+			const isBot = message.classList.contains('bot-message');
+			const content = message.querySelector('.message-content').textContent;
+			const sender = isBot ? 'Tutor' : 'Student';
+			chatContent += `${sender}: ${content}\n`;
+		});
+
+		const summaryPrompt = `Please provide a concise summary of this tutoring session, highlighting the main topics discussed, key concepts learned, and any problems solved:\n\n${chatContent}`;
+
+		const summaryResponse = await getGeminiResponse([
+			{ role: 'system', content: 'You are summarizing a tutoring session. Be concise and focus on learning outcomes.' },
+			{ role: 'user', content: summaryPrompt }
+		]);
+
+		addMessage(`📋 **Chat Summary:**\n\n${summaryResponse}`, 'bot');
+	} catch (error) {
+		console.error('Error generating summary:', error);
+		addMessage('Sorry, I encountered an issue generating the summary. Please try again.', 'bot');
+	}
+
+	hideLoading();
+	isProcessing = false;
 }
 
 // Global function for whiteboard OCR integration
