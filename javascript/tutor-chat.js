@@ -66,6 +66,7 @@ function initializeChat() {
 	}
 
 	initializeFileUpload();
+	createChatControls();
 
 	addMessage("Hi there! I'm your probability tutor! Ask me anything about probability and statistics!", 'bot');
 
@@ -353,7 +354,6 @@ function createVoiceToggle() {
 	toggleBtn.addEventListener('click', toggleVoiceResponse);
 
 	chatHeader.appendChild(toggleBtn);
-	createChatControls();
 }
 
 function createChatControls() {
