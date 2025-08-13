@@ -26,6 +26,8 @@ let isDragging = false;
 let isResizing = false;
 let dragOffset = { x: 0, y: 0 };
 let resizeHandle = null;
+let teacherDrawingData = null;
+let studentDrawingData = null;
 
 document.addEventListener('DOMContentLoaded', function () {
 	initializeWhiteboards();
@@ -597,7 +599,6 @@ function resizeCanvas(canvas, boardType) {
 }
 
 function clearWhiteboard(boardType) {
-	// In sessions, only host can clear teacher whiteboard
 	if (
 		window.sessionManager &&
 		window.sessionManager.sessionId &&
@@ -614,15 +615,16 @@ function clearWhiteboard(boardType) {
 
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	
-	// Clear symbols
+	// Clear symbols and drawing data
 	if (boardType === 'teacher') {
 		teacherSymbols = [];
+		teacherDrawingData = null;
 	} else {
 		studentSymbols = [];
+		studentDrawingData = null;
 	}
 	selectedSymbol = null;
 
-	// Broadcast clear action to session
 	if (window.sessionManager && window.sessionManager.sessionId) {
 		window.sessionManager.ws.send(
 			JSON.stringify({
@@ -743,6 +745,9 @@ function startDrawing(e, boardType) {
 	const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
 	if (!currentDrawMode && !currentEraseMode) return;
 
+	// Save current state before drawing
+	saveDrawingState(boardType);
+
 	isDrawing = true;
 	isAnythingDrawn = true;
 	clearTimeout(recogTimer);
@@ -759,9 +764,9 @@ function startDrawing(e, boardType) {
 	ctx.moveTo(x, y);
 
 	if (currentEraseMode) {
-		ctx.lineWidth = 20; // Larger eraser size
+		ctx.lineWidth = 20;
 	} else {
-		ctx.lineWidth = 4; // Normal pen size
+		ctx.lineWidth = 4;
 	}
 }
 
@@ -798,7 +803,10 @@ function draw(e, boardType) {
 function stopDrawing(boardType) {
 	isDrawing = false;
 	currentPath = [];
-	// OCR only triggers when drawing mode is turned OFF, not on every stroke
+	// Save drawing state after drawing
+	if (isAnythingDrawn) {
+		saveDrawingState(boardType);
+	}
 }
 
 // Drawing functions that can work on either whiteboard
@@ -1146,54 +1154,75 @@ function addMathSymbol(symbol, boardType = 'teacher') {
 	isAnythingDrawn = true;
 }
 
+function saveDrawingState(boardType) {
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	if (!ctx || !canvas) return;
+	
+	// Save canvas without symbols
+	const tempCanvas = document.createElement('canvas');
+	tempCanvas.width = canvas.width;
+	tempCanvas.height = canvas.height;
+	const tempCtx = tempCanvas.getContext('2d');
+	tempCtx.drawImage(canvas, 0, 0);
+	
+	if (boardType === 'teacher') {
+		teacherDrawingData = tempCanvas.toDataURL();
+	} else {
+		studentDrawingData = tempCanvas.toDataURL();
+	}
+}
+
 function redrawCanvas(boardType) {
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	const symbols = boardType === 'teacher' ? teacherSymbols : studentSymbols;
+	const drawingData = boardType === 'teacher' ? teacherDrawingData : studentDrawingData;
 	if (!ctx || !canvas) return;
 
-	// Save current drawing state
-	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-	
-	// Clear canvas
+	// Clear entire canvas
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	
-	// Restore drawing (but this will clear symbols, so we need a different approach)
-	// For now, just draw symbols over existing content
-	ctx.putImageData(imageData, 0, 0);
+	// Restore background drawing if exists
+	if (drawingData) {
+		const img = new Image();
+		img.onload = () => {
+			ctx.drawImage(img, 0, 0);
+			drawSymbols();
+		};
+		img.src = drawingData;
+	} else {
+		drawSymbols();
+	}
 	
-	// Clear only symbol areas and redraw them
-	symbols.forEach(symbolObj => {
-		ctx.font = `${symbolObj.size}px Arial`;
-		const metrics = ctx.measureText(symbolObj.symbol);
-		const width = metrics.width;
-		const height = symbolObj.size;
-		
-		// Clear symbol area
-		ctx.clearRect(symbolObj.x - width/2 - 15, symbolObj.y - height - 15, width + 30, height + 30);
-		
-		// Draw symbol
-		ctx.fillStyle = symbolObj.selected ? '#007bff' : '#333';
-		ctx.textAlign = 'center';
-		ctx.fillText(symbolObj.symbol, symbolObj.x, symbolObj.y);
-		
-		// Draw selection handles
-		if (symbolObj.selected) {
-			// Selection box
-			ctx.strokeStyle = '#007bff';
-			ctx.lineWidth = 2;
-			ctx.setLineDash([5, 5]);
-			ctx.strokeRect(symbolObj.x - width/2 - 10, symbolObj.y - height - 5, width + 20, height + 15);
-			ctx.setLineDash([]);
+	function drawSymbols() {
+		symbols.forEach(symbolObj => {
+			ctx.font = `${symbolObj.size}px Arial`;
+			ctx.fillStyle = symbolObj.selected ? '#007bff' : '#333';
+			ctx.textAlign = 'center';
+			ctx.fillText(symbolObj.symbol, symbolObj.x, symbolObj.y);
 			
-			// Resize handle
-			ctx.fillStyle = '#007bff';
-			ctx.fillRect(symbolObj.x + width/2 + 5, symbolObj.y - 10, 10, 10);
-			ctx.strokeStyle = '#fff';
-			ctx.lineWidth = 1;
-			ctx.strokeRect(symbolObj.x + width/2 + 5, symbolObj.y - 10, 10, 10);
-		}
-	});
+			if (symbolObj.selected) {
+				const metrics = ctx.measureText(symbolObj.symbol);
+				const width = metrics.width;
+				const height = symbolObj.size;
+				
+				// Selection box
+				ctx.strokeStyle = '#007bff';
+				ctx.lineWidth = 2;
+				ctx.setLineDash([5, 5]);
+				ctx.strokeRect(symbolObj.x - width/2 - 10, symbolObj.y - height - 5, width + 20, height + 15);
+				ctx.setLineDash([]);
+				
+				// Resize handle
+				ctx.fillStyle = '#007bff';
+				ctx.fillRect(symbolObj.x + width/2 + 5, symbolObj.y - 10, 10, 10);
+				ctx.strokeStyle = '#fff';
+				ctx.lineWidth = 1;
+				ctx.strokeRect(symbolObj.x + width/2 + 5, symbolObj.y - 10, 10, 10);
+			}
+		});
+	}
 }
 
 function getSymbolAt(x, y, boardType) {
