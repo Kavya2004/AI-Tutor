@@ -3,6 +3,7 @@ let context = [
 	{
 		role: 'system',
 		content: `You are an AI tutor specializing in introductory probability and statistics. You have been extensively trained on university-level question-answer pairs in this subject area.Your role is to guide students through concepts interactively, using both whiteboards and conversation. You are supportive, brief, and thoughtful in your responses.
+You must always cite from the relevant ProbabilityCourse.com link(s) I provide in the context.
 
 You have access to two whiteboards:
 
@@ -583,6 +584,24 @@ async function getOcrTextFromWhiteboardImage(board) {
 	}
 }
 
+async function searchProbabilityCourse(query) {
+	try {
+	  const res = await fetch('/api/search', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ query })
+	  });
+  
+	  if (!res.ok) throw new Error('Search request failed');
+	  const data = await res.json();
+	  return data.results || [];
+	} catch (err) {
+	  console.error("Error searching ProbabilityCourse:", err);
+	  return [];
+	}
+  }
+
+  
 async function processUserMessage(message) {
 	if (isProcessing || (!message.trim() && uploadedFiles.length === 0)) return;
 
@@ -655,6 +674,20 @@ async function processUserMessage(message) {
 
 		// Add user message to context for AI
 		context.push({ role: 'user', content: message });
+		// Search for matching ProbabilityCourse.com sections
+		const searchResults = await searchProbabilityCourse(message);
+
+		if (searchResults.length > 0) {
+		let refsText = "Relevant sections from the ProbabilityCourse.com textbook:\n";
+		searchResults.forEach((r, idx) => {
+			refsText += `${idx + 1}. ${r.title} - ${r.link}\n   ${r.snippet}\n`;
+		});
+
+		context.push({
+			role: 'system',
+			content: refsText
+		});
+		}
 
 		// Get AI response
 		let botResponse = await getGeminiResponse(context);
