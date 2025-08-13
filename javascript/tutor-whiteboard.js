@@ -381,7 +381,16 @@ function initializeWhiteboards() {
 }
 
 function setupCanvas(canvas, ctx, boardType) {
-	canvas.addEventListener('mousedown', (e) => handleMouseDown(e, boardType));
+	// Remove existing listeners first
+	canvas.removeEventListener('mousedown', handleMouseDown);
+	canvas.removeEventListener('mousemove', handleMouseMove);
+	canvas.removeEventListener('mouseup', handleMouseUp);
+	
+	// Add new listeners
+	canvas.addEventListener('mousedown', (e) => {
+		console.log('Canvas mousedown event');
+		handleMouseDown(e, boardType);
+	});
 	canvas.addEventListener('mousemove', (e) => handleMouseMove(e, boardType));
 	canvas.addEventListener('mouseup', () => handleMouseUp(boardType));
 	canvas.addEventListener('mouseout', () => handleMouseUp(boardType));
@@ -395,6 +404,7 @@ function setupCanvas(canvas, ctx, boardType) {
 	ctx.lineCap = 'round';
 	ctx.lineJoin = 'round';
 	ctx.globalCompositeOperation = 'source-over';
+	ctx.willReadFrequently = true;
 }
 
 function switchWhiteboard(boardType) {
@@ -649,6 +659,8 @@ function broadcastDiagramAction(diagramName, boardType = 'teacher') {
 }
 
 function toggleDrawing(boardType) {
+	console.log('Toggle drawing called for:', boardType);
+	
 	if (boardType === 'teacher') {
 		teacherDrawingMode = !teacherDrawingMode;
 		if (teacherDrawingMode) teacherEraserMode = false;
@@ -682,6 +694,7 @@ function toggleDrawing(boardType) {
 	}
 
 	console.log(`[DRAW] Drawing mode ${currentMode ? 'ENABLED' : 'DISABLED'} for ${boardType}`);
+	console.log('Current modes:', { teacherDrawingMode, studentDrawingMode });
 }
 
 function toggleEraser(boardType) {
@@ -738,12 +751,20 @@ function updateDrawButtons() {
 		eraserStudentButton.style.color = studentEraserMode ? 'white' : '#333';
 		eraserStudentButton.textContent = studentEraserMode ? 'Stop Erase' : 'Eraser';
 	}
+
+	console.log('Draw modes:', { teacherDrawingMode, studentDrawingMode, teacherEraserMode, studentEraserMode });
 }
 
 function startDrawing(e, boardType) {
 	const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
 	const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
-	if (!currentDrawMode && !currentEraseMode) return;
+	
+	console.log('Start drawing:', { boardType, currentDrawMode, currentEraseMode });
+	
+	if (!currentDrawMode && !currentEraseMode) {
+		console.log('No draw/erase mode active');
+		return;
+	}
 
 	isDrawing = true;
 	isAnythingDrawn = true;
@@ -762,9 +783,13 @@ function startDrawing(e, boardType) {
 
 	if (currentEraseMode) {
 		ctx.lineWidth = 20;
+		ctx.globalCompositeOperation = 'destination-out';
 	} else {
 		ctx.lineWidth = 4;
+		ctx.globalCompositeOperation = 'source-over';
 	}
+	
+	console.log('Drawing started successfully');
 }
 
 function draw(e, boardType) {
@@ -1288,6 +1313,8 @@ function handleMouseDown(e, boardType) {
 	const x = e.clientX - rect.left;
 	const y = e.clientY - rect.top;
 
+	console.log('Mouse down:', { boardType, teacherDrawingMode, studentDrawingMode });
+
 	// Check for symbol interaction first
 	const clickedSymbol = getSymbolAt(x, y, boardType);
 	
@@ -1324,9 +1351,11 @@ function handleMouseDown(e, boardType) {
 	
 	// Clear selection if clicking empty space
 	const symbols = boardType === 'teacher' ? teacherSymbols : studentSymbols;
-	symbols.forEach(s => s.selected = false);
-	selectedSymbol = null;
-	redrawCanvas(boardType);
+	if (symbols.some(s => s.selected)) {
+		symbols.forEach(s => s.selected = false);
+		selectedSymbol = null;
+		redrawCanvas(boardType);
+	}
 	
 	// Handle drawing/erasing
 	startDrawing(e, boardType);
