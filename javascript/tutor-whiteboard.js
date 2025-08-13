@@ -741,9 +741,6 @@ function updateDrawButtons() {
 }
 
 function startDrawing(e, boardType) {
-	// Don't start drawing if manipulating symbols
-	if (isDragging || isResizing) return;
-	
 	const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
 	const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
 	if (!currentDrawMode && !currentEraseMode) return;
@@ -771,12 +768,11 @@ function startDrawing(e, boardType) {
 }
 
 function draw(e, boardType) {
-	// Don't draw if manipulating symbols
-	if (isDragging || isResizing) return;
-	
 	const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
 	const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
 	if (!isDrawing || (!currentDrawMode && !currentEraseMode)) return;
+	// Don't draw if manipulating symbols
+	if (isDragging || isResizing) return;
 
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
