@@ -727,7 +727,7 @@ function startDrawing(e, boardType) {
 
 	// If there's a pending symbol, place it at click location
 	if (pendingSymbol) {
-		ctx.font = '24px Arial';
+		ctx.font = '45px Arial';
 		ctx.fillStyle = '#333';
 		ctx.textAlign = 'center';
 		ctx.fillText(pendingSymbol, x, y);
