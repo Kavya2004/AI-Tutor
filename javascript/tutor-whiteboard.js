@@ -741,12 +741,12 @@ function updateDrawButtons() {
 }
 
 function startDrawing(e, boardType) {
+	// Don't start drawing if manipulating symbols
+	if (isDragging || isResizing) return;
+	
 	const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
 	const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
 	if (!currentDrawMode && !currentEraseMode) return;
-
-	// Save current state before drawing
-	saveDrawingState(boardType);
 
 	isDrawing = true;
 	isAnythingDrawn = true;
@@ -771,6 +771,9 @@ function startDrawing(e, boardType) {
 }
 
 function draw(e, boardType) {
+	// Don't draw if manipulating symbols
+	if (isDragging || isResizing) return;
+	
 	const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
 	const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
 	if (!isDrawing || (!currentDrawMode && !currentEraseMode)) return;
@@ -1132,6 +1135,9 @@ function addMathSymbol(symbol, boardType = 'teacher') {
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	if (!canvas) return;
 
+	// Save current drawing state before adding symbol
+	saveDrawingState(boardType);
+
 	const x = Math.random() * (canvas.width - 100) + 50;
 	const y = Math.random() * (canvas.height - 100) + 50;
 
@@ -1157,14 +1163,26 @@ function addMathSymbol(symbol, boardType = 'teacher') {
 function saveDrawingState(boardType) {
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	const symbols = boardType === 'teacher' ? teacherSymbols : studentSymbols;
 	if (!ctx || !canvas) return;
 	
-	// Save canvas without symbols
+	// Create temp canvas with only pen/eraser drawings (no symbols)
 	const tempCanvas = document.createElement('canvas');
 	tempCanvas.width = canvas.width;
 	tempCanvas.height = canvas.height;
 	const tempCtx = tempCanvas.getContext('2d');
+	
+	// Copy current canvas
 	tempCtx.drawImage(canvas, 0, 0);
+	
+	// Remove all symbols from temp canvas
+	symbols.forEach(symbolObj => {
+		tempCtx.font = `${symbolObj.size}px Arial`;
+		const metrics = tempCtx.measureText(symbolObj.symbol);
+		const width = metrics.width;
+		const height = symbolObj.size;
+		tempCtx.clearRect(symbolObj.x - width/2 - 20, symbolObj.y - height - 20, width + 40, height + 40);
+	});
 	
 	if (boardType === 'teacher') {
 		teacherDrawingData = tempCanvas.toDataURL();
@@ -1214,12 +1232,17 @@ function redrawCanvas(boardType) {
 				ctx.strokeRect(symbolObj.x - width/2 - 10, symbolObj.y - height - 5, width + 20, height + 15);
 				ctx.setLineDash([]);
 				
-				// Resize handle
+				// Larger resize handle
 				ctx.fillStyle = '#007bff';
-				ctx.fillRect(symbolObj.x + width/2 + 5, symbolObj.y - 10, 10, 10);
+				ctx.fillRect(symbolObj.x + width/2 + 5, symbolObj.y - 10, 15, 15);
 				ctx.strokeStyle = '#fff';
-				ctx.lineWidth = 1;
-				ctx.strokeRect(symbolObj.x + width/2 + 5, symbolObj.y - 10, 10, 10);
+				ctx.lineWidth = 2;
+				ctx.strokeRect(symbolObj.x + width/2 + 5, symbolObj.y - 10, 15, 15);
+				// Add resize arrows
+				ctx.fillStyle = '#fff';
+				ctx.font = '10px Arial';
+				ctx.textAlign = 'center';
+				ctx.fillText('↕', symbolObj.x + width/2 + 12, symbolObj.y - 2);
 			}
 		});
 	}
@@ -1252,10 +1275,11 @@ function getResizeHandle(x, y, symbol, ctx) {
 	const metrics = ctx.measureText(symbol.symbol);
 	const width = metrics.width;
 	
-	const handleX = symbol.x + width/2;
-	const handleY = symbol.y - 5;
+	const handleX = symbol.x + width/2 + 5;
+	const handleY = symbol.y - 10;
 	
-	if (x >= handleX - 4 && x <= handleX + 12 && y >= handleY - 4 && y <= handleY + 12) {
+	// Larger hit area for easier resizing
+	if (x >= handleX - 10 && x <= handleX + 20 && y >= handleY - 10 && y <= handleY + 20) {
 		return 'resize';
 	}
 	return null;
@@ -1272,6 +1296,9 @@ function handleMouseDown(e, boardType) {
 	const clickedSymbol = getSymbolAt(x, y, boardType);
 	
 	if (clickedSymbol) {
+		// Save state before any manipulation
+		saveDrawingState(boardType);
+		
 		// Clear previous selection
 		const symbols = boardType === 'teacher' ? teacherSymbols : studentSymbols;
 		symbols.forEach(s => s.selected = false);
@@ -1285,14 +1312,17 @@ function handleMouseDown(e, boardType) {
 		
 		if (resizeHandle) {
 			isResizing = true;
+			canvas.style.cursor = 'ns-resize';
 		} else {
 			isDragging = true;
+			canvas.style.cursor = 'move';
 			dragOffset.x = x - clickedSymbol.x;
 			dragOffset.y = y - clickedSymbol.y;
 		}
 		
 		redrawCanvas(boardType);
 		e.preventDefault();
+		e.stopPropagation();
 		return;
 	}
 	
@@ -1313,32 +1343,39 @@ function handleMouseMove(e, boardType) {
 	const y = e.clientY - rect.top;
 
 	if (isDragging && selectedSymbol) {
+		// Save state before moving
+		saveDrawingState(boardType);
 		selectedSymbol.x = x - dragOffset.x;
 		selectedSymbol.y = y - dragOffset.y;
 		redrawCanvas(boardType);
 		e.preventDefault();
+		e.stopPropagation();
 		return;
 	}
 	
 	if (isResizing && selectedSymbol) {
-		const distance = Math.sqrt((x - selectedSymbol.x) ** 2 + (y - selectedSymbol.y) ** 2);
-		selectedSymbol.size = Math.max(12, Math.min(60, distance));
+		// Save state before resizing
+		saveDrawingState(boardType);
+		// Simple resize based on mouse Y position relative to symbol
+		const deltaY = selectedSymbol.y - y;
+		selectedSymbol.size = Math.max(12, Math.min(80, 24 + deltaY));
 		redrawCanvas(boardType);
 		e.preventDefault();
+		e.stopPropagation();
 		return;
 	}
 	
 	// Handle drawing/erasing only if not manipulating symbols
-	if (!isDragging && !isResizing) {
-		draw(e, boardType);
-	}
+	draw(e, boardType);
 }
 
 function handleMouseUp(boardType) {
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	if (isDragging || isResizing) {
 		isDragging = false;
 		isResizing = false;
 		resizeHandle = null;
+		canvas.style.cursor = 'default';
 		return;
 	}
 	stopDrawing(boardType);
