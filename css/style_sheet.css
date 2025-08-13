@@ -784,6 +784,7 @@ body {
 }
 .chat-section {
 	width: 600px;
+	max-width: 50vw;
 	background: white;
 	border-right: 2px solid #ddd;
 	display: flex;
@@ -831,7 +832,7 @@ body {
 	order: 2;
 }
 .message-content {
-	max-width: 280px;
+	max-width: min(280px, 70vw);
 	padding: 12px 16px;
 	border-radius: 18px;
 	line-height: 1.4;
@@ -935,10 +936,12 @@ body {
 .whiteboard-header {
 	display: flex;
 	justify-content: space-between;
-	align-items: center;
+	align-items: flex-start;
 	padding: 15px 20px;
 	background: #f8f9fa;
 	border-bottom: 1px solid #ddd;
+	flex-wrap: wrap;
+	gap: 10px;
 }
 .whiteboard-header h3 {
 	color: #333;
@@ -1068,19 +1071,49 @@ body {
 .chat-messages::-webkit-scrollbar-thumb:hover {
 	background: #999;
 }
+/* Tablet and small desktop */
+@media (max-width: 1200px) {
+	.chat-section {
+		flex: 0 0 400px;
+		min-width: 300px;
+	}
+	.whiteboard-controls {
+		gap: 4px;
+	}
+	.whiteboard-controls button {
+		padding: 6px 10px;
+		font-size: 12px;
+	}
+}
+
+/* Mobile landscape and small tablets */
 @media (max-width: 900px) {
 	.main-content {
 		flex-direction: column;
 	}
 	.chat-section {
 		width: 100%;
-		height: 40%;
+		height: 45vh;
+		flex: none;
 	}
 	.whiteboard-section {
-		height: 60%;
+		height: 55vh;
+		flex: none;
 	}
 	.tutor-header h1 {
-		font-size: 2em;
+		font-size: 1.8em;
+	}
+	.tutor-header p {
+		font-size: 1em;
+	}
+	.whiteboard-tabs {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+	}
+	.tab-button {
+		flex: 0 0 auto;
+		padding: 8px 12px;
+		font-size: 12px;
 	}
 	.math-buttons {
 		gap: 2px;
@@ -1090,6 +1123,98 @@ body {
 		height: 28px;
 		font-size: 14px;
 		padding: 4px 6px;
+	}
+}
+
+/* Mobile portrait */
+@media (max-width: 600px) {
+	.tutor-header {
+		padding: 15px 10px;
+	}
+	.tutor-header h1 {
+		font-size: 1.5em;
+		margin-bottom: 5px;
+	}
+	.tutor-header p {
+		font-size: 0.9em;
+	}
+	.close-button {
+		top: 10px;
+		right: 10px;
+		padding: 6px 8px;
+		font-size: 0.9em;
+	}
+	.chat-section {
+		height: 50vh;
+	}
+	.whiteboard-section {
+		height: 50vh;
+	}
+	.chat-input-container {
+		padding: 10px;
+		gap: 6px;
+	}
+	#chatInput {
+		padding: 10px 12px;
+		font-size: 14px;
+	}
+	#sendButton {
+		padding: 10px 15px;
+		font-size: 14px;
+	}
+	.whiteboard-header {
+		padding: 10px 15px;
+		flex-wrap: wrap;
+	}
+	.whiteboard-header h3 {
+		font-size: 1.1em;
+		margin-bottom: 8px;
+		width: 100%;
+	}
+	.whiteboard-controls {
+		width: 100%;
+		justify-content: space-between;
+	}
+	.whiteboard-controls button {
+		padding: 6px 8px;
+		font-size: 11px;
+		flex: 1;
+		max-width: 70px;
+	}
+	.math-buttons {
+		width: 100%;
+		justify-content: center;
+		margin-top: 6px;
+		padding-top: 6px;
+	}
+	.math-buttons button {
+		min-width: 24px;
+		height: 24px;
+		font-size: 12px;
+		padding: 2px 4px;
+	}
+	.upload-btn {
+		min-width: 36px;
+		height: 36px;
+		font-size: 14px;
+	}
+}
+
+/* Very small screens */
+@media (max-width: 400px) {
+	.tutor-header h1 {
+		font-size: 1.3em;
+	}
+	.chat-input-container {
+		padding: 8px;
+	}
+	.whiteboard-header {
+		padding: 8px 10px;
+	}
+	.math-buttons button {
+		min-width: 20px;
+		height: 20px;
+		font-size: 10px;
 	}
 }
 .slide-in {
@@ -1147,9 +1272,9 @@ body {
 }
 
 .chat-section {
-	flex: 0 0 600px; /* Keep this as default */
+	flex: 0 0 600px;
 	position: relative;
-	min-width: 200px;
+	min-width: 250px;
 	max-width: calc(100vw - 300px);
 }
 

@@ -16,7 +16,16 @@ let currentPath = [];
 let isExpanded = false;
 let recogTimer = null;
 let isAnythingDrawn = false;
-let activeWhiteboard = 'teacher'; // Track which whiteboard is active
+let activeWhiteboard = 'teacher';
+
+// Symbol management
+let teacherSymbols = [];
+let studentSymbols = [];
+let selectedSymbol = null;
+let isDragging = false;
+let isResizing = false;
+let dragOffset = { x: 0, y: 0 };
+let resizeHandle = null;
 
 document.addEventListener('DOMContentLoaded', function () {
 	initializeWhiteboards();
@@ -370,14 +379,14 @@ function initializeWhiteboards() {
 }
 
 function setupCanvas(canvas, ctx, boardType) {
-	canvas.addEventListener('mousedown', (e) => startDrawing(e, boardType));
-	canvas.addEventListener('mousemove', (e) => draw(e, boardType));
-	canvas.addEventListener('mouseup', () => stopDrawing(boardType));
-	canvas.addEventListener('mouseout', () => stopDrawing(boardType));
+	canvas.addEventListener('mousedown', (e) => handleMouseDown(e, boardType));
+	canvas.addEventListener('mousemove', (e) => handleMouseMove(e, boardType));
+	canvas.addEventListener('mouseup', () => handleMouseUp(boardType));
+	canvas.addEventListener('mouseout', () => handleMouseUp(boardType));
 
 	canvas.addEventListener('touchstart', (e) => handleTouchStart(e, boardType));
 	canvas.addEventListener('touchmove', (e) => handleTouchMove(e, boardType));
-	canvas.addEventListener('touchend', () => stopDrawing(boardType));
+	canvas.addEventListener('touchend', () => handleMouseUp(boardType));
 
 	ctx.strokeStyle = '#333';
 	ctx.lineWidth = 4;
@@ -604,6 +613,14 @@ function clearWhiteboard(boardType) {
 	if (!ctx || !canvas) return;
 
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	
+	// Clear symbols
+	if (boardType === 'teacher') {
+		teacherSymbols = [];
+	} else {
+		studentSymbols = [];
+	}
+	selectedSymbol = null;
 
 	// Broadcast clear action to session
 	if (window.sessionManager && window.sessionManager.sessionId) {
@@ -1102,22 +1119,176 @@ function drawTreeDiagram(boardType = 'teacher') {
 	});
 }
 
-// Math button functions
+// Math symbol functions
 function addMathSymbol(symbol, boardType = 'teacher') {
-	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
-	if (!ctx || !canvas) return;
+	if (!canvas) return;
 
-	ctx.font = '24px Arial';
-	ctx.fillStyle = '#333';
-	ctx.textAlign = 'left';
-
-	// Find a good position (simple placement)
 	const x = Math.random() * (canvas.width - 100) + 50;
 	const y = Math.random() * (canvas.height - 100) + 50;
 
-	ctx.fillText(symbol, x, y);
+	const symbolObj = {
+		id: Date.now() + Math.random(),
+		symbol: symbol,
+		x: x,
+		y: y,
+		size: 24,
+		selected: false
+	};
+
+	if (boardType === 'teacher') {
+		teacherSymbols.push(symbolObj);
+	} else {
+		studentSymbols.push(symbolObj);
+	}
+
+	redrawCanvas(boardType);
 	isAnythingDrawn = true;
+}
+
+function redrawCanvas(boardType) {
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	const symbols = boardType === 'teacher' ? teacherSymbols : studentSymbols;
+	if (!ctx || !canvas) return;
+
+	// Clear and redraw all symbols
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	
+	symbols.forEach(symbolObj => {
+		ctx.font = `${symbolObj.size}px Arial`;
+		ctx.fillStyle = symbolObj.selected ? '#007bff' : '#333';
+		ctx.textAlign = 'center';
+		ctx.fillText(symbolObj.symbol, symbolObj.x, symbolObj.y);
+		
+		// Draw selection handles
+		if (symbolObj.selected) {
+			const metrics = ctx.measureText(symbolObj.symbol);
+			const width = metrics.width;
+			const height = symbolObj.size;
+			
+			// Selection box
+			ctx.strokeStyle = '#007bff';
+			ctx.lineWidth = 1;
+			ctx.strokeRect(symbolObj.x - width/2 - 5, symbolObj.y - height + 5, width + 10, height + 5);
+			
+			// Resize handle
+			ctx.fillStyle = '#007bff';
+			ctx.fillRect(symbolObj.x + width/2, symbolObj.y - 5, 8, 8);
+		}
+	});
+}
+
+function getSymbolAt(x, y, boardType) {
+	const symbols = boardType === 'teacher' ? teacherSymbols : studentSymbols;
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	if (!ctx) return null;
+
+	for (let i = symbols.length - 1; i >= 0; i--) {
+		const symbol = symbols[i];
+		ctx.font = `${symbol.size}px Arial`;
+		const metrics = ctx.measureText(symbol.symbol);
+		const width = metrics.width;
+		const height = symbol.size;
+		
+		if (x >= symbol.x - width/2 && x <= symbol.x + width/2 &&
+			y >= symbol.y - height && y <= symbol.y) {
+			return symbol;
+		}
+	}
+	return null;
+}
+
+function getResizeHandle(x, y, symbol, ctx) {
+	if (!symbol.selected) return null;
+	
+	ctx.font = `${symbol.size}px Arial`;
+	const metrics = ctx.measureText(symbol.symbol);
+	const width = metrics.width;
+	
+	const handleX = symbol.x + width/2;
+	const handleY = symbol.y - 5;
+	
+	if (x >= handleX && x <= handleX + 8 && y >= handleY && y <= handleY + 8) {
+		return 'resize';
+	}
+	return null;
+}
+
+function handleMouseDown(e, boardType) {
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	const rect = canvas.getBoundingClientRect();
+	const x = e.clientX - rect.left;
+	const y = e.clientY - rect.top;
+
+	// Check for symbol interaction first
+	const clickedSymbol = getSymbolAt(x, y, boardType);
+	
+	if (clickedSymbol) {
+		// Clear previous selection
+		const symbols = boardType === 'teacher' ? teacherSymbols : studentSymbols;
+		symbols.forEach(s => s.selected = false);
+		
+		// Select clicked symbol
+		clickedSymbol.selected = true;
+		selectedSymbol = clickedSymbol;
+		
+		// Check if clicking resize handle
+		resizeHandle = getResizeHandle(x, y, clickedSymbol, ctx);
+		
+		if (resizeHandle) {
+			isResizing = true;
+		} else {
+			isDragging = true;
+			dragOffset.x = x - clickedSymbol.x;
+			dragOffset.y = y - clickedSymbol.y;
+		}
+		
+		redrawCanvas(boardType);
+		return;
+	}
+	
+	// Clear selection if clicking empty space
+	if (selectedSymbol) {
+		selectedSymbol.selected = false;
+		selectedSymbol = null;
+		redrawCanvas(boardType);
+	}
+	
+	// Handle drawing/erasing
+	startDrawing(e, boardType);
+}
+
+function handleMouseMove(e, boardType) {
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	const rect = canvas.getBoundingClientRect();
+	const x = e.clientX - rect.left;
+	const y = e.clientY - rect.top;
+
+	if (isDragging && selectedSymbol) {
+		selectedSymbol.x = x - dragOffset.x;
+		selectedSymbol.y = y - dragOffset.y;
+		redrawCanvas(boardType);
+		return;
+	}
+	
+	if (isResizing && selectedSymbol) {
+		const distance = Math.sqrt((x - selectedSymbol.x) ** 2 + (y - selectedSymbol.y) ** 2);
+		selectedSymbol.size = Math.max(12, Math.min(60, distance / 2));
+		redrawCanvas(boardType);
+		return;
+	}
+	
+	// Handle drawing/erasing
+	draw(e, boardType);
+}
+
+function handleMouseUp(boardType) {
+	isDragging = false;
+	isResizing = false;
+	resizeHandle = null;
+	stopDrawing(boardType);
 }
 
 function insertPlus(boardType = 'teacher') { addMathSymbol('+', boardType); }
