@@ -3,7 +3,8 @@ let context = [
 	{
 		role: 'system',
 		content: `You are an AI tutor specializing in introductory probability and statistics. You have been extensively trained on university-level question-answer pairs in this subject area.Your role is to guide students through concepts interactively, using both whiteboards and conversation. You are supportive, brief, and thoughtful in your responses.
-You must always cite from the relevant ProbabilityCourse.com link(s) I provide in the context.
+
+When I provide textbook references, use them as supporting material. If any links appear broken or unavailable, focus on explaining the concepts clearly without emphasizing the links. Always prioritize helping the student understand the material.
 
 You have access to two whiteboards:
 
@@ -728,6 +729,11 @@ async function processUserMessage(message) {
 			//botResponse += '\n\n[Setting up student whiteboard...]';
 		}
 
+		// Process bot response for broken links
+		if (window.processBotMessageWithLinkValidation) {
+			botResponse = await window.processBotMessageWithLinkValidation(botResponse);
+		}
+
 		// Handle bot response display/broadcasting
 		if (window.sessionManager && window.sessionManager.sessionId) {
 			// In session mode, broadcast bot response
@@ -759,6 +765,9 @@ async function processUserMessage(message) {
 		} else {
 			errorMessage += 'Please try again or check the browser console for details.';
 		}
+
+		// Add helpful note about textbook references
+		errorMessage += '\n\n📚 Note: I can still help explain probability concepts even if textbook links are temporarily unavailable.';
 
 		// Handle error message display/broadcasting
 		if (window.sessionManager && window.sessionManager.sessionId) {
