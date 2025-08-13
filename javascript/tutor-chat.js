@@ -3,8 +3,7 @@ let context = [
 	{
 		role: 'system',
 		content: `You are an AI tutor specializing in introductory probability and statistics. You have been extensively trained on university-level question-answer pairs in this subject area.Your role is to guide students through concepts interactively, using both whiteboards and conversation. You are supportive, brief, and thoughtful in your responses.
-
-When I provide textbook references, use them as supporting material. If any links appear broken or unavailable, focus on explaining the concepts clearly without emphasizing the links. Always prioritize helping the student understand the material.
+You must always cite from the relevant ProbabilityCourse.com link(s) I provide in the context. If a link appears broken, still reference the textbook content but note the link issue.
 
 You have access to two whiteboards:
 
@@ -681,7 +680,9 @@ async function processUserMessage(message) {
 		if (searchResults.length > 0) {
 		let refsText = "Relevant sections from the ProbabilityCourse.com textbook:\n";
 		searchResults.forEach((r, idx) => {
-			refsText += `${idx + 1}. ${r.title} - ${r.link}\n   ${r.snippet}\n`;
+			const linkText = r.link.includes('unavailable') || r.link.includes('Built-in') ? 
+				'[Link temporarily unavailable]' : r.link;
+			refsText += `${idx + 1}. ${r.title} - ${linkText}\n   ${r.snippet}\n`;
 		});
 
 		context.push({

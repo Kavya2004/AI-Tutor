@@ -1,20 +1,28 @@
-// Fallback content for common probability topics
+// Fallback content with textbook knowledge
 const fallbackContent = {
   'probability': {
-    title: 'Introduction to Probability',
-    content: 'Probability measures the likelihood of events occurring, ranging from 0 (impossible) to 1 (certain).'
+    title: 'Introduction to Probability - Chapter 1',
+    content: 'Probability measures the likelihood of events occurring, ranging from 0 (impossible) to 1 (certain). Key concepts include sample spaces, events, and the basic probability rules.'
   },
   'bayes': {
-    title: 'Bayes Theorem', 
-    content: 'Bayes theorem describes the probability of an event based on prior knowledge of conditions related to the event.'
+    title: 'Bayes Theorem - Chapter 3', 
+    content: 'Bayes theorem: P(A|B) = P(B|A)P(A)/P(B). This describes how to update probabilities based on new evidence.'
   },
   'normal distribution': {
-    title: 'Normal Distribution',
-    content: 'The normal distribution is a bell-shaped curve that describes many natural phenomena.'
+    title: 'Normal Distribution - Chapter 5',
+    content: 'The normal distribution N(μ,σ²) is bell-shaped with mean μ and variance σ². About 68% of values fall within 1 standard deviation of the mean.'
   },
   'binomial': {
-    title: 'Binomial Distribution',
-    content: 'The binomial distribution models the number of successes in a fixed number of independent trials.'
+    title: 'Binomial Distribution - Chapter 4',
+    content: 'For n independent trials with success probability p: P(X=k) = C(n,k)p^k(1-p)^(n-k). Mean = np, Variance = np(1-p).'
+  },
+  'conditional': {
+    title: 'Conditional Probability - Chapter 2',
+    content: 'P(A|B) = P(A∩B)/P(B). The probability of A given that B has occurred.'
+  },
+  'independence': {
+    title: 'Independence - Chapter 2',
+    content: 'Events A and B are independent if P(A∩B) = P(A)P(B), or equivalently P(A|B) = P(A).'
   }
 };
 
