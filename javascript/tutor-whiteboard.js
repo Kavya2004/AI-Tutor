@@ -9,6 +9,9 @@ let isDrawing = false;
 let isDrawingMode = false;
 let teacherDrawingMode = false;
 let studentDrawingMode = false;
+let isEraserMode = false;
+let teacherEraserMode = false;
+let studentEraserMode = false;
 let currentPath = [];
 let isExpanded = false;
 let recogTimer = null;
@@ -24,11 +27,13 @@ function setupWhiteboardControls() {
 	// Teacher whiteboard controls
 	const clearTeacherButton = document.getElementById('clearTeacherButton');
 	const drawTeacherButton = document.getElementById('drawTeacherButton');
+	const eraserTeacherButton = document.getElementById('eraserTeacherButton');
 	const expandTeacherButton = document.getElementById('expandTeacherButton');
 
 	// Student whiteboard controls
 	const clearStudentButton = document.getElementById('clearStudentButton');
 	const drawStudentButton = document.getElementById('drawStudentButton');
+	const eraserStudentButton = document.getElementById('eraserStudentButton');
 	const expandStudentButton = document.getElementById('expandStudentButton');
 
 	if (clearTeacherButton) {
@@ -37,6 +42,10 @@ function setupWhiteboardControls() {
 
 	if (drawTeacherButton) {
 		drawTeacherButton.addEventListener('click', () => toggleDrawing('teacher'));
+	}
+
+	if (eraserTeacherButton) {
+		eraserTeacherButton.addEventListener('click', () => toggleEraser('teacher'));
 	}
 
 	if (expandTeacherButton) {
@@ -52,6 +61,10 @@ function setupWhiteboardControls() {
 			resizeCanvas(studentCanvas, 'student');
 			toggleDrawing('student');
 		});
+	}
+
+	if (eraserStudentButton) {
+		eraserStudentButton.addEventListener('click', () => toggleEraser('student'));
 	}
 
 	if (expandStudentButton) {
@@ -370,6 +383,7 @@ function setupCanvas(canvas, ctx, boardType) {
 	ctx.lineWidth = 4;
 	ctx.lineCap = 'round';
 	ctx.lineJoin = 'round';
+	ctx.globalCompositeOperation = 'source-over';
 }
 
 function switchWhiteboard(boardType) {
@@ -618,15 +632,21 @@ function broadcastDiagramAction(diagramName, boardType = 'teacher') {
 function toggleDrawing(boardType) {
 	if (boardType === 'teacher') {
 		teacherDrawingMode = !teacherDrawingMode;
+		if (teacherDrawingMode) teacherEraserMode = false;
 		isDrawingMode = teacherDrawingMode;
+		isEraserMode = teacherEraserMode;
 		if (teacherCanvas) {
 			teacherCanvas.style.cursor = teacherDrawingMode ? 'crosshair' : 'default';
+			teacherCtx.globalCompositeOperation = 'source-over';
 		}
 	} else {
 		studentDrawingMode = !studentDrawingMode;
+		if (studentDrawingMode) studentEraserMode = false;
 		isDrawingMode = studentDrawingMode;
+		isEraserMode = studentEraserMode;
 		if (studentCanvas) {
 			studentCanvas.style.cursor = studentDrawingMode ? 'crosshair' : 'default';
+			studentCtx.globalCompositeOperation = 'source-over';
 		}
 	}
 
@@ -645,26 +665,66 @@ function toggleDrawing(boardType) {
 	console.log(`[DRAW] Drawing mode ${currentMode ? 'ENABLED' : 'DISABLED'} for ${boardType}`);
 }
 
+function toggleEraser(boardType) {
+	if (boardType === 'teacher') {
+		teacherEraserMode = !teacherEraserMode;
+		if (teacherEraserMode) teacherDrawingMode = false;
+		isEraserMode = teacherEraserMode;
+		isDrawingMode = teacherDrawingMode;
+		if (teacherCanvas) {
+			teacherCanvas.style.cursor = teacherEraserMode ? 'grab' : 'default';
+			teacherCtx.globalCompositeOperation = teacherEraserMode ? 'destination-out' : 'source-over';
+		}
+	} else {
+		studentEraserMode = !studentEraserMode;
+		if (studentEraserMode) studentDrawingMode = false;
+		isEraserMode = studentEraserMode;
+		isDrawingMode = studentDrawingMode;
+		if (studentCanvas) {
+			studentCanvas.style.cursor = studentEraserMode ? 'grab' : 'default';
+			studentCtx.globalCompositeOperation = studentEraserMode ? 'destination-out' : 'source-over';
+		}
+	}
+
+	updateDrawButtons();
+	console.log(`[ERASE] Eraser mode ${isEraserMode ? 'ENABLED' : 'DISABLED'} for ${boardType}`);
+}
+
 function updateDrawButtons() {
 	const drawTeacherButton = document.getElementById('drawTeacherButton');
 	const drawStudentButton = document.getElementById('drawStudentButton');
+	const eraserTeacherButton = document.getElementById('eraserTeacherButton');
+	const eraserStudentButton = document.getElementById('eraserStudentButton');
 
 	if (drawTeacherButton) {
-		drawTeacherButton.style.background = isDrawingMode ? '#337810' : 'white';
-		drawTeacherButton.style.color = isDrawingMode ? 'white' : '#333';
-		drawTeacherButton.textContent = isDrawingMode ? 'Stop Draw' : 'Draw';
+		drawTeacherButton.style.background = teacherDrawingMode ? '#337810' : 'white';
+		drawTeacherButton.style.color = teacherDrawingMode ? 'white' : '#333';
+		drawTeacherButton.textContent = teacherDrawingMode ? 'Stop Draw' : 'Draw';
 	}
 
 	if (drawStudentButton) {
-		drawStudentButton.style.background = isDrawingMode ? '#337810' : 'white';
-		drawStudentButton.style.color = isDrawingMode ? 'white' : '#333';
-		drawStudentButton.textContent = isDrawingMode ? 'Stop Draw' : 'Draw';
+		drawStudentButton.style.background = studentDrawingMode ? '#337810' : 'white';
+		drawStudentButton.style.color = studentDrawingMode ? 'white' : '#333';
+		drawStudentButton.textContent = studentDrawingMode ? 'Stop Draw' : 'Draw';
+	}
+
+	if (eraserTeacherButton) {
+		eraserTeacherButton.style.background = teacherEraserMode ? '#dc3545' : 'white';
+		eraserTeacherButton.style.color = teacherEraserMode ? 'white' : '#333';
+		eraserTeacherButton.textContent = teacherEraserMode ? 'Stop Erase' : 'Eraser';
+	}
+
+	if (eraserStudentButton) {
+		eraserStudentButton.style.background = studentEraserMode ? '#dc3545' : 'white';
+		eraserStudentButton.style.color = studentEraserMode ? 'white' : '#333';
+		eraserStudentButton.textContent = studentEraserMode ? 'Stop Erase' : 'Eraser';
 	}
 }
 
 function startDrawing(e, boardType) {
-	const currentMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
-	if (!currentMode) return;
+	const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
+	const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
+	if (!currentDrawMode && !currentEraseMode) return;
 
 	isDrawing = true;
 	isAnythingDrawn = true;
@@ -680,11 +740,18 @@ function startDrawing(e, boardType) {
 	currentPath = [{ x, y }];
 	ctx.beginPath();
 	ctx.moveTo(x, y);
+
+	if (currentEraseMode) {
+		ctx.lineWidth = 20; // Larger eraser size
+	} else {
+		ctx.lineWidth = 4; // Normal pen size
+	}
 }
 
 function draw(e, boardType) {
-	const currentMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
-	if (!isDrawing || !currentMode) return;
+	const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
+	const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
+	if (!isDrawing || (!currentDrawMode && !currentEraseMode)) return;
 
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
@@ -1035,17 +1102,61 @@ function drawTreeDiagram(boardType = 'teacher') {
 	});
 }
 
+// Math button functions
+function addMathSymbol(symbol, boardType = 'teacher') {
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	if (!ctx || !canvas) return;
+
+	ctx.font = '24px Arial';
+	ctx.fillStyle = '#333';
+	ctx.textAlign = 'left';
+
+	// Find a good position (simple placement)
+	const x = Math.random() * (canvas.width - 100) + 50;
+	const y = Math.random() * (canvas.height - 100) + 50;
+
+	ctx.fillText(symbol, x, y);
+	isAnythingDrawn = true;
+}
+
+function insertPlus(boardType = 'teacher') { addMathSymbol('+', boardType); }
+function insertMinus(boardType = 'teacher') { addMathSymbol('−', boardType); }
+function insertMultiply(boardType = 'teacher') { addMathSymbol('×', boardType); }
+function insertDivide(boardType = 'teacher') { addMathSymbol('÷', boardType); }
+function insertEquals(boardType = 'teacher') { addMathSymbol('=', boardType); }
+function insertFraction(boardType = 'teacher') { addMathSymbol('½', boardType); }
+function insertSquareRoot(boardType = 'teacher') { addMathSymbol('√', boardType); }
+function insertPi(boardType = 'teacher') { addMathSymbol('π', boardType); }
+
 // Export functions for external use
 window.tutorWhiteboard = {
 	clearWhiteboard,
 	toggleDrawing,
+	toggleEraser,
 	toggleWhiteboardSize,
 	drawProbabilityScale,
 	drawSampleDistribution,
 	drawNormalCurve,
 	drawTreeDiagram,
-	switchWhiteboard
+	switchWhiteboard,
+	insertPlus,
+	insertMinus,
+	insertMultiply,
+	insertDivide,
+	insertEquals,
+	insertFraction,
+	insertSquareRoot,
+	insertPi
 };
 
-// Make switchWhiteboard globally available
+// Make functions globally available
 window.switchWhiteboard = switchWhiteboard;
+window.insertPlus = insertPlus;
+window.insertMinus = insertMinus;
+window.insertMultiply = insertMultiply;
+window.insertDivide = insertDivide;
+window.insertEquals = insertEquals;
+window.insertFraction = insertFraction;
+window.insertSquareRoot = insertSquareRoot;
+window.insertPi = insertPi;
