@@ -1152,29 +1152,46 @@ function redrawCanvas(boardType) {
 	const symbols = boardType === 'teacher' ? teacherSymbols : studentSymbols;
 	if (!ctx || !canvas) return;
 
-	// Clear and redraw all symbols
+	// Save current drawing state
+	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	
+	// Clear canvas
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	
+	// Restore drawing (but this will clear symbols, so we need a different approach)
+	// For now, just draw symbols over existing content
+	ctx.putImageData(imageData, 0, 0);
+	
+	// Clear only symbol areas and redraw them
 	symbols.forEach(symbolObj => {
 		ctx.font = `${symbolObj.size}px Arial`;
+		const metrics = ctx.measureText(symbolObj.symbol);
+		const width = metrics.width;
+		const height = symbolObj.size;
+		
+		// Clear symbol area
+		ctx.clearRect(symbolObj.x - width/2 - 15, symbolObj.y - height - 15, width + 30, height + 30);
+		
+		// Draw symbol
 		ctx.fillStyle = symbolObj.selected ? '#007bff' : '#333';
 		ctx.textAlign = 'center';
 		ctx.fillText(symbolObj.symbol, symbolObj.x, symbolObj.y);
 		
 		// Draw selection handles
 		if (symbolObj.selected) {
-			const metrics = ctx.measureText(symbolObj.symbol);
-			const width = metrics.width;
-			const height = symbolObj.size;
-			
 			// Selection box
 			ctx.strokeStyle = '#007bff';
-			ctx.lineWidth = 1;
-			ctx.strokeRect(symbolObj.x - width/2 - 5, symbolObj.y - height + 5, width + 10, height + 5);
+			ctx.lineWidth = 2;
+			ctx.setLineDash([5, 5]);
+			ctx.strokeRect(symbolObj.x - width/2 - 10, symbolObj.y - height - 5, width + 20, height + 15);
+			ctx.setLineDash([]);
 			
 			// Resize handle
 			ctx.fillStyle = '#007bff';
-			ctx.fillRect(symbolObj.x + width/2, symbolObj.y - 5, 8, 8);
+			ctx.fillRect(symbolObj.x + width/2 + 5, symbolObj.y - 10, 10, 10);
+			ctx.strokeStyle = '#fff';
+			ctx.lineWidth = 1;
+			ctx.strokeRect(symbolObj.x + width/2 + 5, symbolObj.y - 10, 10, 10);
 		}
 	});
 }
@@ -1189,10 +1206,10 @@ function getSymbolAt(x, y, boardType) {
 		ctx.font = `${symbol.size}px Arial`;
 		const metrics = ctx.measureText(symbol.symbol);
 		const width = metrics.width;
-		const height = symbol.size;
+		const height = symbol.size * 0.8;
 		
-		if (x >= symbol.x - width/2 && x <= symbol.x + width/2 &&
-			y >= symbol.y - height && y <= symbol.y) {
+		if (x >= symbol.x - width/2 - 10 && x <= symbol.x + width/2 + 10 &&
+			y >= symbol.y - height - 10 && y <= symbol.y + 10) {
 			return symbol;
 		}
 	}
@@ -1209,7 +1226,7 @@ function getResizeHandle(x, y, symbol, ctx) {
 	const handleX = symbol.x + width/2;
 	const handleY = symbol.y - 5;
 	
-	if (x >= handleX && x <= handleX + 8 && y >= handleY && y <= handleY + 8) {
+	if (x >= handleX - 4 && x <= handleX + 12 && y >= handleY - 4 && y <= handleY + 12) {
 		return 'resize';
 	}
 	return null;
@@ -1246,15 +1263,15 @@ function handleMouseDown(e, boardType) {
 		}
 		
 		redrawCanvas(boardType);
+		e.preventDefault();
 		return;
 	}
 	
 	// Clear selection if clicking empty space
-	if (selectedSymbol) {
-		selectedSymbol.selected = false;
-		selectedSymbol = null;
-		redrawCanvas(boardType);
-	}
+	const symbols = boardType === 'teacher' ? teacherSymbols : studentSymbols;
+	symbols.forEach(s => s.selected = false);
+	selectedSymbol = null;
+	redrawCanvas(boardType);
 	
 	// Handle drawing/erasing
 	startDrawing(e, boardType);
@@ -1270,24 +1287,31 @@ function handleMouseMove(e, boardType) {
 		selectedSymbol.x = x - dragOffset.x;
 		selectedSymbol.y = y - dragOffset.y;
 		redrawCanvas(boardType);
+		e.preventDefault();
 		return;
 	}
 	
 	if (isResizing && selectedSymbol) {
 		const distance = Math.sqrt((x - selectedSymbol.x) ** 2 + (y - selectedSymbol.y) ** 2);
-		selectedSymbol.size = Math.max(12, Math.min(60, distance / 2));
+		selectedSymbol.size = Math.max(12, Math.min(60, distance));
 		redrawCanvas(boardType);
+		e.preventDefault();
 		return;
 	}
 	
-	// Handle drawing/erasing
-	draw(e, boardType);
+	// Handle drawing/erasing only if not manipulating symbols
+	if (!isDragging && !isResizing) {
+		draw(e, boardType);
+	}
 }
 
 function handleMouseUp(boardType) {
-	isDragging = false;
-	isResizing = false;
-	resizeHandle = null;
+	if (isDragging || isResizing) {
+		isDragging = false;
+		isResizing = false;
+		resizeHandle = null;
+		return;
+	}
 	stopDrawing(boardType);
 }
 
