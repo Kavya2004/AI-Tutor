@@ -17,17 +17,7 @@ let isExpanded = false;
 let recogTimer = null;
 let isAnythingDrawn = false;
 let activeWhiteboard = 'teacher';
-
-// Symbol management
-let teacherSymbols = [];
-let studentSymbols = [];
-let selectedSymbol = null;
-let isDragging = false;
-let isResizing = false;
-let dragOffset = { x: 0, y: 0 };
-let resizeHandle = null;
-let teacherDrawingData = null;
-let studentDrawingData = null;
+let pendingSymbol = null;
 
 document.addEventListener('DOMContentLoaded', function () {
 	initializeWhiteboards();
@@ -381,30 +371,20 @@ function initializeWhiteboards() {
 }
 
 function setupCanvas(canvas, ctx, boardType) {
-	// Remove existing listeners first
-	canvas.removeEventListener('mousedown', handleMouseDown);
-	canvas.removeEventListener('mousemove', handleMouseMove);
-	canvas.removeEventListener('mouseup', handleMouseUp);
-	
-	// Add new listeners
-	canvas.addEventListener('mousedown', (e) => {
-		console.log('Canvas mousedown event');
-		handleMouseDown(e, boardType);
-	});
-	canvas.addEventListener('mousemove', (e) => handleMouseMove(e, boardType));
-	canvas.addEventListener('mouseup', () => handleMouseUp(boardType));
-	canvas.addEventListener('mouseout', () => handleMouseUp(boardType));
+	canvas.addEventListener('mousedown', (e) => startDrawing(e, boardType));
+	canvas.addEventListener('mousemove', (e) => draw(e, boardType));
+	canvas.addEventListener('mouseup', () => stopDrawing(boardType));
+	canvas.addEventListener('mouseout', () => stopDrawing(boardType));
 
 	canvas.addEventListener('touchstart', (e) => handleTouchStart(e, boardType));
 	canvas.addEventListener('touchmove', (e) => handleTouchMove(e, boardType));
-	canvas.addEventListener('touchend', () => handleMouseUp(boardType));
+	canvas.addEventListener('touchend', () => stopDrawing(boardType));
 
 	ctx.strokeStyle = '#333';
 	ctx.lineWidth = 4;
 	ctx.lineCap = 'round';
 	ctx.lineJoin = 'round';
 	ctx.globalCompositeOperation = 'source-over';
-	ctx.willReadFrequently = true;
 }
 
 function switchWhiteboard(boardType) {
@@ -624,16 +604,6 @@ function clearWhiteboard(boardType) {
 	if (!ctx || !canvas) return;
 
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	
-	// Clear symbols and drawing data
-	if (boardType === 'teacher') {
-		teacherSymbols = [];
-		teacherDrawingData = null;
-	} else {
-		studentSymbols = [];
-		studentDrawingData = null;
-	}
-	selectedSymbol = null;
 
 	if (window.sessionManager && window.sessionManager.sessionId) {
 		window.sessionManager.ws.send(
@@ -659,8 +629,6 @@ function broadcastDiagramAction(diagramName, boardType = 'teacher') {
 }
 
 function toggleDrawing(boardType) {
-	console.log('Toggle drawing called for:', boardType);
-	
 	if (boardType === 'teacher') {
 		teacherDrawingMode = !teacherDrawingMode;
 		if (teacherDrawingMode) teacherEraserMode = false;
@@ -692,9 +660,6 @@ function toggleDrawing(boardType) {
 			isAnythingDrawn = false;
 		}, 500);
 	}
-
-	console.log(`[DRAW] Drawing mode ${currentMode ? 'ENABLED' : 'DISABLED'} for ${boardType}`);
-	console.log('Current modes:', { teacherDrawingMode, studentDrawingMode });
 }
 
 function toggleEraser(boardType) {
@@ -751,31 +716,34 @@ function updateDrawButtons() {
 		eraserStudentButton.style.color = studentEraserMode ? 'white' : '#333';
 		eraserStudentButton.textContent = studentEraserMode ? 'Stop Erase' : 'Eraser';
 	}
-
-	console.log('Draw modes:', { teacherDrawingMode, studentDrawingMode, teacherEraserMode, studentEraserMode });
 }
 
 function startDrawing(e, boardType) {
-	const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
-	const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
-	
-	console.log('Start drawing:', { boardType, currentDrawMode, currentEraseMode });
-	
-	if (!currentDrawMode && !currentEraseMode) {
-		console.log('No draw/erase mode active');
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	const rect = canvas.getBoundingClientRect();
+	const x = e.clientX - rect.left;
+	const y = e.clientY - rect.top;
+
+	// If there's a pending symbol, place it at click location
+	if (pendingSymbol) {
+		ctx.font = '24px Arial';
+		ctx.fillStyle = '#333';
+		ctx.textAlign = 'center';
+		ctx.fillText(pendingSymbol, x, y);
+		pendingSymbol = null;
+		canvas.style.cursor = 'crosshair';
+		isAnythingDrawn = true;
 		return;
 	}
+
+	const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
+	const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
+	if (!currentDrawMode && !currentEraseMode) return;
 
 	isDrawing = true;
 	isAnythingDrawn = true;
 	clearTimeout(recogTimer);
-
-	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
-	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
-
-	const rect = canvas.getBoundingClientRect();
-	const x = e.clientX - rect.left;
-	const y = e.clientY - rect.top;
 
 	currentPath = [{ x, y }];
 	ctx.beginPath();
@@ -788,16 +756,12 @@ function startDrawing(e, boardType) {
 		ctx.lineWidth = 4;
 		ctx.globalCompositeOperation = 'source-over';
 	}
-	
-	console.log('Drawing started successfully');
 }
 
 function draw(e, boardType) {
 	const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
 	const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
 	if (!isDrawing || (!currentDrawMode && !currentEraseMode)) return;
-	// Don't draw if manipulating symbols
-	if (isDragging || isResizing) return;
 
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
@@ -827,10 +791,6 @@ function draw(e, boardType) {
 function stopDrawing(boardType) {
 	isDrawing = false;
 	currentPath = [];
-	// Save drawing state after drawing
-	if (isAnythingDrawn) {
-		saveDrawingState(boardType);
-	}
 }
 
 // Drawing functions that can work on either whiteboard
@@ -1151,34 +1111,19 @@ function drawTreeDiagram(boardType = 'teacher') {
 	});
 }
 
-// Math symbol functions
+// Math symbol functions - click to place
 function addMathSymbol(symbol, boardType = 'teacher') {
-	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
-	if (!canvas) return;
-
-	// Save current drawing state before adding symbol
-	saveDrawingState(boardType);
-
-	const x = Math.random() * (canvas.width - 100) + 50;
-	const y = Math.random() * (canvas.height - 100) + 50;
-
-	const symbolObj = {
-		id: Date.now() + Math.random(),
-		symbol: symbol,
-		x: x,
-		y: y,
-		size: 24,
-		selected: false
-	};
-
-	if (boardType === 'teacher') {
-		teacherSymbols.push(symbolObj);
-	} else {
-		studentSymbols.push(symbolObj);
+	const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
+	if (!currentDrawMode) {
+		alert('Please enable Draw mode first to add math symbols');
+		return;
 	}
 
-	redrawCanvas(boardType);
-	isAnythingDrawn = true;
+	pendingSymbol = symbol;
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	if (canvas) {
+		canvas.style.cursor = 'crosshair';
+	}
 }
 
 function saveDrawingState(boardType) {
