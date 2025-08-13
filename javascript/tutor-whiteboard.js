@@ -716,6 +716,17 @@ function updateDrawButtons() {
 		eraserStudentButton.style.color = studentEraserMode ? 'white' : '#333';
 		eraserStudentButton.textContent = studentEraserMode ? 'Stop Erase' : 'Eraser';
 	}
+
+	// Show/hide math buttons based on drawing mode
+	const teacherMathButtons = document.querySelector('#teacherPanel .math-buttons');
+	const studentMathButtons = document.querySelector('#studentPanel .math-buttons');
+	
+	if (teacherMathButtons) {
+		teacherMathButtons.style.display = teacherDrawingMode ? 'flex' : 'none';
+	}
+	if (studentMathButtons) {
+		studentMathButtons.style.display = studentDrawingMode ? 'flex' : 'none';
+	}
 }
 
 function startDrawing(e, boardType) {
