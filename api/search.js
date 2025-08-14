@@ -59,11 +59,22 @@ export default async function handler(req, res) {
           if (response.ok) {
             const data = await response.json();
             if (data.items) {
-              results = data.items.slice(0, 3).map(item => ({
-                title: item.title,
-                link: item.link,
-                snippet: item.snippet
-              }));
+              results = data.items.slice(0, 3).map(item => {
+                // Fix common URL format issues
+                let fixedLink = item.link
+                  .replace(/₁/g, '_1_')
+                  .replace(/₂/g, '_2_')
+                  .replace(/₃/g, '_3_')
+                  .replace(/₄/g, '_4_')
+                  .replace(/₅/g, '_5_')
+                  .replace(/basicdefinitions/g, '0_0_introduction');
+                
+                return {
+                  title: item.title,
+                  link: fixedLink,
+                  snippet: item.snippet
+                };
+              });
             }
           }
         } catch (searchError) {
