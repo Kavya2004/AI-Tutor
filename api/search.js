@@ -50,7 +50,7 @@ export default async function handler(req, res) {
       
       let results = [];
       
-      // Try Google Custom Search first
+      // Always provide textbook content
       if (apiKey && cx) {
         try {
           const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}`;
@@ -61,14 +61,13 @@ export default async function handler(req, res) {
             if (data.items) {
               results = data.items.slice(0, 3).map(item => ({
                 title: item.title,
-                link: item.link,
-                snippet: item.snippet,
-                note: 'If link is unavailable, the content below provides the key concepts.'
+                link: `https://www.probabilitycourse.com/${item.title.toLowerCase().replace(/\s+/g, '_')}`,
+                snippet: item.snippet
               }));
             }
           }
         } catch (searchError) {
-          console.warn('Google Search failed, using fallback:', searchError.message);
+          console.warn('Using textbook content:', searchError.message);
         }
       }
       

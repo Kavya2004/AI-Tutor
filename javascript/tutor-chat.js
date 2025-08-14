@@ -3,8 +3,7 @@ let context = [
 	{
 		role: 'system',
 		content: `You are an AI tutor specializing in introductory probability and statistics. You have been extensively trained on university-level question-answer pairs in this subject area. Your role is to guide students through concepts interactively, using both whiteboards and conversation. You are supportive, brief, and thoughtful in your responses.
-
-Always help students with their probability questions. Use any textbook references I provide as supporting material, but don't let missing or broken links prevent you from teaching. Your primary goal is to help students learn.
+You must always cite from the relevant ProbabilityCourse.com sections I provide in the context.
 
 You have access to two whiteboards:
 
@@ -679,17 +678,15 @@ async function processUserMessage(message) {
 		const searchResults = await searchProbabilityCourse(message);
 
 		if (searchResults.length > 0) {
-		let refsText = "Relevant sections from the ProbabilityCourse.com textbook:\n";
-		searchResults.forEach((r, idx) => {
-			const linkText = r.link.includes('unavailable') || r.link.includes('Built-in') ? 
-				'[Link temporarily unavailable]' : r.link;
-			refsText += `${idx + 1}. ${r.title} - ${linkText}\n   ${r.snippet}\n`;
-		});
+			let refsText = "Relevant sections from the ProbabilityCourse.com textbook:\n";
+			searchResults.forEach((r, idx) => {
+				refsText += `${idx + 1}. ${r.title} - ${r.link}\n   ${r.snippet}\n`;
+			});
 
-		context.push({
-			role: 'system',
-			content: refsText
-		});
+			context.push({
+				role: 'system',
+				content: refsText
+			});
 		}
 
 		// Get AI response
