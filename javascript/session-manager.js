@@ -36,78 +36,84 @@ class SessionManager {
 
     const sessionControls = document.createElement("div");
     sessionControls.className = "session-controls";
-    sessionControls.style.cssText = `
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
-            padding: 10px;
-            background: #f5f5f5;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            width: 100%;
-            box-sizing: border-box;
-            resize: both;
-            overflow: auto;
-        `;
     sessionControls.innerHTML = `
-            <button id="createSessionBtn" class="session-btn create-session">
-                👥 Create Session
-            </button>
-            <button id="customizeProfileBtn" class="session-btn">
-            🎨 Customize Profile
-        </button>
-
-            <button id="joinSessionBtn" class="session-btn join-session">
-                🔗 Join Session
-            </button>
-            <button id="leaveSessionBtn" class="session-btn leave-session" style="display: none;">
-                🚪 Leave Session
-            </button>
-            <button id="shareSessionBtn" class="session-btn share-session" style="display: none;">
-                📤 Share Link
-            </button>
-            <button id="downloadSessionBtn" class="session-btn download-session" style="display: none;">
-                💾 Download
-            </button>
+            <div class="session-top-row">
+                <div class="session-dropdown">
+                    <button class="session-dropdown-btn" id="sessionDropdownBtn">
+                        <span id="sessionDropdownText">💬 No Active Session</span>
+                        <span>▼</span>
+                    </button>
+                    <div class="session-dropdown-content" id="sessionDropdownContent">
+                        <div class="participants-container" id="participantsContainer">
+                            <div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">
+                                No active session
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button id="customizeProfileBtn" class="session-btn customize-profile" style="flex: 0 0 auto; padding: 8px;">
+                    🎨
+                </button>
+            </div>
+            <div class="session-bottom-row">
+                <button id="createSessionBtn" class="session-btn create-session">
+                    👥 Create
+                </button>
+                <button id="joinSessionBtn" class="session-btn join-session">
+                    🔗 Join
+                </button>
+                <button id="publicSessionsBtn" class="session-btn browse-public">
+                    🌐 Browse
+                </button>
+                <button id="leaveSessionBtn" class="session-btn leave-session" style="display: none;">
+                    🚪 Leave
+                </button>
+                <button id="shareSessionBtn" class="session-btn share-session" style="display: none;">
+                    📤 Share
+                </button>
+                <button id="downloadSessionBtn" class="session-btn download-session" style="display: none;">
+                    💾 Save
+                </button>
+            </div>
         `;
 
     chatHeader.insertBefore(sessionControls, chatHeader.firstChild);
 
-    document
-      .getElementById("createSessionBtn")
-      .addEventListener("click", () => this.createSession());
-    document
-      .getElementById("customizeProfileBtn")
-      .addEventListener("click", () => {
-        this.showCustomizationModal();
-      });
+    // Setup dropdown functionality
+    this.setupSessionDropdown();
 
-    document
-      .getElementById("joinSessionBtn")
-      .addEventListener("click", () => this.showJoinModal());
-    document
-      .getElementById("leaveSessionBtn")
-      .addEventListener("click", () => this.leaveSession());
-    document
-      .getElementById("shareSessionBtn")
-      .addEventListener("click", () => this.shareSession());
-    document
-      .getElementById("downloadSessionBtn")
-      .addEventListener("click", () => this.downloadSession());
+    document.getElementById("createSessionBtn").addEventListener("click", () => this.createSession());
+    document.getElementById("customizeProfileBtn").addEventListener("click", () => this.showCustomizationModal());
+    document.getElementById("joinSessionBtn").addEventListener("click", () => this.showJoinModal());
+    document.getElementById("publicSessionsBtn").addEventListener("click", () => this.showPublicSessions());
+    document.getElementById("leaveSessionBtn").addEventListener("click", () => this.leaveSession());
+    document.getElementById("shareSessionBtn").addEventListener("click", () => this.shareSession());
+    document.getElementById("downloadSessionBtn").addEventListener("click", () => this.downloadSession());
+  }
+
+  setupSessionDropdown() {
+    const dropdownBtn = document.getElementById("sessionDropdownBtn");
+    const dropdownContent = document.getElementById("sessionDropdownContent");
+    
+    dropdownBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      dropdownContent.classList.toggle("show");
+      const arrow = dropdownBtn.querySelector("span:last-child");
+      arrow.textContent = dropdownContent.classList.contains("show") ? "▲" : "▼";
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!dropdownBtn.contains(e.target) && !dropdownContent.contains(e.target)) {
+        dropdownContent.classList.remove("show");
+        const arrow = dropdownBtn.querySelector("span:last-child");
+        arrow.textContent = "▼";
+      }
+    });
   }
 
   createPublicSessionsList() {
-    const sessionControls = document.querySelector(".session-controls");
-    
-    const publicSessionsBtn = document.createElement("button");
-    publicSessionsBtn.id = "publicSessionsBtn";
-    publicSessionsBtn.className = "session-btn";
-    publicSessionsBtn.textContent = "🌐 Browse Public Sessions";
-    publicSessionsBtn.addEventListener("click", () => this.showPublicSessions());
-    
-    const joinBtn = document.getElementById("joinSessionBtn");
-    joinBtn.parentNode.insertBefore(publicSessionsBtn, joinBtn.nextSibling);
+    // Public sessions button is now created in the main layout
   }
   
   async showPublicSessions() {
@@ -311,35 +317,7 @@ class SessionManager {
   }
 
   createParticipantsList() {
-    const chatMessages = document.getElementById("chatMessages");
-    const participantsList = document.createElement("div");
-    participantsList.id = "participantsList";
-    participantsList.className = "participants-list";
-    participantsList.style.cssText = `
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    overflow: hidden;
-    width: 100%;
-    box-sizing: border-box;
-    min-width: 0;
-    resize: vertical;
-    max-height: 300px;
-  `;
-    participantsList.innerHTML = `
-            <div class="participants-header">
-                <h4 id="sessionTitleHeader">Session Participants</h4>
-                <div class="session-info">
-                    <span id="sessionIdDisplay"></span>
-                    <span id="participantCount">0 participants</span>
-                </div>
-            </div>
-            <div class="participants-container" id="participantsContainer"></div>
-        `;
-  
-    chatMessages.parentNode.insertBefore(participantsList, chatMessages);
-    participantsList.style.display = "none";
+    // Participants list is now integrated into the dropdown
   }
 
   async createSession() {
@@ -828,25 +806,88 @@ class SessionManager {
 
   renderParticipants() {
     const container = document.getElementById("participantsContainer");
-    const count = document.getElementById("participantCount");
+    const dropdownText = document.getElementById("sessionDropdownText");
+
+    if (!this.sessionId || this.participants.size === 0) {
+      container.innerHTML = `
+        <div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">
+          No active session
+        </div>
+      `;
+      dropdownText.textContent = "💬 No Active Session";
+      return;
+    }
+
+    const sessionTitle = this.currentSessionTitle || `Session ${this.sessionId.substring(0, 8)}`;
+    const participantCount = this.participants.size;
+    dropdownText.innerHTML = `
+      <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
+        <span style="font-weight: 600; font-size: 12px;">${sessionTitle}</span>
+        <span style="font-size: 10px; opacity: 0.8;">${participantCount} participant${participantCount !== 1 ? 's' : ''}</span>
+      </div>
+    `;
 
     container.innerHTML = "";
-    count.textContent = `${this.participants.size} participant${this.participants.size !== 1 ? "s" : ""}`;
+    
+    // Add session info header
+    const sessionInfo = document.createElement("div");
+    sessionInfo.style.cssText = `
+      padding: 12px 16px 8px;
+      background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+      border-bottom: 1px solid #dee2e6;
+      font-size: 11px;
+      color: #495057;
+    `;
+    sessionInfo.innerHTML = `
+      <div style="font-weight: 600; margin-bottom: 4px;">${sessionTitle}</div>
+      <div style="opacity: 0.7;">ID: ${this.sessionId}</div>
+    `;
+    container.appendChild(sessionInfo);
 
     this.participants.forEach((participant, userName) => {
       const participantDiv = document.createElement("div");
       participantDiv.className = "participant-item";
+      participantDiv.style.cssText = `
+        display: flex;
+        align-items: center;
+        padding: 8px 16px;
+        border-bottom: 1px solid #f1f3f4;
+        transition: background 0.2s ease;
+      `;
       participantDiv.innerHTML = `
-            <div class="participant-info">
-                <div class="participant-avatar" style="background: ${participant.color || "#6c757d"};">
-                    ${participant.avatar || "👤"}
-                </div>
-                <div class="participant-details">
-                    <span class="participant-name">${userName}</span>
-                    <span class="participant-role">${userName === this.userName ? "(You)" : ""}</span>
-                </div>
-            </div>
-        `;
+        <div class="participant-avatar" style="
+          background: ${participant.color || "#6c757d"};
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          color: white;
+          margin-right: 10px;
+          flex-shrink: 0;
+        ">
+          ${participant.avatar || "👤"}
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 500; font-size: 12px; color: #333; margin-bottom: 2px;">
+            ${userName}${userName === this.userName ? ' (You)' : ''}
+          </div>
+          <div style="font-size: 10px; color: #666; opacity: 0.8;">
+            ${userName === this.userName && this.isHost ? 'Host' : 'Participant'}
+          </div>
+        </div>
+      `;
+      
+      participantDiv.addEventListener("mouseenter", () => {
+        participantDiv.style.background = "#f8f9fa";
+      });
+      
+      participantDiv.addEventListener("mouseleave", () => {
+        participantDiv.style.background = "transparent";
+      });
+      
       container.appendChild(participantDiv);
     });
   }
@@ -878,41 +919,48 @@ class SessionManager {
     }
   }
   updateSessionUI() {
-    const sessionIdDisplay = document.getElementById("sessionIdDisplay");
-    const participantsList = document.getElementById("participantsList");
-    const titleHeader = document.getElementById("sessionTitleHeader");
-  
+    const bottomRow = document.querySelector(".session-bottom-row");
+    
     if (this.sessionId) {
-      let displayText = `Session: ${this.sessionId}`;
-      if (this.currentSessionTitle) {
-        displayText = `${this.currentSessionTitle} (${this.sessionId})`;
-      }
-      sessionIdDisplay.textContent = displayText;
+      // Show session-active buttons
+      bottomRow.innerHTML = `
+        <button id="leaveSessionBtn" class="session-btn leave-session">
+          🚪 Leave
+        </button>
+        <button id="shareSessionBtn" class="session-btn share-session">
+          📤 Share
+        </button>
+        <button id="downloadSessionBtn" class="session-btn download-session">
+          💾 Save
+        </button>
+      `;
       
-      participantsList.style.display = "block";
-  
-      if (titleHeader) {
-        titleHeader.textContent = this.currentSessionTitle || 'Session Participants';
-      }
-  
-      document.getElementById("createSessionBtn").style.display = "none";
-      document.getElementById("joinSessionBtn").style.display = "none";
-      document.getElementById("leaveSessionBtn").style.display = "inline-block";
-      document.getElementById("shareSessionBtn").style.display = "inline-block";
-      document.getElementById("downloadSessionBtn").style.display = "inline-block";
+      // Re-attach event listeners
+      document.getElementById("leaveSessionBtn").addEventListener("click", () => this.leaveSession());
+      document.getElementById("shareSessionBtn").addEventListener("click", () => this.shareSession());
+      document.getElementById("downloadSessionBtn").addEventListener("click", () => this.downloadSession());
     } else {
-      participantsList.style.display = "none";
+      // Show default buttons
+      bottomRow.innerHTML = `
+        <button id="createSessionBtn" class="session-btn create-session">
+          👥 Create
+        </button>
+        <button id="joinSessionBtn" class="session-btn join-session">
+          🔗 Join
+        </button>
+        <button id="publicSessionsBtn" class="session-btn browse-public">
+          🌐 Browse
+        </button>
+      `;
       
-      if (titleHeader) {
-        titleHeader.textContent = 'Session Participants';
-      }
-  
-      document.getElementById("createSessionBtn").style.display = "inline-block";
-      document.getElementById("joinSessionBtn").style.display = "inline-block";
-      document.getElementById("leaveSessionBtn").style.display = "none";
-      document.getElementById("shareSessionBtn").style.display = "none";
-      document.getElementById("downloadSessionBtn").style.display = "none";
+      // Re-attach event listeners
+      document.getElementById("createSessionBtn").addEventListener("click", () => this.createSession());
+      document.getElementById("joinSessionBtn").addEventListener("click", () => this.showJoinModal());
+      document.getElementById("publicSessionsBtn").addEventListener("click", () => this.showPublicSessions());
     }
+    
+    // Update dropdown display
+    this.renderParticipants();
   }
 
   shareSession() {
@@ -967,6 +1015,7 @@ class SessionManager {
 
     this.currentSession = null;
     this.sessionId = null;
+    this.currentSessionTitle = null;
     this.isHost = false;
     this.participants.clear();
     this.sessionMessages = [];

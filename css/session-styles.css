@@ -1,68 +1,184 @@
 
 .session-controls {
     display: flex;
+    flex-direction: column;
     gap: 8px;
-    margin-bottom: 10px;
-    padding: 10px;
-    background: #f5f5f5;
+    margin-bottom: 8px;
+    padding: 8px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.session-top-row {
+    display: flex;
+    gap: 6px;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.session-dropdown {
+    position: relative;
+    flex: 1;
+}
+
+.session-dropdown-btn {
+    width: 100%;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border: none;
     border-radius: 8px;
-    border: 1px solid #ddd;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.2);
+}
+
+.session-dropdown-btn:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+.session-dropdown-content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    display: none;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.session-dropdown-content.show {
+    display: block;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.session-bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
 }
 
 .session-btn {
     padding: 8px 12px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    transition: all 0.2s ease;
+    font-size: 11px;
+    font-weight: 600;
+    transition: all 0.3s ease;
     white-space: nowrap;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.session-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.session-btn:hover::before {
+    left: 100%;
+}
+
+.session-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 .session-btn.create-session {
-    background: #4CAF50;
+    background: linear-gradient(135deg, #28a745, #20c997);
     color: white;
 }
 
 .session-btn.create-session:hover {
-    background: #45a049;
+    background: linear-gradient(135deg, #218838, #1da88a);
 }
 
 .session-btn.join-session {
-    background: #2196F3;
+    background: linear-gradient(135deg, #007bff, #6610f2);
     color: white;
 }
 
 .session-btn.join-session:hover {
-    background: #1976D2;
+    background: linear-gradient(135deg, #0056b3, #520dc2);
 }
 
 .session-btn.leave-session {
-    background: #f44336;
+    background: linear-gradient(135deg, #dc3545, #e83e8c);
     color: white;
 }
 
 .session-btn.leave-session:hover {
-    background: #ff9191;
+    background: linear-gradient(135deg, #c82333, #d91a72);
 }
 
 .session-btn.share-session {
-    background: #FF9800;
+    background: linear-gradient(135deg, #fd7e14, #ffc107);
     color: white;
 }
 
 .session-btn.share-session:hover {
-    background: #dbf168;
+    background: linear-gradient(135deg, #e8650e, #e0a800);
 }
 
 .session-btn.download-session {
-    background: #6df565;
+    background: linear-gradient(135deg, #6f42c1, #e83e8c);
     color: white;
 }
 
 .session-btn.download-session:hover {
-    background: #7bf96d;
+    background: linear-gradient(135deg, #59359a, #d91a72);
+}
+
+.session-btn.customize-profile {
+    background: linear-gradient(135deg, #17a2b8, #6610f2);
+    color: white;
+}
+
+.session-btn.customize-profile:hover {
+    background: linear-gradient(135deg, #138496, #520dc2);
+}
+
+.session-btn.browse-public {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    color: white;
+}
+
+.session-btn.browse-public:hover {
+    background: linear-gradient(135deg, #5a6268, #3d4142);
 }
 
 .session-btn.cancel {
@@ -158,20 +274,44 @@
 }
 
 .participants-list {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    margin-bottom: 10px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    margin-bottom: 8px;
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.participants-list:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    transform: translateY(-1px);
 }
 
 .participants-header {
-    background: #007bff;
+    background: linear-gradient(135deg, #007bff, #6610f2);
     color: white;
-    padding: 10px 15px;
+    padding: 12px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.participants-header:hover {
+    background: linear-gradient(135deg, #0056b3, #520dc2);
+}
+
+.participants-header::after {
+    content: '▼';
+    font-size: 12px;
+    transition: transform 0.3s ease;
+}
+
+.participants-header.collapsed::after {
+    transform: rotate(-90deg);
 }
 
 .participants-header h4 {
@@ -339,20 +479,26 @@
 
 @media (max-width: 768px) {
     .session-controls {
-        flex-wrap: wrap;
+        padding: 6px;
+    }
+    
+    .session-top-row {
+        gap: 4px;
+    }
+    
+    .session-bottom-row {
+        gap: 4px;
+        grid-template-columns: 1fr 1fr 1fr;
     }
     
     .session-btn {
+        font-size: 10px;
+        padding: 6px 8px;
+    }
+    
+    .session-dropdown-btn {
         font-size: 11px;
         padding: 6px 10px;
-    }
-    
-    .participants-list {
-        font-size: 12px;
-    }
-    
-    .participants-header h4 {
-        font-size: 13px;
     }
     
     .modal-content {
@@ -766,33 +912,21 @@
 
 @media (max-width: 480px) {
     .session-controls {
-        padding: 8px;
+        padding: 6px;
     }
     
     .session-btn {
-        padding: 6px 8px;
+        padding: 5px 6px;
+        font-size: 9px;
+    }
+    
+    .session-dropdown-btn {
         font-size: 10px;
+        padding: 5px 8px;
     }
     
-    .participants-header {
-        padding: 8px 12px;
-    }
-    
-    .participants-container {
-        padding: 8px;
-        max-height: 100px;
-    }
-    
-    .participant-item {
-        padding: 6px 8px;
-    }
-    
-    .participant-name {
-        font-size: 13px;
-    }
-    
-    .participant-role {
-        font-size: 11px;
+    .session-bottom-row {
+        gap: 3px;
     }
     
     .avatar-selection {
@@ -1032,3 +1166,80 @@
       font-size: 15px;
     }
   }
+
+/* Additional styling for the new compact layout */
+.session-dropdown-content {
+    border-top: 2px solid #007bff;
+    margin-top: 2px;
+}
+
+.session-dropdown-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.session-dropdown-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.session-dropdown-content::-webkit-scrollbar-thumb {
+    background: #007bff;
+    border-radius: 3px;
+}
+
+.session-dropdown-content::-webkit-scrollbar-thumb:hover {
+    background: #0056b3;
+}
+
+/* Improved button hover effects */
+.session-btn:active {
+    transform: translateY(0px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Better spacing for mobile */
+@media (max-width: 600px) {
+    .session-controls {
+        margin-bottom: 6px;
+    }
+    
+    .session-dropdown-btn {
+        min-height: 36px;
+    }
+    
+    .session-btn {
+        min-height: 32px;
+    }
+}
+
+/* Improved gradient animations */
+.session-btn {
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.session-btn:hover {
+    animation-play-state: paused;
+}
+
+/* Enhanced dropdown animation */
+.session-dropdown-content {
+    transform-origin: top;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.session-dropdown-content:not(.show) {
+    transform: scaleY(0);
+    opacity: 0;
+}
+
+.session-dropdown-content.show {
+    transform: scaleY(1);
+    opacity: 1;
+}
