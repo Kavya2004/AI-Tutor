@@ -37,54 +37,59 @@ class SessionManager {
     const sessionControls = document.createElement("div");
     sessionControls.className = "session-controls";
     sessionControls.innerHTML = `
-            <div class="session-top-row">
-                <div class="session-dropdown">
-                    <button class="session-dropdown-btn" id="sessionDropdownBtn">
-                        <span id="sessionDropdownText">💬 No Active Session</span>
-                        <span>▼</span>
-                    </button>
-                    <div class="session-dropdown-content" id="sessionDropdownContent">
-                        <div class="participants-container" id="participantsContainer">
-                            <div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">
-                                No active session
+            <button class="session-toggle-btn" id="sessionToggleBtn">
+                💬 Controls ▼
+            </button>
+            <div class="session-content" id="sessionContent" style="display: none;">
+                <div class="session-top-row">
+                    <div class="session-dropdown">
+                        <button class="session-dropdown-btn" id="sessionDropdownBtn">
+                            <span id="sessionDropdownText">💬 No Active Session</span>
+                            <span>▼</span>
+                        </button>
+                        <div class="session-dropdown-content" id="sessionDropdownContent">
+                            <div class="participants-container" id="participantsContainer">
+                                <div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">
+                                    No active session
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <button id="customizeProfileBtn" class="session-btn customize-profile" style="flex: 0 0 auto; padding: 8px;">
+                        🎨
+                    </button>
                 </div>
-                <button id="customizeProfileBtn" class="session-btn customize-profile" style="flex: 0 0 auto; padding: 8px;">
-                    🎨
-                </button>
-            </div>
-            <div class="session-bottom-row">
-                <button id="createSessionBtn" class="session-btn create-session">
-                    👥 Create
-                </button>
-                <button id="joinSessionBtn" class="session-btn join-session">
-                    🔗 Join
-                </button>
-                <button id="publicSessionsBtn" class="session-btn browse-public">
-                    🌐 Browse
-                </button>
-                <button id="leaveSessionBtn" class="session-btn leave-session" style="display: none;">
-                    🚪 Leave
-                </button>
-                <button id="shareSessionBtn" class="session-btn share-session" style="display: none;">
-                    📤 Share
-                </button>
-                <button id="downloadSessionBtn" class="session-btn download-session" style="display: none;">
-                    💾 Save
-                </button>
-            </div>
-            <div class="voice-controls-row">
-                <button id="voiceInputBtn" class="session-btn voice-input" title="Click to speak">
-                    🎤 Speak
-                </button>
-                <button id="autoSpeechBtn" class="session-btn auto-speech" title="Toggle auto-speech">
-                    🔇 Auto
-                </button>
-                <button id="voiceSettingsBtn" class="session-btn voice-settings" title="Voice settings">
-                    ⚙️ Settings
-                </button>
+                <div class="session-bottom-row">
+                    <button id="createSessionBtn" class="session-btn create-session">
+                        👥 Create
+                    </button>
+                    <button id="joinSessionBtn" class="session-btn join-session">
+                        🔗 Join
+                    </button>
+                    <button id="publicSessionsBtn" class="session-btn browse-public">
+                        🌐 Browse
+                    </button>
+                    <button id="leaveSessionBtn" class="session-btn leave-session" style="display: none;">
+                        🚪 Leave
+                    </button>
+                    <button id="shareSessionBtn" class="session-btn share-session" style="display: none;">
+                        📤 Share
+                    </button>
+                    <button id="downloadSessionBtn" class="session-btn download-session" style="display: none;">
+                        💾 Save
+                    </button>
+                </div>
+                <div class="voice-controls-row">
+                    <button id="voiceInputBtn" class="session-btn voice-input" title="Click to speak">
+                        🎤 Speak
+                    </button>
+                    <button id="autoSpeechBtn" class="session-btn auto-speech" title="Toggle auto-speech">
+                        🔇 Auto
+                    </button>
+                    <button id="voiceSettingsBtn" class="session-btn voice-settings" title="Voice settings">
+                        ⚙️ Settings
+                    </button>
+                </div>
             </div>
         `;
 
@@ -93,6 +98,7 @@ class SessionManager {
     // Setup dropdown functionality
     this.setupSessionDropdown();
     this.setupVoiceControls();
+    this.setupSessionToggle();
 
     document.getElementById("createSessionBtn").addEventListener("click", () => this.createSession());
     document.getElementById("customizeProfileBtn").addEventListener("click", () => this.showCustomizationModal());
@@ -155,6 +161,17 @@ class SessionManager {
       if (window.voiceTutor) {
         window.voiceTutor.toggleSettingsMenu();
       }
+    });
+  }
+
+  setupSessionToggle() {
+    const toggleBtn = document.getElementById("sessionToggleBtn");
+    const content = document.getElementById("sessionContent");
+    
+    toggleBtn?.addEventListener("click", () => {
+      const isVisible = content.style.display !== 'none';
+      content.style.display = isVisible ? 'none' : 'block';
+      toggleBtn.innerHTML = isVisible ? '💬 Controls ▼' : '💬 Controls ▲';
     });
   }
 

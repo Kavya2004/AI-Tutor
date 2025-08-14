@@ -145,20 +145,18 @@ class VoiceTutor {
         settingsContainer.style.cssText = `
             display: none;
             position: fixed;
-            bottom: 120px;
-            right: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background: #ffffff;
             padding: 12px;
             border-radius: 8px;
             border: 1px solid #ccc;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             z-index: 1001;
             flex-direction: column;
             gap: 8px;
             width: 220px;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.2s ease, transform 0.2s ease;
         `;
 
         const createSlider = (id, label, min, max, step, value, onChange) => {

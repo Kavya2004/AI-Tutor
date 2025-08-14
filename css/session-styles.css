@@ -11,6 +11,29 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
+.session-toggle-btn {
+    width: 100%;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,123,255,0.2);
+}
+
+.session-toggle-btn:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: translateY(-1px);
+}
+
+.session-content {
+    margin-top: 6px;
+}
+
 .session-top-row {
     display: flex;
     gap: 6px;
