@@ -37,8 +37,26 @@
 .session-top-row {
     display: flex;
     gap: 6px;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+    margin-bottom: 8px;
+}
+
+.session-dropdown {
+    margin-bottom: 8px;
+}
+
+.session-actions {
+    padding: 8px;
+    border-top: 1px solid #e9ecef;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+}
+
+.session-actions .session-btn {
+    font-size: 10px;
+    padding: 6px 8px;
 }
 
 .session-dropdown {

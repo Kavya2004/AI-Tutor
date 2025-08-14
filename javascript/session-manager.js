@@ -37,26 +37,26 @@ class SessionManager {
     const sessionControls = document.createElement("div");
     sessionControls.className = "session-controls";
     sessionControls.innerHTML = `
+            <div class="session-dropdown">
+                <button class="session-dropdown-btn" id="sessionDropdownBtn">
+                    <span id="sessionDropdownText">💬 No Active Session</span>
+                    <span>▼</span>
+                </button>
+                <div class="session-dropdown-content" id="sessionDropdownContent">
+                    <div class="participants-container" id="participantsContainer">
+                        <div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">
+                            No active session
+                        </div>
+                    </div>
+                </div>
+            </div>
             <button class="session-toggle-btn" id="sessionToggleBtn">
-                💬 Controls ▼
+                ⚙️ Functions ▼
             </button>
             <div class="session-content" id="sessionContent" style="display: none;">
                 <div class="session-top-row">
-                    <div class="session-dropdown">
-                        <button class="session-dropdown-btn" id="sessionDropdownBtn">
-                            <span id="sessionDropdownText">💬 No Active Session</span>
-                            <span>▼</span>
-                        </button>
-                        <div class="session-dropdown-content" id="sessionDropdownContent">
-                            <div class="participants-container" id="participantsContainer">
-                                <div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">
-                                    No active session
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <button id="customizeProfileBtn" class="session-btn customize-profile" style="flex: 0 0 auto; padding: 8px;">
-                        🎨
+                    <button id="customizeProfileBtn" class="session-btn customize-profile">
+                        🎨 Profile
                     </button>
                 </div>
                 <div class="session-bottom-row">
@@ -171,7 +171,7 @@ class SessionManager {
     toggleBtn?.addEventListener("click", () => {
       const isVisible = content.style.display !== 'none';
       content.style.display = isVisible ? 'none' : 'block';
-      toggleBtn.innerHTML = isVisible ? '💬 Controls ▼' : '💬 Controls ▲';
+      toggleBtn.innerHTML = isVisible ? '⚙️ Functions ▼' : '⚙️ Functions ▲';
     });
   }
 
@@ -982,44 +982,20 @@ class SessionManager {
     }
   }
   updateSessionUI() {
-    const bottomRow = document.querySelector(".session-bottom-row");
-    
     if (this.sessionId) {
-      // Show session-active buttons
-      bottomRow.innerHTML = `
-        <button id="leaveSessionBtn" class="session-btn leave-session">
-          🚪 Leave
-        </button>
-        <button id="shareSessionBtn" class="session-btn share-session">
-          📤 Share
-        </button>
-        <button id="downloadSessionBtn" class="session-btn download-session">
-          💾 Save
-        </button>
-      `;
-      
-      // Re-attach event listeners
-      document.getElementById("leaveSessionBtn").addEventListener("click", () => this.leaveSession());
-      document.getElementById("shareSessionBtn").addEventListener("click", () => this.shareSession());
-      document.getElementById("downloadSessionBtn").addEventListener("click", () => this.downloadSession());
+      document.getElementById("createSessionBtn").style.display = "none";
+      document.getElementById("joinSessionBtn").style.display = "none";
+      document.getElementById("publicSessionsBtn").style.display = "none";
+      document.getElementById("leaveSessionBtn").style.display = "block";
+      document.getElementById("shareSessionBtn").style.display = "block";
+      document.getElementById("downloadSessionBtn").style.display = "block";
     } else {
-      // Show default buttons
-      bottomRow.innerHTML = `
-        <button id="createSessionBtn" class="session-btn create-session">
-          👥 Create
-        </button>
-        <button id="joinSessionBtn" class="session-btn join-session">
-          🔗 Join
-        </button>
-        <button id="publicSessionsBtn" class="session-btn browse-public">
-          🌐 Browse
-        </button>
-      `;
-      
-      // Re-attach event listeners
-      document.getElementById("createSessionBtn").addEventListener("click", () => this.createSession());
-      document.getElementById("joinSessionBtn").addEventListener("click", () => this.showJoinModal());
-      document.getElementById("publicSessionsBtn").addEventListener("click", () => this.showPublicSessions());
+      document.getElementById("createSessionBtn").style.display = "block";
+      document.getElementById("joinSessionBtn").style.display = "block";
+      document.getElementById("publicSessionsBtn").style.display = "block";
+      document.getElementById("leaveSessionBtn").style.display = "none";
+      document.getElementById("shareSessionBtn").style.display = "none";
+      document.getElementById("downloadSessionBtn").style.display = "none";
     }
     
     // Update dropdown display
