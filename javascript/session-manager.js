@@ -47,32 +47,32 @@ class SessionManager {
                         <span>▼</span>
                     </button>
                     <div class="session-dropdown-content" id="sessionDropdownContent">
-                        <div class="session-actions">
-                            <button id="createSessionBtn" class="session-btn create-session">
-                                👥 Create
-                            </button>
-                            <button id="joinSessionBtn" class="session-btn join-session">
-                                🔗 Join
-                            </button>
-                            <button id="publicSessionsBtn" class="session-btn browse-public">
-                                🌐 Browse
-                            </button>
-                            <button id="leaveSessionBtn" class="session-btn leave-session" style="display: none;">
-                                🚪 Leave
-                            </button>
-                            <button id="shareSessionBtn" class="session-btn share-session" style="display: none;">
-                                📤 Share
-                            </button>
-                            <button id="downloadSessionBtn" class="session-btn download-session" style="display: none;">
-                                💾 Save
-                            </button>
-                        </div>
-                        <div class="participants-container" id="participantsContainer" style="max-height: 80px; overflow-y: auto;">
+                        <div class="participants-container" id="participantsContainer">
                             <div style="padding: 8px; text-align: center; color: #666; font-size: 12px;">
                                 No active session
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="session-actions">
+                    <button id="createSessionBtn" class="session-btn create-session">
+                        👥 Create
+                    </button>
+                    <button id="joinSessionBtn" class="session-btn join-session">
+                        🔗 Join
+                    </button>
+                    <button id="publicSessionsBtn" class="session-btn browse-public">
+                        🌐 Browse
+                    </button>
+                    <button id="leaveSessionBtn" class="session-btn leave-session" style="display: none !important;">
+                        🚪 Leave
+                    </button>
+                    <button id="shareSessionBtn" class="session-btn share-session" style="display: none !important;">
+                        📤 Share
+                    </button>
+                    <button id="downloadSessionBtn" class="session-btn download-session" style="display: none !important;">
+                        💾 Save
+                    </button>
                 </div>
                 <div class="voice-controls-row">
                     <button id="customizeProfileBtn" class="session-btn customize-profile">
@@ -1024,26 +1024,30 @@ class SessionManager {
     }
   }
   updateSessionUI() {
+    const createBtn = document.getElementById("createSessionBtn");
+    const joinBtn = document.getElementById("joinSessionBtn");
+    const browseBtn = document.getElementById("publicSessionsBtn");
+    const leaveBtn = document.getElementById("leaveSessionBtn");
+    const shareBtn = document.getElementById("shareSessionBtn");
+    const downloadBtn = document.getElementById("downloadSessionBtn");
+    
     if (this.sessionId) {
-      document.getElementById("createSessionBtn").style.display = "none";
-      document.getElementById("joinSessionBtn").style.display = "none";
-      document.getElementById("publicSessionsBtn").style.display = "none";
-      document.getElementById("leaveSessionBtn").style.display = "block";
-      document.getElementById("shareSessionBtn").style.display = "block";
-      document.getElementById("downloadSessionBtn").style.display = "block";
+      createBtn.style.display = "none";
+      joinBtn.style.display = "none";
+      browseBtn.style.display = "none";
+      leaveBtn.style.display = "block";
+      shareBtn.style.display = "block";
+      downloadBtn.style.display = "block";
     } else {
-      document.getElementById("createSessionBtn").style.display = "block";
-      document.getElementById("joinSessionBtn").style.display = "block";
-      document.getElementById("publicSessionsBtn").style.display = "block";
-      document.getElementById("leaveSessionBtn").style.display = "none";
-      document.getElementById("shareSessionBtn").style.display = "none";
-      document.getElementById("downloadSessionBtn").style.display = "none";
+      createBtn.style.display = "block";
+      joinBtn.style.display = "block";
+      browseBtn.style.display = "block";
+      leaveBtn.style.display = "none";
+      shareBtn.style.display = "none";
+      downloadBtn.style.display = "none";
     }
     
-    // Update dropdown display
     this.renderParticipants();
-    
-    // Re-setup voice controls
     setTimeout(() => this.setupVoiceControls(), 100);
   }
 
