@@ -130,130 +130,23 @@ class VoiceTutor {
     }
 
     createVoiceButtons() {
-        const chatInput = document.getElementById('chatInput');
-        if (!chatInput) {
-            console.log('Chat input not found, retrying in 1 second...');
-            setTimeout(() => this.createVoiceButtons(), 1000);
-            return;
-        }
+        // Voice controls are now integrated into session controls
+        this.createSettingsMenu();
+    }
 
-        const inputContainer = chatInput.parentElement;
-        
-        if (document.getElementById('voiceControls')) {
-            console.log('Voice controls already exist');
-            return;
-        }
+    createSettingsMenu() {
 
-        inputContainer.style.cssText = `
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            width: 100%;
-        `;
-
-        chatInput.style.flex = '1';
-
-        const voiceControls = document.createElement('div');
-        voiceControls.id = 'voiceControls';
-        voiceControls.style.cssText = `
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            position: relative;
-        `;
-
-        const voiceInputBtn = document.createElement('button');
-        voiceInputBtn.id = 'voiceInputBtn';
-        voiceInputBtn.title = 'Click to speak your question';
-        voiceInputBtn.style.cssText = `
-            width: 36px;
-            height: 36px;
-            border: 2px solid #6b7d4f;
-            border-radius: 50%;
-            background: white url("images/mic.png") no-repeat center center;
-            background-size: 16px 16px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            flex-shrink: 0;
-        `;
-        voiceInputBtn.addEventListener('click', () => this.toggleVoiceInput());
-
-        const stopSpeakingBtn = document.createElement('button');
-        stopSpeakingBtn.id = 'stopSpeakingBtn';
-        stopSpeakingBtn.innerHTML = '⏹️';
-        stopSpeakingBtn.title = 'Stop speaking';
-        stopSpeakingBtn.style.cssText = `
-            width: 36px;
-            height: 36px;
-            border: 2px solid #ff6b6b;
-            border-radius: 50%;
-            background: white;
-            color: #ff6b6b;
-            cursor: pointer;
-            font-size: 12px;
-            display: none;
-            transition: all 0.3s ease;
-            flex-shrink: 0;
-        `;
-        stopSpeakingBtn.addEventListener('click', () => this.stopSpeaking());
-
-        const autoSpeechBtn = document.createElement('button');
-        autoSpeechBtn.id = 'autoSpeechBtn';
-        const autoSpeechEnabled = localStorage.getItem('autoSpeech') === 'true';
-        autoSpeechBtn.innerHTML = autoSpeechEnabled ? '🔊' : '🔇';
-        autoSpeechBtn.title = autoSpeechEnabled ? 'Auto-speech ON (click to disable)' : 'Auto-speech OFF (click to enable)';
-        autoSpeechBtn.style.cssText = `
-            width: 36px;
-            height: 36px;
-            border: 2px solid ${autoSpeechEnabled ? '#6b7d4f' : '#ccc'};
-            border-radius: 50%;
-            background: white;
-            color: ${autoSpeechEnabled ? '#6b7d4f' : '#666'};
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-        `;
-        autoSpeechBtn.addEventListener('click', () => this.toggleAutoSpeech());
-
-        const settingsBtn = document.createElement('button');
-        settingsBtn.id = 'settingsBtn';
-        settingsBtn.innerHTML = '⚙️';
-        settingsBtn.title = 'Adjust speech settings';
-        settingsBtn.style.cssText = `
-            width: 36px;
-            height: 36px;
-            border: 2px solid #6b7d4f;
-            border-radius: 50%;
-            background: white;
-            color: #6b7d4f;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-        `;
-        settingsBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            console.log('Settings button clicked');
-            this.toggleSettingsMenu();
-        });
+        // Create settings menu attached to chat container
+        const chatContainer = document.querySelector('.chat-container');
+        if (!chatContainer || document.getElementById('speechSettings')) return;
 
         const settingsContainer = document.createElement('div');
         settingsContainer.id = 'speechSettings';
         settingsContainer.style.cssText = `
             display: none;
             position: absolute;
-            bottom: 48px; /* Position above the button */
-            right: 0;
+            bottom: 60px;
+            right: 20px;
             background: #ffffff;
             padding: 12px;
             border-radius: 8px;
@@ -369,14 +262,32 @@ class VoiceTutor {
             z-index: 1000;
         `;
 
-        voiceControls.appendChild(voiceInputBtn);
-        voiceControls.appendChild(stopSpeakingBtn);
-        voiceControls.appendChild(autoSpeechBtn);
-        voiceControls.appendChild(settingsBtn);
-        voiceControls.appendChild(settingsContainer);
-        voiceControls.appendChild(voiceStatus);
-        
-        inputContainer.appendChild(voiceControls);
+        // Add stop button to chat input area
+        const inputContainer = document.querySelector('.chat-input-container');
+        if (inputContainer && !document.getElementById('stopSpeakingBtn')) {
+            const stopSpeakingBtn = document.createElement('button');
+            stopSpeakingBtn.id = 'stopSpeakingBtn';
+            stopSpeakingBtn.innerHTML = '⏹️';
+            stopSpeakingBtn.title = 'Stop speaking';
+            stopSpeakingBtn.style.cssText = `
+                width: 36px;
+                height: 36px;
+                border: 2px solid #ff6b6b;
+                border-radius: 50%;
+                background: white;
+                color: #ff6b6b;
+                cursor: pointer;
+                font-size: 12px;
+                display: none;
+                transition: all 0.3s ease;
+                flex-shrink: 0;
+            `;
+            stopSpeakingBtn.addEventListener('click', () => this.stopSpeaking());
+            inputContainer.appendChild(stopSpeakingBtn);
+        }
+
+        chatContainer.appendChild(settingsContainer);
+
         
         const style = document.createElement('style');
         style.textContent = `

@@ -75,12 +75,24 @@ class SessionManager {
                     💾 Save
                 </button>
             </div>
+            <div class="voice-controls-row">
+                <button id="voiceInputBtn" class="session-btn voice-input" title="Click to speak">
+                    🎤 Speak
+                </button>
+                <button id="autoSpeechBtn" class="session-btn auto-speech" title="Toggle auto-speech">
+                    🔇 Auto
+                </button>
+                <button id="voiceSettingsBtn" class="session-btn voice-settings" title="Voice settings">
+                    ⚙️ Settings
+                </button>
+            </div>
         `;
 
     chatHeader.insertBefore(sessionControls, chatHeader.firstChild);
 
     // Setup dropdown functionality
     this.setupSessionDropdown();
+    this.setupVoiceControls();
 
     document.getElementById("createSessionBtn").addEventListener("click", () => this.createSession());
     document.getElementById("customizeProfileBtn").addEventListener("click", () => this.showCustomizationModal());
@@ -108,6 +120,40 @@ class SessionManager {
         dropdownContent.classList.remove("show");
         const arrow = dropdownBtn.querySelector("span:last-child");
         arrow.textContent = "▼";
+      }
+    });
+  }
+
+  setupVoiceControls() {
+    const voiceInputBtn = document.getElementById("voiceInputBtn");
+    const autoSpeechBtn = document.getElementById("autoSpeechBtn");
+    const voiceSettingsBtn = document.getElementById("voiceSettingsBtn");
+
+    // Initialize auto-speech state
+    const autoSpeechEnabled = localStorage.getItem('autoSpeech') !== 'false';
+    if (autoSpeechBtn) {
+      autoSpeechBtn.innerHTML = autoSpeechEnabled ? '🔊 Auto' : '🔇 Auto';
+      autoSpeechBtn.classList.toggle('active', autoSpeechEnabled);
+    }
+
+    voiceInputBtn?.addEventListener("click", () => {
+      if (window.voiceTutor) {
+        window.voiceTutor.toggleVoiceInput();
+      }
+    });
+
+    autoSpeechBtn?.addEventListener("click", () => {
+      if (window.voiceTutor) {
+        window.voiceTutor.toggleAutoSpeech();
+        const enabled = localStorage.getItem('autoSpeech') === 'true';
+        autoSpeechBtn.innerHTML = enabled ? '🔊 Auto' : '🔇 Auto';
+        autoSpeechBtn.classList.toggle('active', enabled);
+      }
+    });
+
+    voiceSettingsBtn?.addEventListener("click", () => {
+      if (window.voiceTutor) {
+        window.voiceTutor.toggleSettingsMenu();
       }
     });
   }
@@ -961,6 +1007,9 @@ class SessionManager {
     
     // Update dropdown display
     this.renderParticipants();
+    
+    // Re-setup voice controls
+    setTimeout(() => this.setupVoiceControls(), 100);
   }
 
   shareSession() {
