@@ -2,9 +2,9 @@
 .session-controls {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-bottom: 8px;
-    padding: 8px;
+    gap: 6px;
+    margin-bottom: 6px;
+    padding: 6px;
     background: linear-gradient(135deg, #f8f9fa, #e9ecef);
     border-radius: 12px;
     border: 1px solid #dee2e6;
@@ -87,7 +87,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 6px;
-    margin-top: 6px;
+    margin-top: 3px;
 }
 
 .session-btn {

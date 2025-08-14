@@ -144,8 +144,8 @@ class VoiceTutor {
         settingsContainer.id = 'speechSettings';
         settingsContainer.style.cssText = `
             display: none;
-            position: absolute;
-            bottom: 60px;
+            position: fixed;
+            bottom: 120px;
             right: 20px;
             background: #ffffff;
             padding: 12px;
