@@ -37,49 +37,54 @@ class SessionManager {
     const sessionControls = document.createElement("div");
     sessionControls.className = "session-controls";
     sessionControls.innerHTML = `
-            <div class="session-dropdown">
-                <button class="session-dropdown-btn" id="sessionDropdownBtn">
-                    <span id="sessionDropdownText">💬 Sessions</span>
-                    <span>▼</span>
-                </button>
-                <div class="session-dropdown-content" id="sessionDropdownContent">
-                    <div class="participants-container" id="participantsContainer">
-                        <div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">
-                            No active session
+            <div class="drag-handle" id="dragHandle">
+                <div class="drag-indicator">↕️</div>
+            </div>
+            <div class="session-content-wrapper" id="sessionWrapper">
+                <div class="session-dropdown">
+                    <button class="session-dropdown-btn" id="sessionDropdownBtn">
+                        <span id="sessionDropdownText">💬 Sessions</span>
+                        <span>▼</span>
+                    </button>
+                    <div class="session-dropdown-content" id="sessionDropdownContent">
+                        <div class="participants-container" id="participantsContainer">
+                            <div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">
+                                No active session
+                            </div>
+                        </div>
+                        <div class="session-actions">
+                            <button id="createSessionBtn" class="session-btn create-session">
+                                👥 Create
+                            </button>
+                            <button id="joinSessionBtn" class="session-btn join-session">
+                                🔗 Join
+                            </button>
+                            <button id="publicSessionsBtn" class="session-btn browse-public">
+                                🌐 Browse
+                            </button>
+                            <button id="leaveSessionBtn" class="session-btn leave-session" style="display: none;">
+                                🚪 Leave
+                            </button>
+                            <button id="shareSessionBtn" class="session-btn share-session" style="display: none;">
+                                📤 Share
+                            </button>
+                            <button id="downloadSessionBtn" class="session-btn download-session" style="display: none;">
+                                💾 Save
+                            </button>
                         </div>
                     </div>
-                    <div class="session-actions">
-                        <button id="createSessionBtn" class="session-btn create-session">
-                            👥 Create
-                        </button>
-                        <button id="joinSessionBtn" class="session-btn join-session">
-                            🔗 Join
-                        </button>
-                        <button id="publicSessionsBtn" class="session-btn browse-public">
-                            🌐 Browse
-                        </button>
-                        <button id="leaveSessionBtn" class="session-btn leave-session" style="display: none;">
-                            🚪 Leave
-                        </button>
-                        <button id="shareSessionBtn" class="session-btn share-session" style="display: none;">
-                            📤 Share
-                        </button>
-                        <button id="downloadSessionBtn" class="session-btn download-session" style="display: none;">
-                            💾 Save
-                        </button>
-                    </div>
                 </div>
-            </div>
-            <div class="voice-controls-row">
-                <button id="customizeProfileBtn" class="session-btn customize-profile">
-                    🎨 Profile
-                </button>
-                <button id="voiceInputBtn" class="session-btn voice-input" title="Click to speak">
-                    🎤 Speak
-                </button>
-                <button id="autoSpeechBtn" class="session-btn auto-speech" title="Toggle auto-speech">
-                    🔇 Auto
-                </button>
+                <div class="voice-controls-row">
+                    <button id="customizeProfileBtn" class="session-btn customize-profile">
+                        🎨 Profile
+                    </button>
+                    <button id="voiceInputBtn" class="session-btn voice-input" title="Click to speak">
+                        🎤 Speak
+                    </button>
+                    <button id="autoSpeechBtn" class="session-btn auto-speech" title="Toggle auto-speech">
+                        🔇 Auto
+                    </button>
+                </div>
             </div>
         `;
 
@@ -88,6 +93,7 @@ class SessionManager {
     // Setup dropdown functionality
     this.setupSessionDropdown();
     this.setupVoiceControls();
+    this.setupDragHandle();
 
     document.getElementById("createSessionBtn").addEventListener("click", () => this.createSession());
     document.getElementById("customizeProfileBtn").addEventListener("click", () => this.showCustomizationModal());
@@ -161,6 +167,53 @@ class SessionManager {
       const isVisible = content.style.display !== 'none';
       content.style.display = isVisible ? 'none' : 'block';
       toggleBtn.innerHTML = isVisible ? '⚙️ Functions ▼' : '⚙️ Functions ▲';
+    });
+  }
+
+  setupDragHandle() {
+    const dragHandle = document.getElementById("dragHandle");
+    const sessionWrapper = document.getElementById("sessionWrapper");
+    let isDragging = false;
+    let startY = 0;
+    let isCollapsed = false;
+
+    dragHandle.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      startY = e.clientY;
+      dragHandle.style.cursor = "grabbing";
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      const deltaY = e.clientY - startY;
+      if (Math.abs(deltaY) > 20) {
+        if (deltaY < 0 && !isCollapsed) {
+          sessionWrapper.style.display = "none";
+          dragHandle.querySelector(".drag-indicator").textContent = "▲";
+          isCollapsed = true;
+        } else if (deltaY > 0 && isCollapsed) {
+          sessionWrapper.style.display = "block";
+          dragHandle.querySelector(".drag-indicator").textContent = "↕️";
+          isCollapsed = false;
+        }
+      }
+    });
+
+    document.addEventListener("mouseup", () => {
+      isDragging = false;
+      dragHandle.style.cursor = "grab";
+    });
+
+    dragHandle.addEventListener("click", () => {
+      if (isCollapsed) {
+        sessionWrapper.style.display = "block";
+        dragHandle.querySelector(".drag-indicator").textContent = "↕️";
+        isCollapsed = false;
+      } else {
+        sessionWrapper.style.display = "none";
+        dragHandle.querySelector(".drag-indicator").textContent = "▲";
+        isCollapsed = true;
+      }
     });
   }
 

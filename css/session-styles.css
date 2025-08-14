@@ -2,13 +2,14 @@
 .session-controls {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-bottom: 6px;
-    padding: 6px;
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    gap: 0;
+    margin-bottom: 8px;
+    padding: 0;
+    background: linear-gradient(135deg, #f6f4f2, #e8e6e4);
     border-radius: 12px;
-    border: 1px solid #dee2e6;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border: 1px solid #d0ccc8;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
 }
 
 .session-toggle-btn {
@@ -32,6 +33,43 @@
 
 .session-content {
     margin-top: 6px;
+}
+
+.drag-handle {
+    width: 100%;
+    height: 24px;
+    background: linear-gradient(135deg, #014148, #337810);
+    border-radius: 10px 10px 0 0;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border: 1px solid #4a5c2f;
+    border-bottom: none;
+    box-shadow: 0 2px 4px rgba(1, 65, 72, 0.2);
+}
+
+.drag-handle:hover {
+    background: linear-gradient(135deg, #337810, #6b7d4f);
+    box-shadow: 0 3px 6px rgba(51, 120, 16, 0.3);
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.drag-indicator {
+    color: white;
+    font-size: 12px;
+    user-select: none;
+}
+
+.session-content-wrapper {
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f6f4f2, #e8e6e4);
+    padding: 8px;
 }
 
 .session-top-row {
@@ -66,25 +104,28 @@
 
 .session-dropdown-btn {
     width: 100%;
-    padding: 8px 12px;
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: white;
-    border: none;
-    border-radius: 8px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #014148, #337810);
+    color: #f2fcf7;
+    border: 1px solid #4a5c2f;
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     display: flex;
     justify-content: space-between;
     align-items: center;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,123,255,0.2);
+    box-shadow: 0 3px 6px rgba(1, 65, 72, 0.2);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
 .session-dropdown-btn:hover {
-    background: linear-gradient(135deg, #0056b3, #004085);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+    background: linear-gradient(135deg, #337810, #6b7d4f);
+    border-color: #3a4c1f;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(51, 120, 16, 0.3);
+    color: #ffffff;
 }
 
 .session-dropdown-content {
@@ -166,98 +207,45 @@
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
-.session-btn.create-session {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
+.session-btn {
+    background: linear-gradient(135deg, #337810, #6b7d4f);
+    color: #ffffff;
+    border: 1px solid #4a5c2f;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
 
-.session-btn.create-session:hover {
-    background: linear-gradient(135deg, #218838, #1da88a);
-}
-
-.session-btn.join-session {
-    background: linear-gradient(135deg, #007bff, #6610f2);
-    color: white;
-}
-
-.session-btn.join-session:hover {
-    background: linear-gradient(135deg, #0056b3, #520dc2);
+.session-btn:hover {
+    background: linear-gradient(135deg, #2a6209, #5a6b3f);
+    border-color: #3a4c1f;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(51, 120, 16, 0.3);
 }
 
 .session-btn.leave-session {
-    background: linear-gradient(135deg, #dc3545, #e83e8c);
-    color: white;
+    background: linear-gradient(135deg, #d9534f, #c9302c);
+    border-color: #ac2925;
 }
 
 .session-btn.leave-session:hover {
-    background: linear-gradient(135deg, #c82333, #d91a72);
-}
-
-.session-btn.share-session {
-    background: linear-gradient(135deg, #fd7e14, #ffc107);
-    color: white;
-}
-
-.session-btn.share-session:hover {
-    background: linear-gradient(135deg, #e8650e, #e0a800);
-}
-
-.session-btn.download-session {
-    background: linear-gradient(135deg, #6f42c1, #e83e8c);
-    color: white;
-}
-
-.session-btn.download-session:hover {
-    background: linear-gradient(135deg, #59359a, #d91a72);
-}
-
-.session-btn.customize-profile {
-    background: linear-gradient(135deg, #17a2b8, #6610f2);
-    color: white;
-}
-
-.session-btn.customize-profile:hover {
-    background: linear-gradient(135deg, #138496, #520dc2);
-}
-
-.session-btn.browse-public {
-    background: linear-gradient(135deg, #6c757d, #495057);
-    color: white;
-}
-
-.session-btn.browse-public:hover {
-    background: linear-gradient(135deg, #5a6268, #3d4142);
-}
-
-.session-btn.voice-input {
-    background: linear-gradient(135deg, #28a745, #20c997);
-    color: white;
-}
-
-.session-btn.voice-input:hover {
-    background: linear-gradient(135deg, #218838, #1da88a);
+    background: linear-gradient(135deg, #c9302c, #ac2925);
+    border-color: #8b211e;
 }
 
 .session-btn.auto-speech {
-    background: linear-gradient(135deg, #6c757d, #495057);
-    color: white;
+    background: linear-gradient(135deg, #73c3f6, #5bc0de);
+    border-color: #46b8da;
+    color: #ffffff;
 }
 
 .session-btn.auto-speech:hover {
-    background: linear-gradient(135deg, #5a6268, #3d4142);
+    background: linear-gradient(135deg, #5bc0de, #46b8da);
+    border-color: #31b0d5;
 }
 
 .session-btn.auto-speech.active {
-    background: linear-gradient(135deg, #28a745, #20c997);
-}
-
-.session-btn.voice-settings {
-    background: linear-gradient(135deg, #17a2b8, #6610f2);
-    color: white;
-}
-
-.session-btn.voice-settings:hover {
-    background: linear-gradient(135deg, #138496, #520dc2);
+    background: linear-gradient(135deg, #337810, #6b7d4f);
+    border-color: #4a5c2f;
+    box-shadow: 0 0 8px rgba(51, 120, 16, 0.4);
 }
 
 .session-btn.cancel {
