@@ -47,11 +47,6 @@ class SessionManager {
                         <span>▼</span>
                     </button>
                     <div class="session-dropdown-content" id="sessionDropdownContent">
-                        <div class="participants-container" id="participantsContainer">
-                            <div style="padding: 12px; text-align: center; color: #666; font-size: 12px;">
-                                No active session
-                            </div>
-                        </div>
                         <div class="session-actions">
                             <button id="createSessionBtn" class="session-btn create-session">
                                 👥 Create
@@ -71,6 +66,11 @@ class SessionManager {
                             <button id="downloadSessionBtn" class="session-btn download-session" style="display: none;">
                                 💾 Save
                             </button>
+                        </div>
+                        <div class="participants-container" id="participantsContainer" style="max-height: 80px; overflow-y: auto;">
+                            <div style="padding: 8px; text-align: center; color: #666; font-size: 12px;">
+                                No active session
+                            </div>
                         </div>
                     </div>
                 </div>

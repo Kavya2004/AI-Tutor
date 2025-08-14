@@ -86,15 +86,20 @@
 
 .session-actions {
     padding: 8px;
-    border-top: 1px solid #e9ecef;
+    border-bottom: 1px solid #d0ccc8;
+    background: #ffffff;
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 6px;
+    border-radius: 8px 8px 0 0;
 }
 
 .session-actions .session-btn {
-    font-size: 10px;
-    padding: 6px 8px;
+    font-size: 10px !important;
+    padding: 6px 8px !important;
+    border: 1px solid #337810 !important;
+    display: block !important;
+    visibility: visible !important;
 }
 
 .session-dropdown {
@@ -133,14 +138,12 @@
     top: 100%;
     left: 0;
     right: 0;
-    background: white;
-    border: 1px solid #dee2e6;
+    background: #ffffff;
+    border: 1px solid #d0ccc8;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     z-index: 1000;
     display: none;
-    max-height: 200px;
-    overflow-y: auto;
 }
 
 .session-dropdown-content.show {
