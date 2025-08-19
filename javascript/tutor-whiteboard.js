@@ -388,31 +388,36 @@ function setupCanvas(canvas, ctx, boardType) {
 }
 
 function switchWhiteboard(boardType) {
+	// Save current board state before switching
+	saveDrawingState(activeWhiteboard);
+  
 	const teacherPanel = document.getElementById('teacherPanel');
 	const studentPanel = document.getElementById('studentPanel');
+	const notesPanel = document.getElementById('notesPanel');
 	const teacherTab = document.getElementById('teacherTab');
 	const studentTab = document.getElementById('studentTab');
-
+	const notesTab = document.getElementById('notesTab');
+  
+	// Hide all
+	[teacherPanel, studentPanel, notesPanel].forEach(p => p.classList.remove('active'));
+	[teacherTab, studentTab, notesTab].forEach(t => t.classList.remove('active'));
+  
+	// Show selected
 	if (boardType === 'teacher') {
-		teacherPanel.classList.add('active');
-		studentPanel.classList.remove('active');
-		teacherTab.classList.add('active');
-		studentTab.classList.remove('active');
-		activeWhiteboard = 'teacher';
+	  teacherPanel.classList.add('active');
+	  teacherTab.classList.add('active');
+	} else if (boardType === 'student') {
+	  studentPanel.classList.add('active');
+	  studentTab.classList.add('active');
 	} else {
-		studentPanel.classList.add('active');
-		teacherPanel.classList.remove('active');
-		studentTab.classList.add('active');
-		teacherTab.classList.remove('active');
-		activeWhiteboard = 'student';
+	  notesPanel.classList.add('active');
+	  notesTab.classList.add('active');
 	}
-
-	if (boardType === 'teacher') {
-		resizeCanvas(teacherCanvas, 'teacher');
-	} else {
-		resizeCanvas(studentCanvas, 'student');
-	}
-}
+  
+	activeWhiteboard = boardType;
+	redrawCanvas(boardType); // restore saved content
+  }
+  
 
 function setupResizeHandle() {
 	const chatSection = document.querySelector('.chat-section');
