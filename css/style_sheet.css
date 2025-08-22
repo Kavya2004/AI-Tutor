@@ -472,12 +472,14 @@ a.nostyle {
     display: flex;
     align-items: center;
     gap: 4px; /* Very small gap */
+	height: 24px
 }
 
 .pen-color-group {
     display: flex;
     align-items: center;
     gap: 4px; /* Very small gap */
+	height: 24px
 }
 
 .notes-toolbar label {
