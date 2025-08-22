@@ -488,22 +488,25 @@ function setupResizeHandle() {
 function toggleWhiteboardSize() {
 	const whiteboardSection = document.querySelector('.whiteboard-section');
 	const chatSection = document.querySelector('.chat-section');
-
+	
 	if (!whiteboardSection || !chatSection) {
 		console.error('Required sections not found');
 		return;
 	}
 
-	if (!isExpanded) {
-		chatSection.style.flexBasis = '50px';
-		chatSection.style.width = '50px';
-		chatSection.style.minWidth = '50px';
-		isExpanded = true;
+	isExpanded = !isExpanded; 
+
+	if (chatSection) {
+		chatSection.style.display = isExpanded ? 'none' : 'flex';
+	}
+
+	if (isExpanded) {
+		whiteboardSection.classList.add('expanded');
 	} else {
+		whiteboardSection.classList.remove('expanded');
 		chatSection.style.flexBasis = '400px';
 		chatSection.style.width = '400px';
 		chatSection.style.minWidth = '200px';
-		isExpanded = false;
 	}
 
 	updateExpandButton();
