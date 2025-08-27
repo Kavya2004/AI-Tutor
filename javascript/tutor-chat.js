@@ -22,7 +22,35 @@ Instructions:
 - Avoid going beyond the course syllabus unless asked directly. Focus on core introductory topics.
 - Adjust your tone based on the student’s language. You can be warm and casual, or clear and direct, depending on their mood.
 - Respond briefly. Keep replies short and focused. Avoid overwhelming the student with information all at once.
-- Do not simply recite full answers as you’ve seen in training. Instead, help the student understand by prompting them with questions, offering hints, and explaining only as needed. Prioritize understanding over correctness.`
+- Do not simply recite full answers as you’ve seen in training. Instead, help the student understand by prompting them with questions, offering hints, and explaining only as needed. Prioritize understanding over correctness.
+
+REFERENCE LINKS INSTRUCTIONS:
+
+You have access to the official ProbabilityCourse.com textbook.  
+When referencing definitions, theorems, solved problems, or exercises, you **must cite the exact chapter/section link from the list below.  
+Do not guess URLs. Always use the provided mapping.  
+
+Examples:  
+- If the student asks "what is Bayes' Rule?", cite: https://www.probabilitycourse.com/chapter1/1_4_3_bayes_rule.php  
+- If the student asks "where can I practice problems for Chapter 3?", cite: https://www.probabilitycourse.com/chapter3/3_3_0_chapter3_problems.php  
+
+Here is the full link mapping:  
+(Preface) https://www.probabilitycourse.com/preface.php  
+(1.1.0 What is Probability?) https://www.probabilitycourse.com/chapter1/1_1_0_what_is_probability.php  
+(1.2.1 Venn Diagrams) https://www.probabilitycourse.com/chapter1/1_2_1_venn.php  
+(1.4.3 Bayes’ Rule) https://www.probabilitycourse.com/chapter1/1_4_3_bayes_rule.php  
+(2.1.0 Counting Methods) https://www.probabilitycourse.com/chapter2/2_1_0_counting.php  
+(3.1.2 Discrete Random Variables) https://www.probabilitycourse.com/chapter3/3_1_2_discrete_random_var.php  
+(4.1.1 Probability Density Function) https://www.probabilitycourse.com/chapter4/4_1_1_pdf.php  
+(5.1.1 Joint PMF) https://www.probabilitycourse.com/chapter5/5_1_1_joint_pmf.php  
+(6.2.3 Chernoff Bounds) https://www.probabilitycourse.com/chapter6/6_2_3_chernoff_bounds.php  
+(7.1.2 Central Limit Theorem) https://www.probabilitycourse.com/chapter7/7_1_2_central_limit_theorem.php  
+(8.2.3 Maximum Likelihood Estimation) https://www.probabilitycourse.com/chapter8/8_2_3_max_likelihood_estimation.php  
+(9.1.0 Bayesian Inference) https://www.probabilitycourse.com/chapter9/9_1_0_bayesian_inference.php  
+(10.1.0 Random Processes - Basics) https://www.probabilitycourse.com/chapter10/10_1_0_basic_concepts.php  
+(11.1.2 Poisson Processes) https://www.probabilitycourse.com/chapter11/11_1_2_basic_concepts_of_the_poisson_process.php  
+(Appendix - Distributions) https://www.probabilitycourse.com/appendix/some_important_distributions.php  
+(Bibliography) https://www.probabilitycourse.com/bibliography.php  `
 	}
 ];
 
@@ -586,22 +614,21 @@ async function getOcrTextFromWhiteboardImage(board) {
 
 async function searchProbabilityCourse(query) {
 	try {
-	  const res = await fetch('/api/search', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ query })
-	  });
-  
-	  if (!res.ok) throw new Error('Search request failed');
-	  const data = await res.json();
-	  return data.results || [];
-	} catch (err) {
-	  console.error("Error searching ProbabilityCourse:", err);
-	  return [];
-	}
-  }
+		const res = await fetch('/api/search', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ query })
+		});
 
-  
+		if (!res.ok) throw new Error('Search request failed');
+		const data = await res.json();
+		return data.results || [];
+	} catch (err) {
+		console.error('Error searching ProbabilityCourse:', err);
+		return [];
+	}
+}
+
 async function processUserMessage(message) {
 	if (isProcessing || (!message.trim() && uploadedFiles.length === 0)) return;
 
@@ -678,7 +705,7 @@ async function processUserMessage(message) {
 		const searchResults = await searchProbabilityCourse(message);
 
 		if (searchResults.length > 0) {
-			let refsText = "Relevant sections from the ProbabilityCourse.com textbook:\n";
+			let refsText = 'Relevant sections from the ProbabilityCourse.com textbook:\n';
 			searchResults.forEach((r, idx) => {
 				refsText += `${idx + 1}. ${r.title} - ${r.link}\n   ${r.snippet}\n`;
 			});
@@ -766,7 +793,8 @@ async function processUserMessage(message) {
 		}
 
 		// Add helpful note about textbook references
-		errorMessage += '\n\n📚 Note: I can still help explain probability concepts even if textbook links are temporarily unavailable.';
+		errorMessage +=
+			'\n\n📚 Note: I can still help explain probability concepts even if textbook links are temporarily unavailable.';
 
 		// Handle error message display/broadcasting
 		if (window.sessionManager && window.sessionManager.sessionId) {
