@@ -39,8 +39,8 @@ function convertLatexToUnicode(text) {
         '\\sqrt': '√', '\\partial': '∂', '\\nabla': '∇'
     };
     
-    const urlRegex = /https:\/\/www\.probabilitycourse\.com\/chapter\d+\/[\w_.-]+/g;
-    const urlPlaceholder = 'URLPROTECTED'; // No underscores to avoid subscript conversion
+    const urlRegex = /https?:\/\/[^\s)]+/g;
+    const urlPlaceholder = 'URLPROTECTED'; 
     let urlMap = new Map();
     let placeholderIndex = 0;
 
