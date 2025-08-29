@@ -1,4 +1,3 @@
-// LaTeX to Unicode converter utility
 function convertLatexToUnicode(text) {
     // Basic superscript conversion
     const superscriptMap = {
@@ -40,14 +39,25 @@ function convertLatexToUnicode(text) {
         '\\sqrt': '√', '\\partial': '∂', '\\nabla': '∇'
     };
     
-    let result = text;
-    
-    // Convert Greek letters and symbols first
+    // Protect URLs from LaTeX processing
+    const urlRegex = /https:\/\/www\.probabilitycourse\.com\/chapter\d+\/[\w_.-]+/g;
+    const urlPlaceholder = '__URL_PROTECTED__';
+    let urlMap = new Map();
+    let placeholderIndex = 0;
+
+    // Step 1: Extract and replace URLs with placeholders
+    let result = text.replace(urlRegex, (url) => {
+        const placeholder = `${urlPlaceholder}${placeholderIndex++}`;
+        urlMap.set(placeholder, url);
+        return placeholder;
+    });
+
+    // Step 2: Convert Greek letters and symbols
     for (const [latex, unicode] of Object.entries(symbolMap)) {
         result = result.replace(new RegExp(latex.replace('\\', '\\\\'), 'g'), unicode);
     }
     
-    // Convert superscripts (^{...} or ^single_char)
+    // Step 3: Convert superscripts (^{...} or ^single_char)
     result = result.replace(/\^{([^}]+)}/g, (match, content) => {
         return content.split('').map(char => superscriptMap[char] || char).join('');
     });
@@ -55,7 +65,7 @@ function convertLatexToUnicode(text) {
         return superscriptMap[char] || char;
     });
     
-    // Convert subscripts (_{...} or _single_char)
+    // Step 4: Convert subscripts (_{...} or _single_char)
     result = result.replace(/_{([^}]+)}/g, (match, content) => {
         return content.split('').map(char => subscriptMap[char] || char).join('');
     });
@@ -63,8 +73,12 @@ function convertLatexToUnicode(text) {
         return subscriptMap[char] || char;
     });
     
+    // Step 5: Restore protected URLs
+    for (const [placeholder, url] of urlMap) {
+        result = result.replace(placeholder, url);
+    }
+    
     return result;
 }
 
-// Make it available globally
 window.convertLatexToUnicode = convertLatexToUnicode;
