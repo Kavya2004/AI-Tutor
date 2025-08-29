@@ -41,7 +41,7 @@ function convertLatexToUnicode(text) {
     
     // Protect URLs from LaTeX processing
     const urlRegex = /https:\/\/www\.probabilitycourse\.com\/chapter\d+\/[\w_.-]+/g;
-    const urlPlaceholder = '__URL_PROTECTED__';
+    const urlPlaceholder = 'URLPROTECTED'; // No underscores to avoid subscript conversion
     let urlMap = new Map();
     let placeholderIndex = 0;
 
@@ -75,10 +75,12 @@ function convertLatexToUnicode(text) {
     
     // Step 5: Restore protected URLs
     for (const [placeholder, url] of urlMap) {
-        result = result.replace(placeholder, url);
+        result = result.replace(new RegExp(placeholder, 'g'), url);
     }
     
     return result;
 }
 
+// Make it available globally
+window.convertLatexToUnicode = convertLatexToUnicode;
 window.convertLatexToUnicode = convertLatexToUnicode;
