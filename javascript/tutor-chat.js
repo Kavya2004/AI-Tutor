@@ -488,7 +488,13 @@ function addMessage(text, sender, files = []) {
 
 	const content = document.createElement('div');
 	content.className = 'message-content';
-	content.innerHTML = displayText.replace(/\n/g, '<br>');
+	content.innerHTML = displayText
+	.replace(/\n/g, '<br>')
+	.replace(/<https?:\/\/[^>]+>/g, (match) => {
+		const url = match.slice(1, -1); // strip < >
+		return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+	});
+
 
 	if (files && files.length > 0) {
 		const filesDiv = document.createElement('div');
