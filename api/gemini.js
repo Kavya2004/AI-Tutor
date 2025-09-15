@@ -27,7 +27,7 @@ export default async function handler(req, res) {
           return res.status(500).json({ error: 'Gemini API key not configured' });
       }
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+       const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
 
       const geminiMessages = messages
           .filter(msg => msg.role !== 'system')
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
               temperature: 0.7,
               topK: 40,
               topP: 0.95,
-              maxOutputTokens: 1024,
+              maxOutputTokens: 65536,
           }
       };
 
