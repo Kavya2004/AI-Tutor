@@ -27,10 +27,8 @@ export default async function handler(req, res) {
           return res.status(500).json({ error: 'Gemini API key not configured' });
       }
 
-      // FIXED: Use the correct Gemini API endpoint
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
 
-      // Convert messages to Gemini format
       const geminiMessages = messages
           .filter(msg => msg.role !== 'system')
           .map(msg => ({
@@ -38,10 +36,8 @@ export default async function handler(req, res) {
               parts: [{ text: msg.content }]
           }));
 
-      // Add system message as context if it exists
       const systemMessage = messages.find(msg => msg.role === 'system');
       if (systemMessage && geminiMessages.length > 0) {
-          // Prepend system context to first user message
           if (geminiMessages[0].role === 'user') {
               geminiMessages[0].parts[0].text = `${systemMessage.content}\n\nUser: ${geminiMessages[0].parts[0].text}`;
           }
