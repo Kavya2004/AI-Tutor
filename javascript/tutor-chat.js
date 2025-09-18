@@ -3,7 +3,7 @@ let context = [
 	{
 		role: 'system',
 		content: `You are an AI tutor specializing in introductory probability and statistics. You have been extensively trained on university-level question-answer pairs in this subject area. Your role is to guide students through concepts interactively, using both whiteboards and conversation. You are supportive, brief, and thoughtful in your responses.
-You must always cite from the relevant ProbabilityCourse.com link(s) I provide in the context.
+You must always cite from the relevant ProbabilityCourse.com link(s) I provide in the context. This includes both web pages and PDF documents from the site.
 
 You have access to two whiteboards:
 
@@ -38,7 +38,7 @@ Do not simply recite full answers as you’ve seen in training. Instead, help th
 
 REFERENCE LINKS INSTRUCTIONS:
 
-You have access to the official ProbabilityCourse.com textbook.
+You have access to the official ProbabilityCourse.com textbook, including PDF documents with searchable content.
 When referencing definitions, theorems, solved problems, or exercises, you **must cite the exact chapter/section link from the list below.**
 
 ⚠️ IMPORTANT: To avoid formatting issues with underscores, always output links using one of these two styles:
@@ -641,15 +641,39 @@ async function getOcrTextFromWhiteboardImage(board) {
 
 async function searchProbabilityCourse(query) {
 	try {
-		const res = await fetch('/api/search', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ query })
-		});
+		// Search both web pages and PDFs
+		const [webRes, pdfRes] = await Promise.all([
+			fetch('/api/search', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ query })
+			}),
+			fetch('/api/pdf-content', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ query })
+			})
+		]);
 
-		if (!res.ok) throw new Error('Search request failed');
-		const data = await res.json();
-		return data.results || [];
+		let results = [];
+		
+		if (webRes.ok) {
+			const webData = await webRes.json();
+			results = webData.results || [];
+		}
+		
+		if (pdfRes.ok) {
+			const pdfData = await pdfRes.json();
+			const pdfResults = (pdfData.pdfs || []).map(pdf => ({
+				title: pdf.title,
+				link: pdf.url,
+				snippet: pdf.snippet,
+				content: pdf.content // Include PDF content for context
+			}));
+			results = [...results, ...pdfResults];
+		}
+		
+		return results;
 	} catch (err) {
 		console.error('Error searching ProbabilityCourse:', err);
 		return [];
@@ -735,6 +759,9 @@ async function processUserMessage(message) {
 			let refsText = 'Relevant sections from the ProbabilityCourse.com textbook:\n';
 			searchResults.forEach((r, idx) => {
 				refsText += `${idx + 1}. ${r.title} - ${r.link}\n   ${r.snippet}\n`;
+				if (r.content) {
+					refsText += `   Content excerpt: ${r.content.substring(0, 500)}...\n`;
+				}
 			});
 
 			context.push({
