@@ -77,7 +77,22 @@ function setupWhiteboardControls() {
 	}
 
 	if (drawTeacherButton) {
-		drawTeacherButton.addEventListener('click', () => toggleDrawing('teacher'));
+		console.log('Adding event listener to teacher draw button');
+		drawTeacherButton.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			console.log('Teacher draw button clicked!');
+			toggleDrawing('teacher');
+		});
+		
+		// Also add onclick as backup
+		drawTeacherButton.onclick = function(e) {
+			e.preventDefault();
+			console.log('Teacher draw button onclick triggered');
+			toggleDrawing('teacher');
+		};
+	} else {
+		console.error('Teacher draw button not found!');
 	}
 
 	if (eraserTeacherButton) {
@@ -439,34 +454,59 @@ function testStudentDrawButton() {
 	}
 }
 
+// Manual button test function for teacher
+function testTeacherDrawButton() {
+	console.log('Testing teacher draw button manually...');
+	const button = document.getElementById('drawTeacherButton');
+	if (button) {
+		console.log('Teacher button found, triggering click...');
+		button.click();
+	} else {
+		console.error('Teacher button not found!');
+	}
+}
+
 window.testStudentDrawButton = testStudentDrawButton;
+window.testTeacherDrawButton = testTeacherDrawButton;
 function initializeWhiteboards() {
+	console.log('Initializing whiteboards...');
+	
 	// Initialize teacher whiteboard
 	teacherCanvas = document.getElementById('teacherWhiteboard');
 	if (teacherCanvas) {
+		console.log('Teacher canvas found, initializing...');
 		teacherCtx = teacherCanvas.getContext('2d');
 		setupCanvas(teacherCanvas, teacherCtx, 'teacher');
 		// Make globally accessible
 		window.teacherCanvas = teacherCanvas;
 		window.teacherCtx = teacherCtx;
+	} else {
+		console.error('Teacher canvas not found!');
 	}
 
 	// Initialize student whiteboard
 	studentCanvas = document.getElementById('studentWhiteboard');
 	if (studentCanvas) {
+		console.log('Student canvas found, initializing...');
 		studentCtx = studentCanvas.getContext('2d');
 		setupCanvas(studentCanvas, studentCtx, 'student');
 		// Make globally accessible
 		window.studentCanvas = studentCanvas;
 		window.studentCtx = studentCtx;
+	} else {
+		console.error('Student canvas not found!');
 	}
 
-	if (!teacherCanvas || !studentCanvas) {
-		console.error('Whiteboard canvases not found');
+	if (!teacherCanvas && !studentCanvas) {
+		console.error('No whiteboard canvases found');
 		return;
 	}
 
-	resizeCanvases();
+	// Force initial resize after a short delay
+	setTimeout(() => {
+		resizeCanvases();
+		console.log('Initial canvas resize completed');
+	}, 200);
 	
 	// Debounced resize handler to prevent excessive operations
 	let resizeTimeout;
@@ -474,7 +514,7 @@ function initializeWhiteboards() {
 		clearTimeout(resizeTimeout);
 		resizeTimeout = setTimeout(() => {
 			resizeCanvases();
-		}, 150); // Wait 150ms after resize stops
+		}, 150);
 	});
 
 	updateDrawButtons();
@@ -484,26 +524,50 @@ function initializeWhiteboards() {
 	setTimeout(() => {
 		if (teacherCanvas) saveDrawingState('teacher');
 		if (studentCanvas) saveDrawingState('student');
-	}, 100);
+		console.log('Whiteboard initialization complete');
+	}, 300);
 }
 
 function setupCanvas(canvas, ctx, boardType) {
+	console.log(`Setting up ${boardType} canvas...`);
+	
+	// Remove any existing event listeners first
+	canvas.removeEventListener('mousedown', handleMouseDown);
+	canvas.removeEventListener('mousemove', handleMouseMove);
+	canvas.removeEventListener('mouseup', handleMouseUp);
+	canvas.removeEventListener('mouseout', handleMouseUp);
+	
+	// Add event listeners with proper binding
 	canvas.addEventListener('mousedown', (e) => {
 		e.preventDefault();
+		e.stopPropagation();
+		console.log(`Mouse down on ${boardType} canvas`);
 		handleMouseDown(e, boardType);
-	});
+	}, { passive: false });
+	
 	canvas.addEventListener('mousemove', (e) => {
 		e.preventDefault();
 		handleMouseMove(e, boardType);
-	});
+	}, { passive: false });
+	
 	canvas.addEventListener('mouseup', (e) => {
 		e.preventDefault();
 		handleMouseUp(boardType);
-	});
+	}, { passive: false });
+	
 	canvas.addEventListener('mouseout', () => handleMouseUp(boardType));
 
-	canvas.addEventListener('touchstart', (e) => handleTouchStart(e, boardType));
-	canvas.addEventListener('touchmove', (e) => handleTouchMove(e, boardType));
+	// Touch events
+	canvas.addEventListener('touchstart', (e) => {
+		e.preventDefault();
+		handleTouchStart(e, boardType);
+	}, { passive: false });
+	
+	canvas.addEventListener('touchmove', (e) => {
+		e.preventDefault();
+		handleMouseMove(e, boardType);
+	}, { passive: false });
+	
 	canvas.addEventListener('touchend', () => handleMouseUp(boardType));
 
 	// Set initial canvas properties
@@ -513,10 +577,10 @@ function setupCanvas(canvas, ctx, boardType) {
 	ctx.lineJoin = 'round';
 	ctx.globalCompositeOperation = 'source-over';
 	
-	// Ensure canvas is properly sized
-	setTimeout(() => {
-		resizeCanvas(canvas, boardType);
-	}, 100);
+	// Set initial cursor
+	canvas.style.cursor = 'default';
+	
+	console.log(`${boardType} canvas setup complete`);
 }
 
 function switchWhiteboard(boardType) {
@@ -709,18 +773,37 @@ function resizeCanvases() {
 }
 
 function resizeCanvas(canvas, boardType) {
-	if (!canvas) return;
+	if (!canvas) {
+		console.warn(`Canvas not found for ${boardType}`);
+		return;
+	}
 
 	const panel = document.getElementById(boardType + 'Panel');
-	if (!panel) return;
+	if (!panel) {
+		console.warn(`Panel not found for ${boardType}`);
+		return;
+	}
 
-	const container = panel.querySelector('.whiteboard-container') || panel;
-	const containerRect = container.getBoundingClientRect();
-	const newWidth = Math.max(300, Math.floor(containerRect.width));
-	const newHeight = Math.max(200, Math.floor(containerRect.height - 60));
+	// Get the whiteboard container dimensions
+	const whiteboardSection = document.querySelector('.whiteboard-section');
+	const whiteboardContainer = panel.querySelector('.whiteboard-container') || panel;
+	
+	let containerRect;
+	if (whiteboardSection && whiteboardSection.getBoundingClientRect().width > 0) {
+		containerRect = whiteboardSection.getBoundingClientRect();
+	} else {
+		containerRect = whiteboardContainer.getBoundingClientRect();
+	}
+	
+	// Calculate new dimensions with proper margins
+	const headerHeight = panel.querySelector('.whiteboard-header')?.offsetHeight || 80;
+	const newWidth = Math.max(400, Math.floor(containerRect.width - 40));
+	const newHeight = Math.max(300, Math.floor(containerRect.height - headerHeight - 40));
+
+	console.log(`Resizing ${boardType} canvas to ${newWidth}x${newHeight}`);
 
 	if (canvas.width !== newWidth || canvas.height !== newHeight) {
-		// Only save content if canvas has valid dimensions
+		// Save existing content
 		let tempCanvas = null;
 		if (canvas.width > 0 && canvas.height > 0) {
 			tempCanvas = document.createElement('canvas');
@@ -735,17 +818,21 @@ function resizeCanvas(canvas, boardType) {
 		canvas.height = newHeight;
 
 		const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
-		// Reset canvas properties after resize
-		ctx.strokeStyle = '#333';
-		ctx.lineWidth = 4;
-		ctx.lineCap = 'round';
-		ctx.lineJoin = 'round';
-		ctx.globalCompositeOperation = 'source-over';
+		if (ctx) {
+			// Reset canvas properties after resize
+			ctx.strokeStyle = '#333';
+			ctx.lineWidth = 4;
+			ctx.lineCap = 'round';
+			ctx.lineJoin = 'round';
+			ctx.globalCompositeOperation = 'source-over';
 
-		// Restore content if we saved it
-		if (tempCanvas && tempCanvas.width > 0 && tempCanvas.height > 0) {
-			ctx.drawImage(tempCanvas, 0, 0);
+			// Restore content if we saved it
+			if (tempCanvas && tempCanvas.width > 0 && tempCanvas.height > 0) {
+				ctx.drawImage(tempCanvas, 0, 0);
+			}
 		}
+		
+		console.log(`${boardType} canvas resized successfully`);
 	}
 }
 
@@ -790,27 +877,41 @@ function broadcastDiagramAction(diagramName, boardType = 'teacher') {
 }
 
 function toggleDrawing(boardType) {
+	console.log(`Toggling drawing for ${boardType}`);
+	
 	if (boardType === 'teacher') {
 		teacherDrawingMode = !teacherDrawingMode;
+		console.log(`Teacher drawing mode: ${teacherDrawingMode}`);
+		
 		if (teacherDrawingMode) teacherEraserMode = false;
-		if (teacherCanvas) {
+		
+		if (teacherCanvas && teacherCtx) {
 			teacherCanvas.style.cursor = teacherDrawingMode ? 'crosshair' : 'default';
 			teacherCtx.globalCompositeOperation = 'source-over';
 			teacherCtx.strokeStyle = '#333';
 			teacherCtx.lineWidth = 4;
 			teacherCtx.lineCap = 'round';
 			teacherCtx.lineJoin = 'round';
+			console.log('Teacher canvas properties set');
+		} else {
+			console.error('Teacher canvas or context not available');
 		}
 	} else {
 		studentDrawingMode = !studentDrawingMode;
+		console.log(`Student drawing mode: ${studentDrawingMode}`);
+		
 		if (studentDrawingMode) studentEraserMode = false;
-		if (studentCanvas) {
+		
+		if (studentCanvas && studentCtx) {
 			studentCanvas.style.cursor = studentDrawingMode ? 'crosshair' : 'default';
 			studentCtx.globalCompositeOperation = 'source-over';
 			studentCtx.strokeStyle = '#333';
 			studentCtx.lineWidth = 4;
 			studentCtx.lineCap = 'round';
 			studentCtx.lineJoin = 'round';
+			console.log('Student canvas properties set');
+		} else {
+			console.error('Student canvas or context not available');
 		}
 	}
 

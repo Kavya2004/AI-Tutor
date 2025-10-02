@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Quiz Demo</title>
+    <link rel="stylesheet" href="css/quiz-styles.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .demo-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .demo-title {
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .demo-subtitle {
+            color: #666;
+            font-size: 1.2em;
+        }
+        
+        .quiz-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .quiz-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .quiz-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .quiz-card h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.5em;
+        }
+        
+        .quiz-card p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        
+        .features {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 40px;
+        }
+        
+        .features h3 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .feature-icon {
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1 class="demo-title">🧠 Interactive Quiz System</h1>
+            <p class="demo-subtitle">Test your knowledge with beautiful, interactive quizzes</p>
+        </div>
+        
+        <div class="quiz-options">
+            <div class="quiz-card" onclick="startQuiz('probability')">
+                <h3>📊 Probability Quiz</h3>
+                <p>Test your understanding of probability concepts and calculations</p>
+            </div>
+            
+            <div class="quiz-card" onclick="startQuiz('statistics')">
+                <h3>📈 Statistics Quiz</h3>
+                <p>Challenge yourself with statistics fundamentals and analysis</p>
+            </div>
+        </div>
+        
+        <div class="features">
+            <h3>✨ Features</h3>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <span class="feature-icon">🎯</span>
+                    <span>Interactive multiple choice questions</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📊</span>
+                    <span>Real-time progress tracking</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🎨</span>
+                    <span>Beautiful, modern UI design</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📱</span>
+                    <span>Fully responsive design</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">⏱️</span>
+                    <span>Time tracking and scoring</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔍</span>
+                    <span>Answer review and explanations</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🏆</span>
+                    <span>Performance analytics</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🤖</span>
+                    <span>AI-generated custom quizzes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="javascript/quiz-system.js"></script>
+</body>
+</html>
