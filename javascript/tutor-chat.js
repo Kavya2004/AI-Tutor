@@ -76,6 +76,7 @@ Here is the full link mapping:
 ];
 
 let voiceEnabled = true;
+const searchCache = new Map();
 
 document.addEventListener('DOMContentLoaded', function () {
 	initializeChat();
@@ -621,6 +622,25 @@ function toggleVoiceResponse() {
 	}
 }
 
+function hasWhiteboardContent(board) {
+	const canvas = board === 'teacher' ? 
+		document.getElementById('teacherWhiteboard') : 
+		document.getElementById('studentWhiteboard');
+	if (!canvas) return false;
+	
+	const ctx = canvas.getContext('2d');
+	const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	const data = imageData.data;
+	
+	// Check if any non-white pixels exist
+	for (let i = 0; i < data.length; i += 4) {
+		if (data[i] !== 255 || data[i + 1] !== 255 || data[i + 2] !== 255) {
+			return true;
+		}
+	}
+	return false;
+}
+
 async function getOcrTextFromWhiteboardImage(board) {
 	try {
 		const canvas =
@@ -640,6 +660,12 @@ async function getOcrTextFromWhiteboardImage(board) {
 }
 
 async function searchProbabilityCourse(query) {
+	// Check cache first
+	const cacheKey = query.toLowerCase().trim();
+	if (searchCache.has(cacheKey)) {
+		return searchCache.get(cacheKey);
+	}
+	
 	try {
 		// Search both web pages and PDFs
 		const [webRes, pdfRes] = await Promise.all([
@@ -672,6 +698,13 @@ async function searchProbabilityCourse(query) {
 			}));
 			results = [...results, ...pdfResults];
 		}
+		
+		// Cache results (limit cache size)
+		if (searchCache.size > 50) {
+			const firstKey = searchCache.keys().next().value;
+			searchCache.delete(firstKey);
+		}
+		searchCache.set(cacheKey, results);
 		
 		return results;
 	} catch (err) {
@@ -737,7 +770,7 @@ async function processUserMessage(message) {
 		// }
 
 		let ocrText = null;
-		if (boardToCheck) {
+		if (boardToCheck && hasWhiteboardContent(boardToCheck)) {
 			ocrText = await getOcrTextFromWhiteboardImage(boardToCheck);
 			console.log(`[DEBUG] OCR result from ${boardToCheck} board:`, ocrText);
 
