@@ -50,6 +50,12 @@ function convertLatexToUnicode(text) {
         return placeholder;
     });
 
+    // Convert markdown-style formatting
+    result = result.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'); // **bold**
+    result = result.replace(/\*([^*]+)\*/g, '<em>$1</em>'); // *italic*
+    result = result.replace(/`([^`]+)`/g, '<code>$1</code>'); // `code`
+    result = result.replace(/~~([^~]+)~~/g, '<del>$1</del>'); // ~~strikethrough~~
+
     for (const [latex, unicode] of Object.entries(symbolMap)) {
         result = result.replace(new RegExp(latex.replace('\\', '\\\\'), 'g'), unicode);
     }
@@ -68,6 +74,7 @@ function convertLatexToUnicode(text) {
         return subscriptMap[char] || char;
     });
     
+    // Restore URLs
     for (const [placeholder, url] of urlMap) {
         result = result.replace(new RegExp(placeholder, 'g'), url);
     }
