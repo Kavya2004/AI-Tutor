@@ -74,9 +74,9 @@ function convertLatexToUnicode(text) {
         return subscriptMap[char] || char;
     });
     
-    // Restore URLs
+    // Restore URLs as clickable links
     for (const [placeholder, url] of urlMap) {
-        result = result.replace(new RegExp(placeholder, 'g'), url);
+        result = result.replace(new RegExp(placeholder, 'g'), `<a href="${url}" target="_blank">${url}</a>`);
     }
     
     return result;
