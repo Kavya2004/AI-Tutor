@@ -716,6 +716,11 @@ async function searchProbabilityCourse(query) {
 async function processUserMessage(message) {
 	if (isProcessing || (!message.trim() && uploadedFiles.length === 0)) return;
 
+	// Check if this is a quiz request before processing
+	if (window.quizIntegration && window.quizIntegration.handleQuizCommands(message)) {
+		return; // Quiz command handled, don't process further
+	}
+
 	isProcessing = true;
 
 	// Process uploaded files if any

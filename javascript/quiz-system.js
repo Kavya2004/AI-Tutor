@@ -301,15 +301,111 @@ const sampleQuizzes = {
                 correct: 1
             }
         ]
+    },
+    'chapter1': {
+        title: "Chapter 1: Basic Concepts",
+        questions: [
+            {
+                question: "What is a sample space in probability theory?",
+                options: [
+                    "The set of all possible outcomes of an experiment",
+                    "A subset of outcomes we're interested in",
+                    "The probability of an event occurring",
+                    "The number of trials in an experiment"
+                ],
+                correct: 0
+            },
+            {
+                question: "Which of the following is NOT a probability axiom?",
+                options: [
+                    "P(A) ≥ 0 for any event A",
+                    "P(S) = 1 where S is the sample space",
+                    "P(A ∪ B) = P(A) + P(B) for disjoint events",
+                    "P(A) = 1 - P(A') where A' is the complement of A"
+                ],
+                correct: 3
+            },
+            {
+                question: "In a Venn diagram, what does the intersection of two circles represent?",
+                options: [
+                    "Events that cannot occur together",
+                    "Events that occur together",
+                    "The union of two events",
+                    "The complement of an event"
+                ],
+                correct: 1
+            }
+        ]
+    },
+    'conditional': {
+        title: "Conditional Probability",
+        questions: [
+            {
+                question: "What does P(A|B) represent?",
+                options: [
+                    "The probability of A and B occurring together",
+                    "The probability of A given that B has occurred",
+                    "The probability of A or B occurring",
+                    "The probability of A occurring before B"
+                ],
+                correct: 1
+            },
+            {
+                question: "When are two events A and B independent?",
+                options: [
+                    "When P(A|B) = P(A)",
+                    "When P(A ∩ B) = 0",
+                    "When P(A ∪ B) = P(A) + P(B)",
+                    "When A and B cannot occur together"
+                ],
+                correct: 0
+            },
+            {
+                question: "Bayes' theorem is used to find:",
+                options: [
+                    "P(A ∩ B) from P(A) and P(B)",
+                    "P(A|B) from P(B|A), P(A), and P(B)",
+                    "P(A ∪ B) from P(A) and P(B)",
+                    "The independence of two events"
+                ],
+                correct: 1
+            }
+        ]
     }
 };
 
 // Initialize quiz system
 const quizSystem = new QuizSystem();
 
+// Make functions and data globally available
+window.startQuiz = startQuiz;
+window.getChapterKey = getChapterKey;
+window.sampleQuizzes = sampleQuizzes;
+
 // Function to start a quiz (can be called from chat or buttons)
 function startQuiz(quizType) {
+    // Check for chapter-specific quizzes first
+    const chapterKey = getChapterKey(quizType);
+    if (sampleQuizzes[chapterKey]) {
+        quizSystem.startQuiz(sampleQuizzes[chapterKey]);
+        return;
+    }
+    
     if (sampleQuizzes[quizType]) {
         quizSystem.startQuiz(sampleQuizzes[quizType]);
     }
+}
+
+// Helper function to map chapter names to quiz keys
+function getChapterKey(input) {
+    const lowerInput = input.toLowerCase();
+    
+    if (lowerInput.includes('chapter 1') || lowerInput.includes('basic concept')) {
+        return 'chapter1';
+    }
+    if (lowerInput.includes('conditional') || lowerInput.includes('bayes')) {
+        return 'conditional';
+    }
+    
+    return input.toLowerCase();
 }

@@ -90,7 +90,7 @@ class QuizIntegration {
                 📈 Statistics Quiz
             </button>
             <button class="quiz-menu-item" onclick="quizIntegration.createCustomQuiz(); this.parentElement.remove();">
-                ✨ Create Custom Quiz
+                ✨ Create Custom Quiz (Chapter-specific)
             </button>
         `;
 
@@ -126,6 +126,13 @@ class QuizIntegration {
         const lowerMessage = message.toLowerCase();
         
         if (lowerMessage.includes('quiz') || lowerMessage.includes('test') || lowerMessage.includes('assessment')) {
+            // Check for chapter-specific requests
+            const chapterMatch = this.extractChapterFromMessage(message);
+            if (chapterMatch) {
+                this.generateAIQuiz(chapterMatch);
+                return true;
+            }
+            
             if (lowerMessage.includes('probability')) {
                 startQuiz('probability');
                 return true;
@@ -143,7 +150,7 @@ class QuizIntegration {
 
     createCustomQuiz() {
         // This could integrate with the AI to generate custom quizzes
-        const topic = prompt('What topic would you like to be quizzed on?');
+        const topic = prompt('What topic would you like to be quizzed on? (You can specify a chapter name from probabilitycourse.com)');
         if (topic) {
             this.generateAIQuiz(topic);
         }
@@ -151,10 +158,59 @@ class QuizIntegration {
 
     async generateAIQuiz(topic) {
         try {
+            // Check if we have a sample quiz for this topic first
+            const chapterKey = window.getChapterKey ? window.getChapterKey(topic) : topic.toLowerCase();
+            if (window.sampleQuizzes && window.sampleQuizzes[chapterKey]) {
+                quizSystem.startQuiz(window.sampleQuizzes[chapterKey]);
+                return;
+            }
+            
             // Show loading
             const loadingIndicator = document.getElementById('loadingIndicator');
             if (loadingIndicator) {
                 loadingIndicator.style.display = 'flex';
+            }
+
+            // Enhanced prompt for chapter-specific content
+            const isChapterRequest = this.detectChapterRequest(topic);
+            let promptContent;
+            
+            if (isChapterRequest) {
+                promptContent = `Create a 5-question multiple choice quiz about "${topic}" from probabilitycourse.com. Use these sample formats:
+
+SAMPLE FORMATS:
+1. "Let X be a continuous random variable with PDF f(x) = 2C/x² for 2 ≤ x ≤ 4. What is C?"
+2. "If S = {1,2,...,20} and A = {3,4,5}, what is A ∩ B^c?"
+3. "A fair coin is tossed three times. Let X be the number of heads. What is P(X=1)?"
+4. Joint probability tables and calculations
+
+Use readable mathematical notation (not LaTeX) and university-level concepts.
+
+Return ONLY a JSON object:
+{
+  "title": "${topic} Quiz",
+  "questions": [
+    {
+      "question": "Question with readable math like P(X=1) = 1/4?",
+      "options": ["1/2", "1/4", "3/4", "1"],
+      "correct": 1
+    }
+  ]
+}`;
+            } else {
+                promptContent = `Create a 5-question multiple choice quiz about "${topic}". Use readable mathematical notation (like 1/2, P(X=1), etc.) instead of LaTeX.
+
+Return ONLY a JSON object:
+{
+  "title": "${topic} Quiz",
+  "questions": [
+    {
+      "question": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct": 0
+    }
+  ]
+}`;
             }
 
             // Call your existing Gemini API
@@ -166,18 +222,7 @@ class QuizIntegration {
                 body: JSON.stringify({
                     messages: [{
                         role: 'user',
-                        content: `Create a 5-question multiple choice quiz about "${topic}". Return ONLY a JSON object in this exact format:
-{
-  "title": "${topic} Quiz",
-  "questions": [
-    {
-      "question": "Question text here?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct": 0
-    }
-  ]
-}
-Make sure the "correct" field contains the index (0-3) of the correct answer. Do not include any other text, just the JSON.`
+                        content: promptContent
                     }]
                 })
             });
@@ -256,6 +301,51 @@ Make sure the "correct" field contains the index (0-3) of the correct answer. Do
             title: `${topic} Quiz`,
             questions: questions.slice(0, 5) // Limit to 5 questions
         };
+    }
+
+    detectChapterRequest(topic) {
+        const chapterKeywords = [
+            'chapter', 'ch ', 'ch.', 'section', 'sec ', 'sec.',
+            'basic concepts', 'sample space', 'probability axioms',
+            'conditional probability', 'independence', 'bayes',
+            'random variables', 'discrete', 'continuous',
+            'expectation', 'variance', 'moment generating',
+            'joint distributions', 'marginal', 'covariance',
+            'limit theorems', 'central limit', 'law of large numbers',
+            'markov chains', 'poisson process', 'brownian motion'
+        ];
+        
+        const lowerTopic = topic.toLowerCase();
+        return chapterKeywords.some(keyword => lowerTopic.includes(keyword));
+    }
+
+    extractChapterFromMessage(message) {
+        const lowerMessage = message.toLowerCase();
+        
+        // Common chapter patterns
+        const patterns = [
+            /chapter\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)/i,
+            /ch\s*\.?\s*(\d+)/i,
+            /(basic concepts?|sample space|probability axioms?)/i,
+            /(conditional probability|independence|bayes)/i,
+            /(random variables?|discrete|continuous)/i,
+            /(expectation|variance|moment generating)/i,
+            /(joint distributions?|marginal|covariance)/i,
+            /(limit theorems?|central limit|law of large numbers)/i,
+            /(markov chains?|poisson process|brownian motion)/i,
+            /(pdf|cdf|probability density|cumulative)/i,
+            /(pmf|joint pmf|marginal)/i,
+            /(set theory|venn diagram|intersection|union)/i
+        ];
+        
+        for (const pattern of patterns) {
+            const match = message.match(pattern);
+            if (match) {
+                return match[0];
+            }
+        }
+        
+        return null;
     }
 }
 

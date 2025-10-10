@@ -118,6 +118,11 @@
                 <h3>📈 Statistics Quiz</h3>
                 <p>Challenge yourself with statistics fundamentals and analysis</p>
             </div>
+            
+            <div class="quiz-card" onclick="testChapterQuiz()">
+                <h3>📚 Chapter-Specific Quiz</h3>
+                <p>Test the new chapter-based quiz generation from probabilitycourse.com</p>
+            </div>
         </div>
         
         <div class="features">
@@ -160,5 +165,26 @@
     </div>
     
     <script src="javascript/quiz-system.js"></script>
+    <script src="javascript/quiz-integration.js"></script>
+    <script>
+        function testChapterQuiz() {
+            // Test the chapter-specific functionality
+            const testTopics = [
+                'Chapter 1 Basic Concepts',
+                'Conditional Probability',
+                'Random Variables',
+                'Central Limit Theorem',
+                'Bayes Rule'
+            ];
+            
+            const randomTopic = testTopics[Math.floor(Math.random() * testTopics.length)];
+            
+            if (window.quizIntegration) {
+                window.quizIntegration.generateAIQuiz(randomTopic);
+            } else {
+                alert('Quiz integration not loaded. Please check the console.');
+            }
+        }
+    </script>
 </body>
 </html>
