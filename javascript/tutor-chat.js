@@ -592,10 +592,28 @@ function viewUploadedFile(file) {
 	}
 }
 
+let loadingInterval;
+let loadingStartTime;
+
 function showLoading() {
 	const loadingIndicator = document.getElementById('loadingIndicator');
+	const progressFill = document.getElementById('progressFill');
+	const loadingMessage = document.getElementById('loadingMessage');
+	const loadingTime = document.getElementById('loadingTime');
+	
 	if (loadingIndicator) {
 		loadingIndicator.style.display = 'flex';
+		loadingStartTime = Date.now();
+		
+		// Reset progress
+		if (progressFill) progressFill.style.width = '0%';
+		
+		// Set initial message
+		if (loadingMessage) loadingMessage.textContent = 'Tutor is thinking...';
+		if (loadingTime) loadingTime.textContent = 'Estimated time: 3-5 seconds';
+		
+		// Start progress animation
+		startProgressAnimation();
 	}
 }
 
@@ -604,6 +622,84 @@ function hideLoading() {
 	if (loadingIndicator) {
 		loadingIndicator.style.display = 'none';
 	}
+	
+	// Clear interval
+	if (loadingInterval) {
+		clearInterval(loadingInterval);
+		loadingInterval = null;
+	}
+}
+
+function startProgressAnimation() {
+	const progressFill = document.getElementById('progressFill');
+	const loadingMessage = document.getElementById('loadingMessage');
+	const loadingTime = document.getElementById('loadingTime');
+	
+	let progress = 0;
+	let messageIndex = 0;
+	
+	const messages = [
+		'Tutor is thinking...',
+		'Analyzing your question...',
+		'Searching knowledge base...',
+		'Preparing explanation...',
+		'Almost ready...'
+	];
+	
+	loadingInterval = setInterval(() => {
+		const elapsed = (Date.now() - loadingStartTime) / 1000;
+		
+		// Update progress (slower at start, faster later)
+		if (progress < 70) {
+			progress += Math.random() * 8 + 2;
+		} else if (progress < 90) {
+			progress += Math.random() * 3 + 1;
+		} else {
+			progress += Math.random() * 1;
+		}
+		
+		progress = Math.min(progress, 95); // Never reach 100% until done
+		
+		if (progressFill) {
+			progressFill.style.width = progress + '%';
+		}
+		
+		// Update message every 1.5 seconds
+		if (Math.floor(elapsed / 1.5) > messageIndex && messageIndex < messages.length - 1) {
+			messageIndex++;
+			if (loadingMessage) {
+				loadingMessage.textContent = messages[messageIndex];
+			}
+		}
+		
+		// Update time estimation
+		if (loadingTime) {
+			const remaining = Math.max(0, 5 - elapsed);
+			if (remaining > 1) {
+				loadingTime.textContent = `Estimated time: ${Math.ceil(remaining)} seconds`;
+			} else {
+				loadingTime.textContent = 'Just a moment...';
+			}
+		}
+		
+	}, 200);
+}
+
+function completeLoading() {
+	const progressFill = document.getElementById('progressFill');
+	const loadingMessage = document.getElementById('loadingMessage');
+	
+	if (progressFill) {
+		progressFill.style.width = '100%';
+	}
+	
+	if (loadingMessage) {
+		loadingMessage.textContent = 'Ready!';
+	}
+	
+	setTimeout(() => {
+		hideLoading();
+	}, 500);
 }
 function toggleVoiceResponse() {
 	voiceEnabled = !voiceEnabled;
@@ -852,6 +948,9 @@ async function processUserMessage(message) {
 			botResponse = await window.processBotMessageWithLinkValidation(botResponse);
 		}
 
+		// Complete loading animation
+		completeLoading();
+		
 		// Handle bot response display/broadcasting
 		if (window.sessionManager && window.sessionManager.sessionId) {
 			// In session mode, broadcast bot response
@@ -896,6 +995,11 @@ async function processUserMessage(message) {
 		}
 	}
 
+	// Always hide loading and reset processing state
+	if (loadingInterval) {
+		clearInterval(loadingInterval);
+		loadingInterval = null;
+	}
 	hideLoading();
 	isProcessing = false;
 }
