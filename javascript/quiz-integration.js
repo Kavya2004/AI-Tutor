@@ -119,8 +119,16 @@ class QuizIntegration {
                 <input type="text" id="topicInput" placeholder="e.g., Chapter 1, Conditional Probability, Bayes Theorem..." />
                 <div class="topic-suggestions">
                     <button onclick="document.getElementById('topicInput').value='Chapter 1 - Basic Concepts'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 1</button>
-                    <button onclick="document.getElementById('topicInput').value='Conditional Probability'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Conditional Probability</button>
-                    <button onclick="document.getElementById('topicInput').value='Random Variables'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Random Variables</button>
+                    <button onclick="document.getElementById('topicInput').value='Chapter 2 - Combinatorial Analysis'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 2</button>
+                    <button onclick="document.getElementById('topicInput').value='Chapter 3 - Discrete Random Variables'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 3</button>
+                    <button onclick="document.getElementById('topicInput').value='Chapter 4 - Continuous Random Variables'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 4</button>
+                    <button onclick="document.getElementById('topicInput').value='Chapter 5 - Joint Distributions'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 5</button>
+                    <button onclick="document.getElementById('topicInput').value='Chapter 6 - Limit Theorems'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 6</button>
+                    <button onclick="document.getElementById('topicInput').value='Chapter 7 - Statistical Inference'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 7</button>
+                    <button onclick="document.getElementById('topicInput').value='Chapter 8 - Estimation'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 8</button>
+                    <button onclick="document.getElementById('topicInput').value='Chapter 9 - Bayesian Inference'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 9</button>
+                    <button onclick="document.getElementById('topicInput').value='Chapter 10 - Introduction to Random Processes'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 10</button>
+                    <button onclick="document.getElementById('topicInput').value='Chapter 11 - Some Important Random Processes'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 11</button>
                 </div>
                 <div class="topic-buttons">
                     <button class="topic-btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove();">Cancel</button>
