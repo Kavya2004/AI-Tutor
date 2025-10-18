@@ -685,6 +685,83 @@ function startProgressAnimation() {
 	}, 200);
 }
 
+function showLoadingForQuiz() {
+	const loadingIndicator = document.getElementById('loadingIndicator');
+	const progressFill = document.getElementById('progressFill');
+	const loadingMessage = document.getElementById('loadingMessage');
+	const loadingTime = document.getElementById('loadingTime');
+	
+	if (loadingIndicator) {
+		loadingIndicator.style.display = 'flex';
+		loadingStartTime = Date.now();
+		
+		// Reset progress
+		if (progressFill) progressFill.style.width = '0%';
+		
+		// Set quiz-specific messages
+		if (loadingMessage) loadingMessage.textContent = 'Generating quiz questions...';
+		if (loadingTime) loadingTime.textContent = 'Estimated time: 8-12 seconds';
+		
+		// Start quiz-specific progress animation
+		startQuizProgressAnimation();
+	}
+}
+
+function startQuizProgressAnimation() {
+	const progressFill = document.getElementById('progressFill');
+	const loadingMessage = document.getElementById('loadingMessage');
+	const loadingTime = document.getElementById('loadingTime');
+	
+	let progress = 0;
+	let messageIndex = 0;
+	
+	const quizMessages = [
+		'Generating quiz questions...',
+		'Creating multiple choice options...',
+		'Reviewing question difficulty...',
+		'Finalizing quiz content...',
+		'Almost ready...'
+	];
+	
+	loadingInterval = setInterval(() => {
+		const elapsed = (Date.now() - loadingStartTime) / 1000;
+		
+		// Slower progress for quiz generation
+		if (progress < 60) {
+			progress += Math.random() * 4 + 1;
+		} else if (progress < 85) {
+			progress += Math.random() * 2 + 0.5;
+		} else {
+			progress += Math.random() * 0.5;
+		}
+		
+		progress = Math.min(progress, 95);
+		
+		if (progressFill) {
+			progressFill.style.width = progress + '%';
+		}
+		
+		// Update message every 2 seconds for quiz
+		if (Math.floor(elapsed / 2) > messageIndex && messageIndex < quizMessages.length - 1) {
+			messageIndex++;
+			if (loadingMessage) {
+				loadingMessage.textContent = quizMessages[messageIndex];
+			}
+		}
+		
+		// Update time estimation for quiz
+		if (loadingTime) {
+			const remaining = Math.max(0, 12 - elapsed);
+			if (remaining > 1) {
+				loadingTime.textContent = `Estimated time: ${Math.ceil(remaining)} seconds`;
+			} else {
+				loadingTime.textContent = 'Just a moment...';
+			}
+		}
+		
+	}, 300);
+}
+
 function completeLoading() {
 	const progressFill = document.getElementById('progressFill');
 	const loadingMessage = document.getElementById('loadingMessage');
@@ -701,6 +778,9 @@ function completeLoading() {
 		hideLoading();
 	}, 500);
 }
+
+// Make function globally available
+window.showLoadingForQuiz = showLoadingForQuiz;
 function toggleVoiceResponse() {
 	voiceEnabled = !voiceEnabled;
 	localStorage.setItem('autoSpeech', voiceEnabled.toString());

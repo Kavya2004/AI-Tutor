@@ -265,10 +265,14 @@ class QuizIntegration {
                 return;
             }
             
-            // Show loading
-            const loadingIndicator = document.getElementById('loadingIndicator');
-            if (loadingIndicator) {
-                loadingIndicator.style.display = 'flex';
+            // Show loading with quiz-specific timing
+            if (window.showLoadingForQuiz) {
+                window.showLoadingForQuiz();
+            } else {
+                const loadingIndicator = document.getElementById('loadingIndicator');
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'flex';
+                }
             }
 
             // Enhanced prompt for chapter-specific content
