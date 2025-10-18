@@ -73,40 +73,8 @@ class QuizIntegration {
     }
 
     showQuizMenu() {
-        // Remove existing menu if any
-        const existingMenu = document.querySelector('.quiz-menu');
-        if (existingMenu) {
-            existingMenu.remove();
-            return;
-        }
-
-        const menu = document.createElement('div');
-        menu.className = 'quiz-menu';
-        menu.innerHTML = `
-            <button class="quiz-menu-item" onclick="startQuiz('probability'); this.parentElement.remove();">
-                📊 Probability Quiz
-            </button>
-            <button class="quiz-menu-item" onclick="startQuiz('statistics'); this.parentElement.remove();">
-                📈 Statistics Quiz
-            </button>
-            <button class="quiz-menu-item" onclick="quizIntegration.createCustomQuiz(); this.parentElement.remove();">
-                ✨ Create Custom Quiz (Chapter-specific)
-            </button>
-        `;
-
-        const chatContainer = document.querySelector('.chat-input-container');
-        chatContainer.style.position = 'relative';
-        chatContainer.appendChild(menu);
-
-        // Close menu when clicking outside
-        setTimeout(() => {
-            document.addEventListener('click', function closeMenu(e) {
-                if (!menu.contains(e.target) && !e.target.classList.contains('quiz-trigger-btn')) {
-                    menu.remove();
-                    document.removeEventListener('click', closeMenu);
-                }
-            });
-        }, 100);
+        // Directly show topic input popup instead of menu
+        this.createCustomQuiz();
     }
 
     enhanceChatWithQuizCommands() {
@@ -131,14 +99,6 @@ class QuizIntegration {
             if (chapterMatch) {
                 this.generateAIQuiz(chapterMatch);
                 return true;
-            }
-            
-            if (lowerMessage.includes('probability')) {
-                startQuiz('probability');
-                return true;
-            } else if (lowerMessage.includes('statistics') || lowerMessage.includes('stats')) {
-                startQuiz('statistics');
-                return true;
             } else {
                 this.showQuizMenu();
                 return true;
@@ -149,9 +109,141 @@ class QuizIntegration {
     }
 
     createCustomQuiz() {
-        // This could integrate with the AI to generate custom quizzes
-        const topic = prompt('What topic would you like to be quizzed on? (You can specify a chapter name from probabilitycourse.com)');
+        // Show a better popup for topic selection
+        const popup = document.createElement('div');
+        popup.className = 'topic-popup';
+        popup.innerHTML = `
+            <div class="topic-popup-content">
+                <h3>🧠 Create Custom Quiz</h3>
+                <p>What topic or chapter would you like to be quizzed on?</p>
+                <input type="text" id="topicInput" placeholder="e.g., Chapter 1, Conditional Probability, Bayes Theorem..." />
+                <div class="topic-suggestions">
+                    <button onclick="document.getElementById('topicInput').value='Chapter 1 - Basic Concepts'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 1</button>
+                    <button onclick="document.getElementById('topicInput').value='Conditional Probability'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Conditional Probability</button>
+                    <button onclick="document.getElementById('topicInput').value='Random Variables'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Random Variables</button>
+                </div>
+                <div class="topic-buttons">
+                    <button class="topic-btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove();">Cancel</button>
+                    <button class="topic-btn-primary" onclick="quizIntegration.handleTopicSubmit();">Create Quiz</button>
+                </div>
+            </div>
+        `;
+        
+        // Add styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .topic-popup {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            }
+            .topic-popup-content {
+                background: white;
+                padding: 25px;
+                border-radius: 15px;
+                max-width: 400px;
+                width: 90%;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            }
+            .topic-popup-content h3 {
+                margin: 0 0 15px 0;
+                color: #337810;
+                text-align: center;
+            }
+            .topic-popup-content p {
+                margin: 0 0 15px 0;
+                color: #666;
+                text-align: center;
+            }
+            #topicInput {
+                width: 100%;
+                padding: 12px;
+                border: 2px solid #e0e0e0;
+                border-radius: 8px;
+                font-size: 14px;
+                margin-bottom: 15px;
+                box-sizing: border-box;
+            }
+            #topicInput:focus {
+                border-color: #337810;
+                outline: none;
+            }
+            .topic-suggestions {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+            }
+            .topic-suggestions button {
+                padding: 6px 12px;
+                border: 1px solid #ddd;
+                background: #f8f9fa;
+                border-radius: 15px;
+                cursor: pointer;
+                font-size: 12px;
+                transition: all 0.2s;
+            }
+            .topic-suggestions button:hover {
+                background: #337810;
+                color: white;
+                border-color: #337810;
+            }
+            .topic-buttons {
+                display: flex;
+                gap: 10px;
+                justify-content: flex-end;
+            }
+            .topic-btn-secondary, .topic-btn-primary {
+                padding: 10px 20px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+                transition: all 0.2s;
+            }
+            .topic-btn-secondary {
+                background: #f8f9fa;
+                color: #666;
+            }
+            .topic-btn-secondary:hover {
+                background: #e9ecef;
+            }
+            .topic-btn-primary {
+                background: #337810;
+                color: white;
+            }
+            .topic-btn-primary:hover {
+                background: #2a6209;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(popup);
+        
+        // Focus input
+        setTimeout(() => {
+            document.getElementById('topicInput').focus();
+        }, 100);
+        
+        // Handle Enter key
+        document.getElementById('topicInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.handleTopicSubmit();
+            }
+        });
+    }
+    
+    handleTopicSubmit() {
+        const topic = document.getElementById('topicInput').value.trim();
         if (topic) {
+            document.querySelector('.topic-popup').remove();
             this.generateAIQuiz(topic);
         }
     }
