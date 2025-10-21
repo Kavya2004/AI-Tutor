@@ -643,6 +643,8 @@ function startProgressAnimation() {
 	
 	let progress = 0;
 	let messageIndex = 0;
+	let timeRemaining = 5;
+	let tickCount = 0;
 	
 	const messages = [
 		'Tutor is thinking...',
@@ -653,9 +655,9 @@ function startProgressAnimation() {
 	];
 	
 	loadingInterval = setInterval(() => {
-		const elapsed = (Date.now() - loadingStartTime) / 1000;
+		tickCount++;
 		
-		// Update progress (slower at start, faster later)
+		// Update progress
 		if (progress < 70) {
 			progress += Math.random() * 8 + 2;
 		} else if (progress < 90) {
@@ -664,25 +666,28 @@ function startProgressAnimation() {
 			progress += Math.random() * 1;
 		}
 		
-		progress = Math.min(progress, 95); // Never reach 100% until done
+		progress = Math.min(progress, 95);
 		
 		if (progressFill) {
 			progressFill.style.width = progress + '%';
 		}
 		
-		// Update message every 1.5 seconds
-		if (Math.floor(elapsed / 1.5) > messageIndex && messageIndex < messages.length - 1) {
+		// Update message every 7 ticks (1.4 seconds)
+		if (tickCount % 7 === 0 && messageIndex < messages.length - 1) {
 			messageIndex++;
 			if (loadingMessage) {
 				loadingMessage.textContent = messages[messageIndex];
 			}
 		}
 		
-		// Update time estimation - consistent countdown
+		// Update countdown every 5 ticks (1 second)
+		if (tickCount % 5 === 0 && timeRemaining > 0) {
+			timeRemaining--;
+		}
+		
 		if (loadingTime) {
-			const remaining = Math.max(0, 5 - elapsed);
-			if (remaining > 1) {
-				loadingTime.textContent = `Estimated time: ${Math.floor(remaining)} seconds`;
+			if (timeRemaining > 0) {
+				loadingTime.textContent = `Estimated time: ${timeRemaining} seconds`;
 			} else {
 				loadingTime.textContent = 'Just a moment...';
 			}
