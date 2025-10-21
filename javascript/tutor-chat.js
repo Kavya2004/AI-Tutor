@@ -597,6 +597,12 @@ let loadingStartTime;
 let isLoadingActive = false;
 
 function showLoading() {
+	// Clear any existing loading first
+	if (loadingInterval) {
+		clearInterval(loadingInterval);
+		loadingInterval = null;
+	}
+	
 	// Prevent multiple loading instances
 	if (isLoadingActive) return;
 	
@@ -608,7 +614,6 @@ function showLoading() {
 	if (loadingIndicator) {
 		isLoadingActive = true;
 		loadingIndicator.style.display = 'flex';
-		loadingStartTime = Date.now();
 		
 		// Reset progress
 		if (progressFill) progressFill.style.width = '0%';
