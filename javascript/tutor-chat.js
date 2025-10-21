@@ -594,14 +594,19 @@ function viewUploadedFile(file) {
 
 let loadingInterval;
 let loadingStartTime;
+let isLoadingActive = false;
 
 function showLoading() {
+	// Prevent multiple loading instances
+	if (isLoadingActive) return;
+	
 	const loadingIndicator = document.getElementById('loadingIndicator');
 	const progressFill = document.getElementById('progressFill');
 	const loadingMessage = document.getElementById('loadingMessage');
 	const loadingTime = document.getElementById('loadingTime');
 	
 	if (loadingIndicator) {
+		isLoadingActive = true;
 		loadingIndicator.style.display = 'flex';
 		loadingStartTime = Date.now();
 		
@@ -610,7 +615,7 @@ function showLoading() {
 		
 		// Set initial message
 		if (loadingMessage) loadingMessage.textContent = 'Tutor is thinking...';
-		if (loadingTime) loadingTime.textContent = 'Estimated time: 3-5 seconds';
+		if (loadingTime) loadingTime.textContent = 'Estimated time: 5 seconds';
 		
 		// Start progress animation
 		startProgressAnimation();
@@ -623,11 +628,12 @@ function hideLoading() {
 		loadingIndicator.style.display = 'none';
 	}
 	
-	// Clear interval
+	// Clear interval and reset state
 	if (loadingInterval) {
 		clearInterval(loadingInterval);
 		loadingInterval = null;
 	}
+	isLoadingActive = false;
 }
 
 function startProgressAnimation() {
