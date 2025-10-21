@@ -672,11 +672,11 @@ function startProgressAnimation() {
 			}
 		}
 		
-		// Update time estimation
+		// Update time estimation - consistent countdown
 		if (loadingTime) {
 			const remaining = Math.max(0, 5 - elapsed);
 			if (remaining > 1) {
-				loadingTime.textContent = `Estimated time: ${Math.ceil(remaining)} seconds`;
+				loadingTime.textContent = `Estimated time: ${Math.floor(remaining)} seconds`;
 			} else {
 				loadingTime.textContent = 'Just a moment...';
 			}
