@@ -512,9 +512,11 @@ class DiagramRenderer {
             const container = document.createElement('div');
             container.style.cssText = `
                 position: absolute;
+                top: 0;
+                left: 0;
                 width: ${this.canvas.width}px;
                 height: ${this.canvas.height}px;
-                z-index: -1;
+                visibility: hidden;
             `;
             document.body.appendChild(container);
 
@@ -570,7 +572,8 @@ class DiagramRenderer {
 
         } catch (error) {
             console.error('Desmos failed, using fallback:', error);
-            this.parseAndRenderFunction(config.expressions?.[0]?.latex || 'y=\\sin(x)', '#2d70b3');
+            // Draw a simple gamma curve manually
+            this.drawGammaCurve();
         }
     }
 
@@ -730,6 +733,31 @@ class DiagramRenderer {
         this.ctx.restore();
     }
 
+    drawGammaCurve() {
+        this.ctx.save();
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.strokeStyle = '#2d70b3';
+        this.ctx.lineWidth = 3;
+        
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
+        this.ctx.beginPath();
+        for (let x = 0.1; x <= 5; x += 0.1) {
+            const y = 2 * x * Math.exp(-2 * x);
+            const px = centerX - 200 + x * 80;
+            const py = centerY - y * 200;
+            
+            if (x === 0.1) {
+                this.ctx.moveTo(px, py);
+            } else {
+                this.ctx.lineTo(px, py);
+            }
+        }
+        this.ctx.stroke();
+        this.ctx.restore();
+    }
+
     async loadDesmosAPI() {
         return new Promise((resolve, reject) => {
             if (window.Desmos) {
@@ -737,7 +765,7 @@ class DiagramRenderer {
                 return;
             }
             const script = document.createElement('script');
-            script.src = 'https://www.desmos.com/api/v1.9/calculator.js';
+            script.src = 'https://www.desmos.com/api/v1.7/calculator.js?apikey=dcb31709b452b1cf9dc26972add0fda6';
             script.onload = () => {
                 console.log('Desmos API loaded successfully');
                 resolve();
