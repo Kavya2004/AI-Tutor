@@ -617,8 +617,8 @@ class DiagramRenderer {
         let first = true;
         for (let x = -10; x <= 10; x += 0.1) {
             const y = amplitude * Math.sin(frequency * x);
-            const px = x * 20;
-            const py = y * 30;
+            const px = x * 40; // Doubled scale
+            const py = y * 80; // Doubled scale
             
             if (first) {
                 this.ctx.moveTo(px, py);
@@ -635,8 +635,8 @@ class DiagramRenderer {
         let first = true;
         for (let x = -10; x <= 10; x += 0.1) {
             const y = amplitude * Math.cos(frequency * x);
-            const px = x * 20;
-            const py = y * 30;
+            const px = x * 40; // Doubled scale
+            const py = y * 80; // Doubled scale
             
             if (first) {
                 this.ctx.moveTo(px, py);
@@ -652,23 +652,24 @@ class DiagramRenderer {
         this.ctx.beginPath();
         const x1 = -10, y1 = slope * x1 + intercept;
         const x2 = 10, y2 = slope * x2 + intercept;
-        this.ctx.moveTo(x1 * 20, y1 * 20);
-        this.ctx.lineTo(x2 * 20, y2 * 20);
+        this.ctx.moveTo(x1 * 40, y1 * 40); // Doubled scale
+        this.ctx.lineTo(x2 * 40, y2 * 40); // Doubled scale
         this.ctx.stroke();
     }
 
     renderTable(coordinates, data) {
         if (!data || !data.rows) return;
         
-        const [x, y, cellWidth, cellHeight] = coordinates;
+        const cellWidth = 120; // Fixed larger size
+        const cellHeight = 40; // Fixed larger size
         
         this.ctx.save();
-        this.ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
-        this.ctx.font = '16px Arial';
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.font = '18px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillStyle = '#333';
         this.ctx.strokeStyle = '#333';
-        this.ctx.lineWidth = 1;
+        this.ctx.lineWidth = 2;
         
         const startX = this.canvas.width/2 - (data.rows[0].length * cellWidth)/2;
         const startY = this.canvas.height/2 - (data.rows.length * cellHeight)/2;
