@@ -657,6 +657,32 @@ class DiagramRenderer {
         this.ctx.stroke();
     }
 
+    renderTable(coordinates, data) {
+        if (!data || !data.rows) return;
+        
+        const [x, y, cellWidth, cellHeight] = coordinates;
+        const startX = x * 20;
+        const startY = y * 20;
+        
+        this.ctx.save();
+        this.ctx.scale(1, -1);
+        this.ctx.font = '14px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillStyle = '#333';
+        
+        data.rows.forEach((row, rowIndex) => {
+            row.forEach((cell, colIndex) => {
+                const cellX = startX + (colIndex * cellWidth);
+                const cellY = -startY - (rowIndex * cellHeight);
+                
+                this.ctx.strokeRect(cellX, cellY - cellHeight, cellWidth, cellHeight);
+                this.ctx.fillText(cell, cellX + cellWidth/2, cellY - cellHeight/2 + 5);
+            });
+        });
+        
+        this.ctx.restore();
+    }
+
     async loadDesmosAPI() {
         return new Promise((resolve, reject) => {
             if (window.Desmos) {
