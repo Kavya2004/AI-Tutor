@@ -548,23 +548,36 @@ class DiagramRenderer {
                 calculator.setMathBounds({left: -10, right: 10, bottom: -5, top: 5});
             }
 
-            // Wait and capture
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Wait longer for rendering
+            await new Promise(resolve => setTimeout(resolve, 3000));
             
-            const screenshot = await calculator.asyncScreenshot({
-                width: this.canvas.width,
-                height: this.canvas.height
-            });
+            try {
+                const screenshot = await calculator.asyncScreenshot({
+                    width: this.canvas.width,
+                    height: this.canvas.height,
+                    targetPixelRatio: 1
+                });
 
-            // Draw to canvas
-            const img = new Image();
-            img.onload = () => {
-                this.ctx.save();
-                this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-                this.ctx.drawImage(img, 0, 0);
-                this.ctx.restore();
-            };
-            img.src = screenshot;
+                console.log('Screenshot captured:', screenshot.substring(0, 50));
+
+                // Draw to canvas
+                const img = new Image();
+                img.onload = () => {
+                    console.log('Image loaded, drawing to canvas');
+                    this.ctx.save();
+                    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    this.ctx.drawImage(img, 0, 0);
+                    this.ctx.restore();
+                };
+                img.onerror = (e) => {
+                    console.error('Image load failed:', e);
+                    this.drawGammaCurve();
+                };
+                img.src = screenshot;
+            } catch (screenshotError) {
+                console.error('Screenshot failed:', screenshotError);
+                this.drawGammaCurve();
+            }
 
             // Cleanup
             calculator.destroy();
