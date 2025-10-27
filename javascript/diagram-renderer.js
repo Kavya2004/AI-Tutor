@@ -99,35 +99,38 @@ class DiagramRenderer {
     }
 
     async renderElement(element) {
-        const { type, coordinates, label, color, style } = element;
+        const { type, coordinates, label, color, style, fill } = element;
         
         // Set element styles
-        if (color) this.ctx.strokeStyle = color;
-        if (style === 'dashed') this.ctx.setLineDash([5, 5]);
-        else if (style === 'dotted') this.ctx.setLineDash([2, 2]);
+        this.ctx.strokeStyle = color || '#333';
+        this.ctx.fillStyle = fill || color || '#333';
+        this.ctx.lineWidth = element.lineWidth || 2;
+        
+        if (style === 'dashed') this.ctx.setLineDash([8, 4]);
+        else if (style === 'dotted') this.ctx.setLineDash([2, 3]);
         else this.ctx.setLineDash([]);
 
         switch (type) {
             case 'line':
-                this.renderLine(coordinates);
+                this.renderPreciseLine(coordinates);
                 break;
             case 'circle':
-                this.renderCircle(coordinates);
+                this.renderPreciseCircle(coordinates, fill);
                 break;
             case 'rectangle':
-                this.renderRectangle(coordinates);
+                this.renderPreciseRectangle(coordinates, fill);
                 break;
             case 'point':
                 this.renderPoint(coordinates, label);
                 break;
             case 'curve':
-                this.renderCurve(coordinates);
+                this.renderSmoothCurve(coordinates);
                 break;
             case 'axis':
-                this.renderAxis(coordinates);
+                this.renderPreciseAxis(coordinates);
                 break;
             case 'arrow':
-                this.renderArrow(coordinates);
+                this.renderPreciseArrow(coordinates);
                 break;
             case 'parabola':
                 this.renderParabola(coordinates);
@@ -139,7 +142,19 @@ class DiagramRenderer {
                 this.renderQuadratic(coordinates);
                 break;
             case 'triangle':
-                this.renderTriangle(coordinates);
+                this.renderPreciseTriangle(coordinates, fill);
+                break;
+            case 'polygon':
+                this.renderPolygon(coordinates, fill);
+                break;
+            case 'ellipse':
+                this.renderEllipse(coordinates, fill);
+                break;
+            case 'grid':
+                this.renderGrid(coordinates);
+                break;
+            case 'desmos':
+                await this.renderDesmosGraph(coordinates);
                 break;
         }
 
@@ -166,30 +181,94 @@ class DiagramRenderer {
         this.ctx.stroke();
     }
 
-    renderTriangle([x1, y1, x2, y2, x3, y3]) {
+    renderPreciseTriangle([x1, y1, x2, y2, x3, y3], fill = false) {
         this.ctx.beginPath();
-        this.ctx.moveTo(x1 * 20, y1 * 20);
-        this.ctx.lineTo(x2 * 20, y2 * 20);
-        this.ctx.lineTo(x3 * 20, y3 * 20);
+        this.ctx.moveTo(Math.round(x1 * 20) + 0.5, Math.round(y1 * 20) + 0.5);
+        this.ctx.lineTo(Math.round(x2 * 20) + 0.5, Math.round(y2 * 20) + 0.5);
+        this.ctx.lineTo(Math.round(x3 * 20) + 0.5, Math.round(y3 * 20) + 0.5);
         this.ctx.closePath();
+        if (fill) {
+            this.ctx.fill();
+        }
         this.ctx.stroke();
     }
 
-    renderLine([x1, y1, x2, y2]) {
+    renderPolygon(points, fill = false) {
+        if (points.length < 6) return;
+        
         this.ctx.beginPath();
-        this.ctx.moveTo(x1 * 20, y1 * 20);
-        this.ctx.lineTo(x2 * 20, y2 * 20);
+        this.ctx.moveTo(points[0] * 20, points[1] * 20);
+        
+        for (let i = 2; i < points.length; i += 2) {
+            this.ctx.lineTo(points[i] * 20, points[i + 1] * 20);
+        }
+        
+        this.ctx.closePath();
+        if (fill) {
+            this.ctx.fill();
+        }
         this.ctx.stroke();
     }
 
-    renderCircle([centerX, centerY, radius]) {
+    renderEllipse([centerX, centerY, radiusX, radiusY], fill = false) {
+        this.ctx.beginPath();
+        this.ctx.ellipse(centerX * 20, centerY * 20, radiusX * 20, radiusY * 20, 0, 0, 2 * Math.PI);
+        if (fill) {
+            this.ctx.fill();
+        }
+        this.ctx.stroke();
+    }
+
+    renderGrid([xMin, xMax, yMin, yMax, spacing = 1]) {
+        this.ctx.save();
+        this.ctx.strokeStyle = '#e0e0e0';
+        this.ctx.lineWidth = 0.5;
+        
+        // Vertical lines
+        for (let x = xMin; x <= xMax; x += spacing) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x * 20, yMin * 20);
+            this.ctx.lineTo(x * 20, yMax * 20);
+            this.ctx.stroke();
+        }
+        
+        // Horizontal lines
+        for (let y = yMin; y <= yMax; y += spacing) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(xMin * 20, y * 20);
+            this.ctx.lineTo(xMax * 20, y * 20);
+            this.ctx.stroke();
+        }
+        
+        this.ctx.restore();
+    }
+
+    renderPreciseLine([x1, y1, x2, y2]) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(Math.round(x1 * 20) + 0.5, Math.round(y1 * 20) + 0.5);
+        this.ctx.lineTo(Math.round(x2 * 20) + 0.5, Math.round(y2 * 20) + 0.5);
+        this.ctx.stroke();
+    }
+
+    renderPreciseCircle([centerX, centerY, radius], fill = false) {
         this.ctx.beginPath();
         this.ctx.arc(centerX * 20, centerY * 20, radius * 20, 0, 2 * Math.PI);
+        if (fill) {
+            this.ctx.fill();
+        }
         this.ctx.stroke();
     }
 
-    renderRectangle([x, y, width, height]) {
-        this.ctx.strokeRect(x * 20, y * 20, width * 20, height * 20);
+    renderPreciseRectangle([x, y, width, height], fill = false) {
+        const px = Math.round(x * 20) + 0.5;
+        const py = Math.round(y * 20) + 0.5;
+        const pw = Math.round(width * 20);
+        const ph = Math.round(height * 20);
+        
+        if (fill) {
+            this.ctx.fillRect(px, py, pw, ph);
+        }
+        this.ctx.strokeRect(px, py, pw, ph);
     }
 
     renderPoint([x, y], label) {
@@ -228,42 +307,71 @@ class DiagramRenderer {
         this.ctx.stroke();
     }
 
-    renderAxis([xMin, xMax, yMin, yMax]) {
+
+
+    renderPreciseArrow([x1, y1, x2, y2]) {
+        // Draw line
+        this.renderPreciseLine([x1, y1, x2, y2]);
+        
+        // Draw arrowhead
+        const angle = Math.atan2((y2 - y1) * 20, (x2 - x1) * 20);
+        const headLength = 12;
+        const headAngle = Math.PI / 6;
+        
+        this.ctx.beginPath();
+        this.ctx.moveTo(x2 * 20, y2 * 20);
+        this.ctx.lineTo(
+            x2 * 20 - headLength * Math.cos(angle - headAngle),
+            y2 * 20 - headLength * Math.sin(angle - headAngle)
+        );
+        this.ctx.moveTo(x2 * 20, y2 * 20);
+        this.ctx.lineTo(
+            x2 * 20 - headLength * Math.cos(angle + headAngle),
+            y2 * 20 - headLength * Math.sin(angle + headAngle)
+        );
+        this.ctx.stroke();
+    }
+
+    renderPreciseAxis([xMin, xMax, yMin, yMax]) {
+        this.ctx.save();
+        this.ctx.strokeStyle = '#333';
+        this.ctx.lineWidth = 1.5;
+        
         // X-axis
         this.ctx.beginPath();
-        this.ctx.moveTo(xMin * 20, 0);
-        this.ctx.lineTo(xMax * 20, 0);
+        this.ctx.moveTo(xMin * 20, 0.5);
+        this.ctx.lineTo(xMax * 20, 0.5);
         this.ctx.stroke();
         
         // Y-axis
         this.ctx.beginPath();
-        this.ctx.moveTo(0, yMin * 20);
-        this.ctx.lineTo(0, yMax * 20);
+        this.ctx.moveTo(0.5, yMin * 20);
+        this.ctx.lineTo(0.5, yMax * 20);
         this.ctx.stroke();
         
         // Add tick marks and labels
         this.addAxisLabels(xMin, xMax, yMin, yMax);
+        this.ctx.restore();
     }
 
-    renderArrow([x1, y1, x2, y2]) {
-        // Draw line
-        this.renderLine([x1, y1, x2, y2]);
-        
-        // Draw arrowhead
-        const angle = Math.atan2((y2 - y1) * 20, (x2 - x1) * 20);
-        const headLength = 10;
+    renderSmoothCurve(points) {
+        if (points.length < 4) return;
         
         this.ctx.beginPath();
-        this.ctx.moveTo(x2 * 20, y2 * 20);
-        this.ctx.lineTo(
-            x2 * 20 - headLength * Math.cos(angle - Math.PI / 6),
-            y2 * 20 - headLength * Math.sin(angle - Math.PI / 6)
-        );
-        this.ctx.moveTo(x2 * 20, y2 * 20);
-        this.ctx.lineTo(
-            x2 * 20 - headLength * Math.cos(angle + Math.PI / 6),
-            y2 * 20 - headLength * Math.sin(angle + Math.PI / 6)
-        );
+        this.ctx.moveTo(points[0] * 20, points[1] * 20);
+        
+        // Use quadratic curves for smoothness
+        for (let i = 2; i < points.length - 2; i += 2) {
+            const cpx = (points[i] + points[i + 2]) / 2 * 20;
+            const cpy = (points[i + 1] + points[i + 3]) / 2 * 20;
+            this.ctx.quadraticCurveTo(points[i] * 20, points[i + 1] * 20, cpx, cpy);
+        }
+        
+        // Final point
+        if (points.length >= 4) {
+            this.ctx.lineTo(points[points.length - 2] * 20, points[points.length - 1] * 20);
+        }
+        
         this.ctx.stroke();
     }
 
@@ -376,6 +484,90 @@ class DiagramRenderer {
         this.ctx.font = '12px Arial';
         this.ctx.fillText(label, x * 20 + 5, -y * 20 - 5);
         this.ctx.restore();
+    }
+
+    async renderDesmosGraph(config) {
+        try {
+            // Load Desmos API if not available
+            if (!window.Desmos) {
+                await this.loadDesmosAPI();
+            }
+
+            // Create temporary container for Desmos
+            const tempContainer = document.createElement('div');
+            tempContainer.style.cssText = 'position: absolute; top: -9999px; width: 400px; height: 300px;';
+            document.body.appendChild(tempContainer);
+
+            // Initialize Desmos calculator
+            const calculator = window.Desmos.GraphingCalculator(tempContainer, {
+                keypad: false,
+                expressions: false,
+                settingsMenu: false,
+                zoomButtons: false,
+                border: false,
+                showGrid: true
+            });
+
+            // Set expressions
+            if (config.expressions) {
+                config.expressions.forEach((expr, index) => {
+                    calculator.setExpression({
+                        id: 'expr-' + index,
+                        latex: expr.latex || expr,
+                        color: expr.color || '#2d70b3'
+                    });
+                });
+            }
+
+            // Set viewport if specified
+            if (config.viewport) {
+                calculator.setMathBounds(config.viewport);
+            }
+
+            // Wait for rendering
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Get screenshot and draw to canvas
+            const screenshot = await calculator.asyncScreenshot({
+                width: this.canvas.width,
+                height: this.canvas.height,
+                targetPixelRatio: 1
+            });
+
+            const img = new Image();
+            img.onload = () => {
+                this.ctx.save();
+                this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+                this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.restore();
+            };
+            img.src = screenshot;
+
+            // Cleanup
+            calculator.destroy();
+            document.body.removeChild(tempContainer);
+
+        } catch (error) {
+            console.error('Failed to render Desmos graph:', error);
+            // Fallback to basic function rendering
+            if (config.expressions && config.expressions[0]) {
+                this.renderFunction({
+                    type: 'linear',
+                    coefficients: [1, 0],
+                    domain: [-10, 10]
+                });
+            }
+        }
+    }
+
+    async loadDesmosAPI() {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://www.desmos.com/api/v1.7/calculator.js?apikey=dcb31709b452b1cf9dc26972add0fda6';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
     }
 }
 

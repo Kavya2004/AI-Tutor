@@ -1,0 +1,323 @@
+/* Shape Tools Styling */
+.shape-tools {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 8px;
+    padding: 12px;
+    background: rgba(40, 167, 69, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(40, 167, 69, 0.1);
+}
+
+.shape-btn {
+    min-width: 60px;
+    height: 36px;
+    border: 2px solid #28a745;
+    background: white;
+    color: #28a745;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.shape-btn:hover {
+    background: #28a745;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.shape-btn.active {
+    background: #28a745;
+    color: white;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+.shape-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(40, 167, 69, 0.2);
+}
+
+/* Graph Tools Styling */
+.graph-tools {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 8px;
+    padding: 12px;
+    background: rgba(0, 123, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 123, 255, 0.1);
+}
+
+.graph-tools button {
+    min-width: 70px;
+    height: 36px;
+    border: 2px solid #007bff;
+    background: white;
+    color: #007bff;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.graph-tools button:hover {
+    background: #007bff;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.graph-tools button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 123, 255, 0.2);
+}
+
+/* Desmos Container Styling */
+.desmos-container {
+    position: absolute;
+    top: 80px;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.desmos-container .dcg-container {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 6px;
+}
+
+/* Shape preview styling */
+.shape-preview {
+    position: absolute;
+    pointer-events: none;
+    z-index: 999;
+    border: 2px dashed #007bff;
+    background: rgba(0, 123, 255, 0.1);
+}
+
+/* Tool cursor styles */
+.whiteboard-canvas.line-tool {
+    cursor: crosshair;
+}
+
+.whiteboard-canvas.rectangle-tool {
+    cursor: crosshair;
+}
+
+.whiteboard-canvas.circle-tool {
+    cursor: crosshair;
+}
+
+.whiteboard-canvas.triangle-tool {
+    cursor: crosshair;
+}
+
+.whiteboard-canvas.arrow-tool {
+    cursor: crosshair;
+}
+
+.whiteboard-canvas.text-tool {
+    cursor: text;
+}
+
+/* Responsive adjustments for tools */
+@media (max-width: 768px) {
+    .shape-tools,
+    .graph-tools,
+    .quick-graphs {
+        gap: 4px;
+        padding: 8px;
+        margin-top: 6px;
+    }
+    
+    .shape-btn,
+    .graph-tools button,
+    .quick-graphs button {
+        min-width: 50px;
+        height: 32px;
+        font-size: 10px;
+        padding: 4px 6px;
+    }
+}
+
+@media (max-width: 600px) {
+    .shape-tools,
+    .graph-tools,
+    .quick-graphs {
+        gap: 2px;
+        padding: 6px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .shape-btn,
+    .graph-tools button,
+    .quick-graphs button {
+        min-width: 45px;
+        height: 28px;
+        font-size: 9px;
+        padding: 2px 4px;
+        flex: 1;
+        max-width: 60px;
+    }
+}
+
+/* Animation for tool activation */
+@keyframes toolActivate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.shape-btn.activating,
+.graph-tools button.activating {
+    animation: toolActivate 0.3s ease;
+}
+
+/* Enhanced math buttons to work with new tools */
+.math-buttons {
+    display: none;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 8px;
+    padding: 12px;
+    background: rgba(0, 123, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 123, 255, 0.1);
+}
+
+.math-buttons button {
+    min-width: 40px;
+    height: 40px;
+    border: 2px solid #007bff;
+    background: white;
+    color: #007bff;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.math-buttons button:hover {
+    background: #007bff;
+    color: white;
+    transform: scale(1.05);
+}
+
+.math-buttons button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Show tools when drawing mode is active */
+.whiteboard-panel.drawing-active .shape-tools,
+.whiteboard-panel.drawing-active .graph-tools,
+.whiteboard-panel.drawing-active .math-buttons {
+    display: flex;
+}
+
+/* Quick Graphs Styling */
+.quick-graphs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 8px;
+    padding: 10px;
+    background: rgba(138, 43, 226, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(138, 43, 226, 0.1);
+}
+
+.quick-graphs button {
+    min-width: 65px;
+    height: 32px;
+    border: 2px solid #8a2be2;
+    background: white;
+    color: #8a2be2;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.quick-graphs button:hover {
+    background: #8a2be2;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(138, 43, 226, 0.3);
+}
+
+.quick-graphs button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(138, 43, 226, 0.2);
+}
+
+/* Tool grouping */
+.tool-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.tool-group-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+/* Compact mode for smaller screens */
+@media (max-width: 900px) {
+    .tool-group {
+        gap: 4px;
+        margin-top: 4px;
+    }
+    
+    .tool-group-label {
+        font-size: 10px;
+        margin-bottom: 2px;
+    }
+}

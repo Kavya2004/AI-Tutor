@@ -1495,6 +1495,50 @@ function insertFraction(boardType = 'teacher') { addMathSymbol('½', boardType);
 function insertSquareRoot(boardType = 'teacher') { addMathSymbol('√', boardType); }
 function insertPi(boardType = 'teacher') { addMathSymbol('π', boardType); }
 
+// Shape tool functions
+function setShapeTool(tool, boardType = 'teacher') {
+	if (window.shapeTools) {
+		window.shapeTools.setTool(tool);
+		updateShapeButtons(tool, boardType);
+	}
+}
+
+function updateShapeButtons(activeTool, boardType) {
+	const panel = document.getElementById(boardType + 'Panel');
+	if (!panel) return;
+	
+	const buttons = panel.querySelectorAll('.shape-btn');
+	buttons.forEach(btn => {
+		btn.classList.remove('active');
+		if (btn.dataset.tool === activeTool) {
+			btn.classList.add('active');
+		}
+	});
+}
+
+// Desmos integration functions
+async function showDesmosGraph(boardType = 'teacher') {
+	if (window.desmosIntegration) {
+		await window.desmosIntegration.initialize(boardType);
+		window.desmosIntegration.showGraph();
+	}
+}
+
+async function plotFunction(expression, boardType = 'teacher') {
+	if (window.desmosIntegration) {
+		window.desmosIntegration.currentBoardType = boardType;
+		await window.desmosIntegration.plotFunction(expression);
+	}
+}
+
+async function captureGraphToBoard(boardType = 'teacher') {
+	if (window.desmosIntegration) {
+		window.desmosIntegration.currentBoardType = boardType;
+		await window.desmosIntegration.captureGraphToCanvas();
+		window.desmosIntegration.hideGraph();
+	}
+}
+
 // Export functions for external use
 window.tutorWhiteboard = {
 	clearWhiteboard,
@@ -1515,6 +1559,75 @@ window.tutorWhiteboard = {
 	insertSquareRoot,
 	insertPi
 };
+
+// Quick graph generation function
+async function quickGraph(type, boardType = 'teacher') {
+	if (!window.smartGraphGenerator) {
+		console.error('Smart graph generator not available');
+		return;
+	}
+	
+	try {
+		let result;
+		
+		switch (type) {
+			case 'linear':
+				result = await window.smartGraphGenerator.quickLinear(1, 0, boardType);
+				break;
+			case 'quadratic':
+				result = await window.smartGraphGenerator.quickQuadratic(1, 0, 0, boardType);
+				break;
+			case 'sine':
+				result = await window.smartGraphGenerator.quickTrig('sine', 1, 1, boardType);
+				break;
+			case 'normal':
+				result = await window.smartGraphGenerator.generateFromType('normal', 'normal distribution', boardType);
+				break;
+			default:
+				console.warn('Unknown graph type:', type);
+				return;
+		}
+		
+		if (result.success) {
+			console.log(`Generated ${type} graph successfully`);
+			// Auto-capture to whiteboard after a short delay
+			setTimeout(() => {
+				captureGraphToBoard(boardType);
+			}, 1000);
+		} else {
+			console.error('Failed to generate graph:', result.message);
+		}
+	} catch (error) {
+		console.error('Error in quickGraph:', error);
+	}
+}
+
+// Enhanced graph processing for chat integration
+async function processGraphRequest(message, boardType = 'teacher') {
+	if (!window.smartGraphGenerator) {
+		return null;
+	}
+	
+	// Check if message contains graph-related keywords
+	const graphKeywords = /(?:graph|plot|draw|show|visualize|chart).*(?:function|equation|line|curve|parabola|sine|cosine|exponential|logarithm)/i;
+	
+	if (graphKeywords.test(message)) {
+		try {
+			const result = await window.smartGraphGenerator.processUserRequest(message, boardType);
+			if (result.success) {
+				// Auto-capture to whiteboard
+				setTimeout(() => {
+					captureGraphToBoard(boardType);
+				}, 1500);
+				return result;
+			}
+		} catch (error) {
+			console.error('Error processing graph request:', error);
+		}
+	}
+	
+	return null;
+}
 
 // Make functions globally available
 window.switchWhiteboard = switchWhiteboard;

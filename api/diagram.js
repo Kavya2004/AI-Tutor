@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     }
 
     // Enhanced prompt for diagram generation
-    const diagramPrompt = `Create a simple diagram using basic shapes. Use ONLY numbers in coordinates - no Math expressions!
+    const diagramPrompt = `Create precise mathematical diagrams using exact shapes. Use ONLY numbers in coordinates!
 
 Question: ${question}
 
@@ -35,17 +35,34 @@ Available shapes:
 - circle: [centerX, centerY, radius] 
 - rectangle: [x, y, width, height]
 - triangle: [x1, y1, x2, y2, x3, y3]
+- arrow: [x1, y1, x2, y2]
+- axis: [xMin, xMax, yMin, yMax]
+- grid: [xMin, xMax, yMin, yMax, spacing]
+- polygon: [x1, y1, x2, y2, x3, y3, ...]
+- ellipse: [centerX, centerY, radiusX, radiusY]
+- desmos: {expressions: [{latex: "y=x^2", color: "#2d70b3"}], viewport: {left: -10, right: 10, bottom: -10, top: 10}}
 
-IMPORTANT: Use only simple numbers like 1, 2, 3, etc. NO Math.sqrt() or calculations!
+Properties:
+- color: "#2d70b3", "#388c46", "#6042a6", "#c74440"
+- style: "solid", "dashed", "dotted"
+- fill: true/false
+- lineWidth: 1-5
 
-Example house:
+For graphs, use desmos type with LaTeX expressions.
+For geometric shapes, use exact coordinates.
+Use grid and axis for mathematical contexts.
+
+Example probability tree:
 {
   "needsDiagram": true,
   "instructions": {
-    "title": "Simple House",
+    "title": "Probability Tree",
     "elements": [
-      {"type": "rectangle", "coordinates": [0, 0, 4, 3], "color": "black"},
-      {"type": "triangle", "coordinates": [0, 3, 2, 5, 4, 3], "color": "red"}
+      {"type": "grid", "coordinates": [-5, 5, -3, 3, 1], "color": "#f0f0f0"},
+      {"type": "axis", "coordinates": [-5, 5, -3, 3], "color": "#333"},
+      {"type": "circle", "coordinates": [0, 0, 0.2], "color": "#2d70b3", "fill": true},
+      {"type": "line", "coordinates": [0, 0, -2, 1], "color": "#333"},
+      {"type": "line", "coordinates": [0, 0, 2, 1], "color": "#333"}
     ]
   }
 }

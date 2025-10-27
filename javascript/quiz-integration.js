@@ -280,29 +280,27 @@ class QuizIntegration {
             let promptContent;
             
             if (isChapterRequest) {
-                promptContent = `Create a 5-question multiple choice quiz about "${topic}" from probabilitycourse.com. Use these sample formats:
+                promptContent = `Create a 5-question multiple choice quiz STRICTLY about "${topic}" from probabilitycourse.com. 
 
-SAMPLE FORMATS:
-1. "Let X be a continuous random variable with PDF f(x) = 2C/x² for 2 ≤ x ≤ 4. What is C?"
-2. "If S = {1,2,...,20} and A = {3,4,5}, what is A ∩ B^c?"
-3. "A fair coin is tossed three times. Let X be the number of heads. What is P(X=1)?"
-4. Joint probability tables and calculations
+IMPORTANT: ALL questions must be from ${topic} ONLY. Do NOT include questions from other chapters.
 
-Use readable mathematical notation (not LaTeX) and university-level concepts.
+Use readable mathematical notation (not LaTeX) and stay within the specified chapter scope.
 
 Return ONLY a JSON object:
 {
   "title": "${topic} Quiz",
   "questions": [
     {
-      "question": "Question with readable math like P(X=1) = 1/4?",
-      "options": ["1/2", "1/4", "3/4", "1"],
-      "correct": 1
+      "question": "Question strictly from ${topic} only?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct": 0
     }
   ]
 }`;
             } else {
-                promptContent = `Create a 5-question multiple choice quiz about "${topic}". Use readable mathematical notation (like 1/2, P(X=1), etc.) instead of LaTeX.
+                promptContent = `Create a 5-question multiple choice quiz STRICTLY about "${topic}". Use readable mathematical notation (like 1/2, P(X=1), etc.) instead of LaTeX.
+
+IMPORTANT: ALL questions must be about ${topic} ONLY. Do not mix topics or include unrelated concepts.
 
 Return ONLY a JSON object:
 {
@@ -408,19 +406,8 @@ Return ONLY a JSON object:
     }
 
     detectChapterRequest(topic) {
-        const chapterKeywords = [
-            'chapter', 'ch ', 'ch.', 'section', 'sec ', 'sec.',
-            'basic concepts', 'sample space', 'probability axioms',
-            'conditional probability', 'independence', 'bayes',
-            'random variables', 'discrete', 'continuous',
-            'expectation', 'variance', 'moment generating',
-            'joint distributions', 'marginal', 'covariance',
-            'limit theorems', 'central limit', 'law of large numbers',
-            'markov chains', 'poisson process', 'brownian motion'
-        ];
-        
         const lowerTopic = topic.toLowerCase();
-        return chapterKeywords.some(keyword => lowerTopic.includes(keyword));
+        return lowerTopic.includes('chapter') || lowerTopic.includes('ch ') || lowerTopic.includes('ch.');
     }
 
     extractChapterFromMessage(message) {
