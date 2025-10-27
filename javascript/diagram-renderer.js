@@ -527,14 +527,10 @@ class DiagramRenderer {
             document.body.appendChild(container);
 
             // Initialize calculator
-            const calculator = window.Desmos.GraphingCalculator(container, {
-                expressions: false,
-                settingsMenu: false,
-                zoomButtons: false,
-                showGrid: true,
-                showXAxis: true,
-                showYAxis: true
-            });
+            const calculator = window.Desmos.GraphingCalculator(container);
+            
+            // Wait for calculator to initialize
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             // Add expressions
             if (config.expressions) {
@@ -554,8 +550,8 @@ class DiagramRenderer {
                 calculator.setMathBounds({left: -10, right: 10, bottom: -5, top: 5});
             }
 
-            // Wait longer for rendering
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            // Wait for expressions to render
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
             try {
                 const screenshot = await calculator.asyncScreenshot({
@@ -563,8 +559,12 @@ class DiagramRenderer {
                     height: this.canvas.height,
                     targetPixelRatio: 1
                 });
+                
+                if (!screenshot) {
+                    throw new Error('Screenshot returned null/undefined');
+                }
 
-                console.log('Screenshot captured:', screenshot.substring(0, 50));
+                console.log('Screenshot captured:', screenshot ? screenshot.substring(0, 50) : 'undefined');
 
                 // Draw to canvas
                 const img = new Image();
