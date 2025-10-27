@@ -508,79 +508,171 @@ class DiagramRenderer {
                 await this.loadDesmosAPI();
             }
 
-            // Create temporary container for Desmos
-            const tempContainer = document.createElement('div');
-            tempContainer.style.cssText = 'position: absolute; top: -9999px; width: 400px; height: 300px;';
-            document.body.appendChild(tempContainer);
+            // Create visible container for Desmos
+            const container = document.createElement('div');
+            container.style.cssText = `
+                position: absolute;
+                width: ${this.canvas.width}px;
+                height: ${this.canvas.height}px;
+                z-index: -1;
+            `;
+            document.body.appendChild(container);
 
-            // Initialize Desmos calculator
-            const calculator = window.Desmos.GraphingCalculator(tempContainer, {
-                keypad: false,
+            // Initialize calculator
+            const calculator = window.Desmos.GraphingCalculator(container, {
                 expressions: false,
                 settingsMenu: false,
                 zoomButtons: false,
-                border: false,
-                showGrid: true
+                showGrid: true,
+                showXAxis: true,
+                showYAxis: true
             });
 
-            // Set expressions
+            // Add expressions
             if (config.expressions) {
-                config.expressions.forEach((expr, index) => {
+                config.expressions.forEach((expr, i) => {
                     calculator.setExpression({
-                        id: 'expr-' + index,
+                        id: 'expr' + i,
                         latex: expr.latex || expr,
                         color: expr.color || '#2d70b3'
                     });
                 });
             }
 
-            // Set viewport if specified
+            // Set viewport
             if (config.viewport) {
                 calculator.setMathBounds(config.viewport);
+            } else {
+                calculator.setMathBounds({left: -10, right: 10, bottom: -5, top: 5});
             }
 
-            // Wait for rendering
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // Get screenshot and draw to canvas
+            // Wait and capture
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
             const screenshot = await calculator.asyncScreenshot({
                 width: this.canvas.width,
-                height: this.canvas.height,
-                targetPixelRatio: 1
+                height: this.canvas.height
             });
 
+            // Draw to canvas
             const img = new Image();
             img.onload = () => {
                 this.ctx.save();
                 this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-                this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.drawImage(img, 0, 0);
                 this.ctx.restore();
             };
             img.src = screenshot;
 
             // Cleanup
             calculator.destroy();
-            document.body.removeChild(tempContainer);
+            document.body.removeChild(container);
 
         } catch (error) {
-            console.error('Failed to render Desmos graph:', error);
-            // Fallback to basic function rendering
-            if (config.expressions && config.expressions[0]) {
-                this.renderFunction({
-                    type: 'linear',
-                    coefficients: [1, 0],
-                    domain: [-10, 10]
-                });
+            console.error('Desmos failed, using fallback:', error);
+            this.parseAndRenderFunction(config.expressions?.[0]?.latex || 'y=\\sin(x)', '#2d70b3');
+        }
+    }
+
+    parseAndRenderFunction(latex, color = '#2d70b3') {
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 3;
+        
+        // Parse coefficients and parameters from LaTeX
+        if (latex.includes('sin')) {
+            const ampMatch = latex.match(/(\d*\.?\d*)\\?sin/);
+            const freqMatch = latex.match(/sin\((\d*\.?\d*)\*?x/);
+            const amp = ampMatch ? parseFloat(ampMatch[1]) || 1 : 1;
+            const freq = freqMatch ? parseFloat(freqMatch[1]) || 1 : 1;
+            this.renderParametricSine(amp, freq);
+        } else if (latex.includes('cos')) {
+            const ampMatch = latex.match(/(\d*\.?\d*)\\?cos/);
+            const freqMatch = latex.match(/cos\((\d*\.?\d*)\*?x/);
+            const amp = ampMatch ? parseFloat(ampMatch[1]) || 1 : 1;
+            const freq = freqMatch ? parseFloat(freqMatch[1]) || 1 : 1;
+            this.renderParametricCosine(amp, freq);
+        } else if (latex.includes('x^2') || latex.includes('x^{2}')) {
+            const aMatch = latex.match(/([-\d*\.?\d*])\*?x\^/);
+            const bMatch = latex.match(/\+\s*([-\d*\.?\d*])\*?x(?!\^)/);
+            const cMatch = latex.match(/\+\s*([-\d*\.?\d*])(?!.*x)/);
+            const a = aMatch ? parseFloat(aMatch[1]) : 1;
+            const b = bMatch ? parseFloat(bMatch[1]) : 0;
+            const c = cMatch ? parseFloat(cMatch[1]) : 0;
+            this.renderQuadratic([a, b, c]);
+        } else {
+            // Linear or other
+            const mMatch = latex.match(/([-\d*\.?\d*])\*?x/);
+            const bMatch = latex.match(/\+\s*([-\d*\.?\d*])(?!.*x)/);
+            const m = mMatch ? parseFloat(mMatch[1]) : 1;
+            const b = bMatch ? parseFloat(bMatch[1]) : 0;
+            this.renderLinearFunction(m, b);
+        }
+        
+        // Always add axes
+        this.renderPreciseAxis([-10, 10, -5, 5]);
+    }
+
+    renderParametricSine(amplitude = 1, frequency = 1) {
+        this.ctx.beginPath();
+        let first = true;
+        for (let x = -10; x <= 10; x += 0.1) {
+            const y = amplitude * Math.sin(frequency * x);
+            const px = x * 20;
+            const py = y * 30;
+            
+            if (first) {
+                this.ctx.moveTo(px, py);
+                first = false;
+            } else {
+                this.ctx.lineTo(px, py);
             }
         }
+        this.ctx.stroke();
+    }
+
+    renderParametricCosine(amplitude = 1, frequency = 1) {
+        this.ctx.beginPath();
+        let first = true;
+        for (let x = -10; x <= 10; x += 0.1) {
+            const y = amplitude * Math.cos(frequency * x);
+            const px = x * 20;
+            const py = y * 30;
+            
+            if (first) {
+                this.ctx.moveTo(px, py);
+                first = false;
+            } else {
+                this.ctx.lineTo(px, py);
+            }
+        }
+        this.ctx.stroke();
+    }
+
+    renderLinearFunction(slope = 1, intercept = 0) {
+        this.ctx.beginPath();
+        const x1 = -10, y1 = slope * x1 + intercept;
+        const x2 = 10, y2 = slope * x2 + intercept;
+        this.ctx.moveTo(x1 * 20, y1 * 20);
+        this.ctx.lineTo(x2 * 20, y2 * 20);
+        this.ctx.stroke();
     }
 
     async loadDesmosAPI() {
         return new Promise((resolve, reject) => {
+            if (window.Desmos) {
+                resolve();
+                return;
+            }
             const script = document.createElement('script');
-            script.src = 'https://www.desmos.com/api/v1.7/calculator.js?apikey=dcb31709b452b1cf9dc26972add0fda6';
-            script.onload = resolve;
-            script.onerror = reject;
+            script.src = 'https://www.desmos.com/api/v1.9/calculator.js';
+            script.onload = () => {
+                console.log('Desmos API loaded successfully');
+                resolve();
+            };
+            script.onerror = (e) => {
+                console.error('Failed to load Desmos API:', e);
+                reject(e);
+            };
             document.head.appendChild(script);
         });
     }

@@ -1456,10 +1456,10 @@ function redrawCanvas(boardType) {
 	
 	// Redraw diagram if exists
 	if (canvas.diagramData && window.diagramRenderer) {
-		setTimeout(() => {
+		setTimeout(async () => {
 			window.diagramRenderer.setupCanvas(boardType);
-			window.diagramRenderer.renderDiagram(canvas.diagramData);
-		}, 100);
+			await window.diagramRenderer.renderDiagram(canvas.diagramData);
+		}, 200);
 	}
 }
 
