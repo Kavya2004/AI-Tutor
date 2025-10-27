@@ -765,7 +765,7 @@ class DiagramRenderer {
                 return;
             }
             const script = document.createElement('script');
-            script.src = 'https://www.desmos.com/api/v1.7/calculator.js?apikey=3436815955a546ca8def444af3e50649';
+            script.src = 'https://www.desmos.com/api/v1.11/calculator.js?apiKey=3436815955a546ca8def444af3e50649';
             script.onload = () => {
                 console.log('Desmos API loaded successfully');
                 resolve();
