@@ -170,11 +170,11 @@ class DiagramRenderer {
                 break;
             case 'desmos':
                 console.log('Desmos element found:', element);
-                if (coordinates && coordinates.expressions) {
-                    console.log('Calling renderDesmosGraph with:', coordinates);
-                    await this.renderDesmosGraph(coordinates);
+                if (element.expressions) {
+                    console.log('Calling renderDesmosGraph with:', element);
+                    await this.renderDesmosGraph(element);
                 } else {
-                    console.log('No expressions found in coordinates:', coordinates);
+                    console.log('No expressions found in element:', element);
                 }
                 break;
         }
