@@ -554,15 +554,19 @@ class DiagramRenderer {
             await new Promise(resolve => setTimeout(resolve, 2000));
             
             try {
-                const screenshot = await calculator.asyncScreenshot({
-                    width: this.canvas.width,
-                    height: this.canvas.height,
-                    targetPixelRatio: 1
+                const screenshot = await new Promise((resolve, reject) => {
+                    calculator.screenshot({
+                        width: this.canvas.width,
+                        height: this.canvas.height,
+                        targetPixelRatio: 1
+                    }, (dataUrl) => {
+                        if (dataUrl) {
+                            resolve(dataUrl);
+                        } else {
+                            reject(new Error('Screenshot failed'));
+                        }
+                    });
                 });
-                
-                if (!screenshot) {
-                    throw new Error('Screenshot returned null/undefined');
-                }
 
                 console.log('Screenshot captured:', screenshot ? screenshot.substring(0, 50) : 'undefined');
 
