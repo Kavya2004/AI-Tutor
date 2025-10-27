@@ -613,12 +613,20 @@ class DiagramRenderer {
     }
 
     renderParametricSine(amplitude = 1, frequency = 1) {
+        this.ctx.save();
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.strokeStyle = '#2d70b3';
+        this.ctx.lineWidth = 3;
+        
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
         this.ctx.beginPath();
         let first = true;
-        for (let x = -10; x <= 10; x += 0.1) {
+        for (let x = -6; x <= 6; x += 0.1) {
             const y = amplitude * Math.sin(frequency * x);
-            const px = x * 40; // Doubled scale
-            const py = y * 80; // Doubled scale
+            const px = centerX + x * 40;
+            const py = centerY - y * 60; // Flip Y and center
             
             if (first) {
                 this.ctx.moveTo(px, py);
@@ -628,6 +636,7 @@ class DiagramRenderer {
             }
         }
         this.ctx.stroke();
+        this.ctx.restore();
     }
 
     renderParametricCosine(amplitude = 1, frequency = 1) {
