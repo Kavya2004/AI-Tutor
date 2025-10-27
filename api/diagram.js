@@ -41,6 +41,7 @@ Available shapes:
 - polygon: [x1, y1, x2, y2, x3, y3, ...]
 - ellipse: [centerX, centerY, radiusX, radiusY]
 - desmos: {expressions: [{latex: "y=x^2", color: "#2d70b3"}], viewport: {left: -10, right: 10, bottom: -10, top: 10}}
+- table: {coordinates: [x, y, cellWidth, cellHeight], data: {rows: [["Outcome", "Probability"], ["1", "1/6"], ["2", "1/6"]]}}
 
 Properties:
 - color: "#2d70b3", "#388c46", "#6042a6", "#c74440"
@@ -49,6 +50,7 @@ Properties:
 - lineWidth: 1-5
 
 For graphs, use desmos type with LaTeX expressions.
+For tables, use table type with data.rows array.
 For geometric shapes, use exact coordinates.
 Use grid and axis for mathematical contexts.
 

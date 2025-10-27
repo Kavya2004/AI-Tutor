@@ -61,12 +61,9 @@ class DiagramRenderer {
 
         this.ctx = this.canvas.getContext('2d');
         
-        // Store diagram data for redrawing
-        if (!this.canvas.diagramData) {
-            this.canvas.diagramData = null;
-        }
-        
+        // Always clear previous diagram
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.canvas.diagramData = null;
         
         // Set up coordinate system (center origin)
         this.ctx.save();
@@ -165,6 +162,9 @@ class DiagramRenderer {
                 break;
             case 'grid':
                 this.renderGrid(coordinates);
+                break;
+            case 'table':
+                this.renderTable(coordinates, element.data);
                 break;
             case 'desmos':
                 if (coordinates && coordinates.expressions) {
