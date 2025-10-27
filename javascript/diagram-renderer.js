@@ -111,6 +111,8 @@ class DiagramRenderer {
     async renderElement(element) {
         const { type, coordinates, label, color, style, fill } = element;
         
+        console.log('Rendering element:', type, element);
+        
         // Set element styles
         this.ctx.strokeStyle = color || '#333';
         this.ctx.fillStyle = fill || color || '#333';
