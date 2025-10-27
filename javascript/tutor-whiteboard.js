@@ -1453,6 +1453,14 @@ function redrawCanvas(boardType) {
 		};
 		img.src = drawingData;
 	}
+	
+	// Redraw diagram if exists
+	if (canvas.diagramData && window.diagramRenderer) {
+		setTimeout(() => {
+			window.diagramRenderer.setupCanvas(boardType);
+			window.diagramRenderer.renderDiagram(canvas.diagramData);
+		}, 100);
+	}
 }
 
 function getSymbolAt(x, y, boardType) {

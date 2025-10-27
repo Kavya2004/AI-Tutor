@@ -32,6 +32,10 @@ class DiagramRenderer {
                 return { success: false, message: diagramData.explanation || 'No diagram needed' };
             }
 
+            if (!diagramData.instructions || !diagramData.instructions.elements) {
+                return { success: false, message: 'Invalid diagram instructions received' };
+            }
+
             // Render the diagram
             this.setupCanvas(targetBoard);
             await this.renderDiagram(diagramData.instructions);
@@ -56,6 +60,12 @@ class DiagramRenderer {
         }
 
         this.ctx = this.canvas.getContext('2d');
+        
+        // Store diagram data for redrawing
+        if (!this.canvas.diagramData) {
+            this.canvas.diagramData = null;
+        }
+        
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
         // Set up coordinate system (center origin)
@@ -91,6 +101,9 @@ class DiagramRenderer {
         }
 
         this.ctx.restore();
+        
+        // Store diagram data for redrawing on resize
+        this.canvas.diagramData = instructions;
         
         // Mark that something was drawn for OCR detection
         if (typeof window.isAnythingDrawn !== 'undefined') {
@@ -154,7 +167,9 @@ class DiagramRenderer {
                 this.renderGrid(coordinates);
                 break;
             case 'desmos':
-                await this.renderDesmosGraph(coordinates);
+                if (coordinates && coordinates.expressions) {
+                    await this.renderDesmosGraph(coordinates);
+                }
                 break;
         }
 

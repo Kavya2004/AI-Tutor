@@ -1169,7 +1169,7 @@ async function generateAIDiagram(description, targetBoard = 'teacher') {
 
 		const result = await window.diagramRenderer.generateDiagram(description, targetBoard);
 
-		if (result.success) {
+		if (result && result.success) {
 			// Switch to the target whiteboard
 			if (window.switchWhiteboard) {
 				window.switchWhiteboard(targetBoard);
