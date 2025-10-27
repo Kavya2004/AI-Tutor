@@ -661,22 +661,28 @@ class DiagramRenderer {
         if (!data || !data.rows) return;
         
         const [x, y, cellWidth, cellHeight] = coordinates;
-        const startX = x * 20;
-        const startY = y * 20;
         
         this.ctx.save();
-        this.ctx.scale(1, -1);
-        this.ctx.font = '14px Arial';
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+        this.ctx.font = '16px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.fillStyle = '#333';
+        this.ctx.strokeStyle = '#333';
+        this.ctx.lineWidth = 1;
+        
+        const startX = this.canvas.width/2 - (data.rows[0].length * cellWidth)/2;
+        const startY = this.canvas.height/2 - (data.rows.length * cellHeight)/2;
         
         data.rows.forEach((row, rowIndex) => {
             row.forEach((cell, colIndex) => {
                 const cellX = startX + (colIndex * cellWidth);
-                const cellY = -startY - (rowIndex * cellHeight);
+                const cellY = startY + (rowIndex * cellHeight);
                 
-                this.ctx.strokeRect(cellX, cellY - cellHeight, cellWidth, cellHeight);
-                this.ctx.fillText(cell, cellX + cellWidth/2, cellY - cellHeight/2 + 5);
+                // Draw cell border
+                this.ctx.strokeRect(cellX, cellY, cellWidth, cellHeight);
+                
+                // Draw cell text
+                this.ctx.fillText(cell, cellX + cellWidth/2, cellY + cellHeight/2 + 5);
             });
         });
         
