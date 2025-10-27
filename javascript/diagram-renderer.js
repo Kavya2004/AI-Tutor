@@ -608,8 +608,13 @@ class DiagramRenderer {
             this.renderLinearFunction(m, b);
         }
         
-        // Always add axes
+        // Always add axes first
         this.renderPreciseAxis([-10, 10, -5, 5]);
+        
+        // Then draw the function on top
+        if (latex.includes('sin')) {
+            this.drawSineOnTop();
+        }
     }
 
     renderParametricSine(amplitude = 1, frequency = 1) {
@@ -696,6 +701,32 @@ class DiagramRenderer {
             });
         });
         
+        this.ctx.restore();
+    }
+
+    drawSineOnTop() {
+        this.ctx.save();
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.strokeStyle = '#ff0000';
+        this.ctx.lineWidth = 4;
+        
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
+        this.ctx.beginPath();
+        for (let x = -300; x <= 300; x += 5) {
+            const radians = (x / 50);
+            const y = Math.sin(radians) * 50;
+            const px = centerX + x;
+            const py = centerY - y;
+            
+            if (x === -300) {
+                this.ctx.moveTo(px, py);
+            } else {
+                this.ctx.lineTo(px, py);
+            }
+        }
+        this.ctx.stroke();
         this.ctx.restore();
     }
 
