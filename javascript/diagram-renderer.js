@@ -167,8 +167,12 @@ class DiagramRenderer {
                 this.renderTable(coordinates, element.data);
                 break;
             case 'desmos':
+                console.log('Desmos element found:', element);
                 if (coordinates && coordinates.expressions) {
+                    console.log('Calling renderDesmosGraph with:', coordinates);
                     await this.renderDesmosGraph(coordinates);
+                } else {
+                    console.log('No expressions found in coordinates:', coordinates);
                 }
                 break;
         }
