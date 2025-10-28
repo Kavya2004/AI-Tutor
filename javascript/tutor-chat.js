@@ -1024,20 +1024,20 @@ async function processUserMessage(message) {
 		if (diagramMatch) {
 			diagramRequest = diagramMatch[1].trim();
 			targetBoard = 'teacher';
-			botResponse = botResponse.replace(/\[GENERATE_DIAGRAM:[^\]]+\]/, '').trim();
-			//botResponse += '\n\n[Generating diagram...]';
+			botResponse = botResponse.replace(/\[GENERATE_DIAGRAM:[^\]]+\]/g, '').trim();
 		} else if (teacherMatch) {
 			// Convert old syntax to new diagram generation
 			diagramRequest = teacherMatch[1].trim();
 			targetBoard = 'teacher';
-			botResponse = botResponse.replace(/\[TEACHER_BOARD:[^\]]+\]/, '').trim();
-			//botResponse += '\n\n[Generating diagram...]';
+			botResponse = botResponse.replace(/\[TEACHER_BOARD:[^\]]+\]/g, '').trim();
 		} else if (studentMatch) {
 			whiteboardAction = studentMatch[1];
 			targetBoard = 'student';
-			botResponse = botResponse.replace(/\[STUDENT_BOARD:[^\]]+\]/, '').trim();
-			//botResponse += '\n\n[Setting up student whiteboard...]';
+			botResponse = botResponse.replace(/\[STUDENT_BOARD:[^\]]+\]/g, '').trim();
 		}
+		
+		// Clean up any remaining whiteboard tags
+		botResponse = botResponse.replace(/\[(?:TEACHER_BOARD|STUDENT_BOARD|GENERATE_DIAGRAM):[^\]]+\]/g, '').trim();
 
 		// Process bot response for broken links
 		if (window.processBotMessageWithLinkValidation) {

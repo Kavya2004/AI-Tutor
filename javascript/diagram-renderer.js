@@ -528,75 +528,95 @@ class DiagramRenderer {
     }
 
     async renderDesmosGraph(config) {
-        console.log('Rendering graph directly to canvas:', config);
-        
-        // Parse the expression and render directly
-        if (config.expressions && config.expressions.length > 0) {
-            const expr = config.expressions[0];
-            const latex = expr.latex || expr;
-            console.log('Rendering expression:', latex);
+        try {
+            console.log('Starting Desmos render with config:', config);
             
+            // Load Desmos API if not available
+            if (!window.Desmos) {
+                console.log('Loading Desmos API...');
+                await this.loadDesmosAPI();
+            }
+
+            // Create container that's visible but positioned off-screen
+            const container = document.createElement('div');
+            container.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: -2000px;
+                width: ${this.canvas.width}px;
+                height: ${this.canvas.height}px;
+                background: white;
+                border: 1px solid #ccc;
+            `;
+            document.body.appendChild(container);
+
+            // Initialize calculator with minimal options
+            console.log('Initializing Desmos calculator...');
+            const calculator = window.Desmos.GraphingCalculator(container);
+            
+            // Wait for calculator to fully initialize
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
             // Set viewport
             const viewport = config.viewport || {left: -10, right: 10, bottom: -5, top: 5};
-            
-            // Render axes first
-            this.renderPreciseAxis([viewport.left, viewport.right, viewport.bottom, viewport.top]);
-            
-            // Parse and render the function
-            this.renderMathFunction(latex, viewport);
-        }
-    }
-    
-    renderMathFunction(latex, viewport) {
-        const centerX = this.canvas.width / 2;
-        const centerY = this.canvas.height / 2;
-        const scaleX = this.canvas.width / (viewport.right - viewport.left);
-        const scaleY = this.canvas.height / (viewport.top - viewport.bottom);
-        
-        this.ctx.save();
-        this.ctx.strokeStyle = '#2d70b3';
-        this.ctx.lineWidth = 3;
-        this.ctx.beginPath();
-        
-        let first = true;
-        const step = (viewport.right - viewport.left) / 1000;
-        
-        for (let x = viewport.left; x <= viewport.right; x += step) {
-            let y;
-            
-            // Parse different function types
-            if (latex.includes('sin')) {
-                y = Math.sin(x);
-            } else if (latex.includes('cos')) {
-                y = Math.cos(x);
-            } else if (latex.includes('x^2') || latex.includes('x^{2}')) {
-                y = x * x;
-            } else if (latex.includes('sqrt') || latex.includes('\\sqrt')) {
-                y = x >= 0 ? Math.sqrt(x) : NaN;
-            } else if (latex.includes('ln')) {
-                y = x > 0 ? Math.log(x) : NaN;
-            } else if (latex.includes('e^x')) {
-                y = Math.exp(x);
-            } else {
-                // Default to linear
-                y = x;
+            console.log('Setting viewport:', viewport);
+            calculator.setMathBounds(viewport);
+
+            // Add expressions
+            if (config.expressions) {
+                console.log('Adding expressions:', config.expressions);
+                config.expressions.forEach((expr, i) => {
+                    const expression = {
+                        id: 'expr' + i,
+                        latex: expr.latex || expr,
+                        color: expr.color || '#2d70b3'
+                    };
+                    console.log('Setting expression:', expression);
+                    calculator.setExpression(expression);
+                });
             }
+
+            // Wait for expressions to render
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
-            if (!isNaN(y) && isFinite(y)) {
-                const px = centerX + (x - (viewport.left + viewport.right) / 2) * scaleX;
-                const py = centerY - (y - (viewport.bottom + viewport.top) / 2) * scaleY;
-                
-                if (first) {
-                    this.ctx.moveTo(px, py);
-                    first = false;
-                } else {
-                    this.ctx.lineTo(px, py);
-                }
-            }
+            console.log('Taking screenshot...');
+            const screenshot = await new Promise((resolve, reject) => {
+                calculator.screenshot({
+                    width: this.canvas.width,
+                    height: this.canvas.height,
+                    targetPixelRatio: 1
+                }, (dataUrl) => {
+                    console.log('Screenshot received:', !!dataUrl);
+                    if (dataUrl) {
+                        resolve(dataUrl);
+                    } else {
+                        reject(new Error('No screenshot data'));
+                    }
+                });
+            });
+
+            // Draw to canvas
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            await new Promise((resolve, reject) => {
+                img.onload = () => {
+                    console.log('Drawing image to canvas');
+                    this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+                    resolve();
+                };
+                img.onerror = reject;
+                img.src = screenshot;
+            });
+
+            // Cleanup
+            calculator.destroy();
+            document.body.removeChild(container);
+            console.log('Desmos render completed');
+
+        } catch (error) {
+            console.error('Desmos rendering failed:', error);
+            throw error;
         }
-        
-        this.ctx.stroke();
-        this.ctx.restore();
     }
 
     parseAndRenderFunction(latex, color = '#2d70b3') {
@@ -781,8 +801,23 @@ class DiagramRenderer {
     }
 
     async loadDesmosAPI() {
-        // No longer needed since we're rendering directly
-        return Promise.resolve();
+        return new Promise((resolve, reject) => {
+            if (window.Desmos) {
+                resolve();
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://www.desmos.com/api/v1.11/calculator.js?apiKey=3436815955a546ca8def444af3e50649';
+            script.onload = () => {
+                console.log('Desmos API loaded successfully');
+                resolve();
+            };
+            script.onerror = (e) => {
+                console.error('Failed to load Desmos API:', e);
+                reject(e);
+            };
+            document.head.appendChild(script);
+        });
     }
 }
 
