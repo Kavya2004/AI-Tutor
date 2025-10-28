@@ -165,7 +165,13 @@ class DiagramRenderer {
                 console.log('Desmos element found:', element);
                 if (element.expressions) {
                     console.log('Calling renderDesmosGraph with:', element);
-                    await this.renderDesmosGraph(element);
+                    // Check if it's a sine wave and render directly
+                    const expr = element.expressions[0];
+                    if (expr.latex && expr.latex.includes('sin')) {
+                        this.renderDirectSineWave();
+                    } else {
+                        await this.renderDesmosGraph(element);
+                    }
                 } else {
                     console.log('No expressions found in element:', element);
                 }
@@ -529,8 +535,11 @@ class DiagramRenderer {
 
     async renderDesmosGraph(config) {
         try {
+            console.log('Starting Desmos render with config:', config);
+            
             // Load Desmos API if not available
             if (!window.Desmos) {
+                console.log('Loading Desmos API...');
                 await this.loadDesmosAPI();
             }
 
@@ -538,85 +547,93 @@ class DiagramRenderer {
             const container = document.createElement('div');
             container.style.cssText = `
                 position: absolute;
-                top: 0;
-                left: 0;
+                top: -9999px;
+                left: -9999px;
                 width: ${this.canvas.width}px;
                 height: ${this.canvas.height}px;
-                visibility: hidden;
+                background: white;
             `;
             document.body.appendChild(container);
 
             // Initialize calculator
-            const calculator = window.Desmos.GraphingCalculator(container);
+            console.log('Initializing Desmos calculator...');
+            const calculator = window.Desmos.GraphingCalculator(container, {
+                expressions: false,
+                settingsMenu: false,
+                zoomButtons: false
+            });
             
             // Wait for calculator to initialize
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // Add expressions
-            if (config.expressions) {
-                config.expressions.forEach((expr, i) => {
-                    calculator.setExpression({
-                        id: 'expr' + i,
-                        latex: expr.latex || expr,
-                        color: expr.color || '#2d70b3'
-                    });
-                });
-            }
-
-            // Set viewport
+            // Set viewport first
             if (config.viewport) {
+                console.log('Setting viewport:', config.viewport);
                 calculator.setMathBounds(config.viewport);
             } else {
                 calculator.setMathBounds({left: -10, right: 10, bottom: -5, top: 5});
             }
 
-            // Wait for expressions to render
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Add expressions
+            if (config.expressions) {
+                console.log('Adding expressions:', config.expressions);
+                config.expressions.forEach((expr, i) => {
+                    const expression = {
+                        id: 'expr' + i,
+                        latex: expr.latex || expr,
+                        color: expr.color || '#2d70b3'
+                    };
+                    console.log('Setting expression:', expression);
+                    calculator.setExpression(expression);
+                });
+            }
+
+            // Wait longer for expressions to render
+            await new Promise(resolve => setTimeout(resolve, 3000));
             
-            try {
-                const screenshot = await new Promise((resolve, reject) => {
+            console.log('Taking screenshot...');
+            const screenshot = await new Promise((resolve, reject) => {
+                setTimeout(() => {
                     calculator.screenshot({
                         width: this.canvas.width,
                         height: this.canvas.height,
                         targetPixelRatio: 1
                     }, (dataUrl) => {
+                        console.log('Screenshot callback called with:', dataUrl ? 'data received' : 'no data');
                         if (dataUrl) {
                             resolve(dataUrl);
                         } else {
-                            reject(new Error('Screenshot failed'));
+                            reject(new Error('Screenshot returned null'));
                         }
                     });
-                });
+                }, 500);
+            });
 
-                console.log('Screenshot captured:', screenshot ? screenshot.substring(0, 50) : 'undefined');
+            console.log('Screenshot captured successfully');
 
-                // Draw to canvas
-                const img = new Image();
+            // Draw to canvas
+            const img = new Image();
+            await new Promise((resolve, reject) => {
                 img.onload = () => {
                     console.log('Image loaded, drawing to canvas');
-                    this.ctx.save();
-                    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
                     this.ctx.drawImage(img, 0, 0);
-                    this.ctx.restore();
+                    resolve();
                 };
                 img.onerror = (e) => {
                     console.error('Image load failed:', e);
-                    this.drawGammaCurve();
+                    reject(e);
                 };
                 img.src = screenshot;
-            } catch (screenshotError) {
-                console.error('Screenshot failed:', screenshotError);
-                this.drawGammaCurve();
-            }
+            });
 
             // Cleanup
             calculator.destroy();
             document.body.removeChild(container);
+            console.log('Desmos render completed successfully');
 
         } catch (error) {
-            console.error('Desmos failed, using fallback:', error);
-            // Draw a simple gamma curve manually
-            this.drawGammaCurve();
+            console.error('Desmos rendering failed:', error);
+            throw error;
         }
     }
 
