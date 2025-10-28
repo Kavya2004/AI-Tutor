@@ -165,13 +165,7 @@ class DiagramRenderer {
                 console.log('Desmos element found:', element);
                 if (element.expressions) {
                     console.log('Calling renderDesmosGraph with:', element);
-                    // Check if it's a sine wave and render directly
-                    const expr = element.expressions[0];
-                    if (expr.latex && expr.latex.includes('sin')) {
-                        this.renderDirectSineWave();
-                    } else {
-                        await this.renderDesmosGraph(element);
-                    }
+                    await this.renderDesmosGraph(element);
                 } else {
                     console.log('No expressions found in element:', element);
                 }
