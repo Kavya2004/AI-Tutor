@@ -934,18 +934,20 @@ function toggleEraser(boardType) {
 		if (teacherEraserMode) teacherDrawingMode = false;
 		isEraserMode = teacherEraserMode;
 		isDrawingMode = teacherDrawingMode;
-		if (teacherCanvas) {
+		if (teacherCanvas && teacherCtx) {
 			teacherCanvas.style.cursor = teacherEraserMode ? 'grab' : 'default';
 			teacherCtx.globalCompositeOperation = teacherEraserMode ? 'destination-out' : 'source-over';
+			teacherCtx.lineWidth = teacherEraserMode ? 20 : 4;
 		}
 	} else {
 		studentEraserMode = !studentEraserMode;
 		if (studentEraserMode) studentDrawingMode = false;
 		isEraserMode = studentEraserMode;
 		isDrawingMode = studentDrawingMode;
-		if (studentCanvas) {
+		if (studentCanvas && studentCtx) {
 			studentCanvas.style.cursor = studentEraserMode ? 'grab' : 'default';
 			studentCtx.globalCompositeOperation = studentEraserMode ? 'destination-out' : 'source-over';
+			studentCtx.lineWidth = studentEraserMode ? 20 : 4;
 		}
 	}
 
@@ -1040,10 +1042,14 @@ function startDrawing(e, boardType) {
 	if (currentEraseMode) {
 		ctx.lineWidth = 20;
 		ctx.globalCompositeOperation = 'destination-out';
+		ctx.lineCap = 'round';
+		ctx.lineJoin = 'round';
 	} else {
 		ctx.lineWidth = 4;
 		ctx.globalCompositeOperation = 'source-over';
 		ctx.strokeStyle = '#333';
+		ctx.lineCap = 'round';
+		ctx.lineJoin = 'round';
 	}
 	console.log('Drawing started successfully');
 }
