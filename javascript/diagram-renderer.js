@@ -587,20 +587,23 @@ class DiagramRenderer {
             
             console.log('Taking screenshot...');
             const screenshot = await new Promise((resolve, reject) => {
-                setTimeout(() => {
-                    calculator.screenshot({
-                        width: this.canvas.width,
-                        height: this.canvas.height,
-                        targetPixelRatio: 1
-                    }, (dataUrl) => {
-                        console.log('Screenshot callback called with:', dataUrl ? 'data received' : 'no data');
-                        if (dataUrl) {
-                            resolve(dataUrl);
-                        } else {
-                            reject(new Error('Screenshot returned null'));
-                        }
-                    });
-                }, 500);
+                const timeout = setTimeout(() => {
+                    reject(new Error('Screenshot timeout'));
+                }, 10000);
+                
+                calculator.screenshot({
+                    width: this.canvas.width,
+                    height: this.canvas.height,
+                    targetPixelRatio: 1
+                }, (dataUrl) => {
+                    clearTimeout(timeout);
+                    console.log('Screenshot callback called with:', dataUrl ? 'data received' : 'no data');
+                    if (dataUrl) {
+                        resolve(dataUrl);
+                    } else {
+                        reject(new Error('Screenshot returned null'));
+                    }
+                });
             });
 
             console.log('Screenshot captured successfully');
