@@ -186,6 +186,9 @@ class DiagramRenderer {
     }
 
     renderQuadratic([a, b, c, xMin, xMax]) {
+        this.ctx.save();
+        this.ctx.strokeStyle = '#2d70b3';
+        this.ctx.lineWidth = 3;
         this.ctx.beginPath();
         let first = true;
         
@@ -200,6 +203,7 @@ class DiagramRenderer {
             }
         }
         this.ctx.stroke();
+        this.ctx.restore();
     }
 
     renderPreciseTriangle([x1, y1, x2, y2, x3, y3], fill = false) {
@@ -378,6 +382,9 @@ class DiagramRenderer {
     renderSmoothCurve(points) {
         if (points.length < 4) return;
         
+        this.ctx.save();
+        this.ctx.strokeStyle = '#2d70b3';
+        this.ctx.lineWidth = 3;
         this.ctx.beginPath();
         this.ctx.moveTo(points[0] * 20, points[1] * 20);
         
@@ -394,6 +401,7 @@ class DiagramRenderer {
         }
         
         this.ctx.stroke();
+        this.ctx.restore();
     }
 
     renderParabola([a, h, k, xMin, xMax]) {
@@ -417,6 +425,9 @@ class DiagramRenderer {
         const { type, coefficients, domain } = params;
         const [xMin, xMax] = domain || [-10, 10];
         
+        this.ctx.save();
+        this.ctx.strokeStyle = '#2d70b3';
+        this.ctx.lineWidth = 3;
         this.ctx.beginPath();
         let first = true;
         
@@ -448,6 +459,7 @@ class DiagramRenderer {
             }
         }
         this.ctx.stroke();
+        this.ctx.restore();
     }
 
     addAxisLabels(xMin, xMax, yMin, yMax) {
