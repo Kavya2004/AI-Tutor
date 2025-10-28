@@ -537,17 +537,17 @@ class DiagramRenderer {
                 await this.loadDesmosAPI();
             }
 
-            // Create visible container for Desmos
+            // Create hidden container for Desmos
             const container = document.createElement('div');
             container.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
+                position: absolute;
+                top: -10000px;
+                left: -10000px;
                 width: ${this.canvas.width}px;
                 height: ${this.canvas.height}px;
                 background: white;
-                z-index: 9999;
-                visibility: visible;
+                opacity: 0;
+                pointer-events: none;
             `;
             document.body.appendChild(container);
 
@@ -584,8 +584,11 @@ class DiagramRenderer {
                 });
             }
 
-            // Wait longer for expressions to render
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            // Wait for expressions to render
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Force a redraw
+            calculator.resize();
             
             console.log('Taking screenshot...');
             
@@ -602,8 +605,7 @@ class DiagramRenderer {
                         calculator.screenshot({
                             width: this.canvas.width,
                             height: this.canvas.height,
-                            targetPixelRatio: 1,
-                            mode: 'contain'
+                            targetPixelRatio: 2
                         }, (dataUrl) => {
                             clearTimeout(timeout);
                             console.log(`Screenshot attempt ${attempt} callback:`, dataUrl ? 'success' : 'failed');
