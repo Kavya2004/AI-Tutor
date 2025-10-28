@@ -540,12 +540,14 @@ class DiagramRenderer {
             // Create visible container for Desmos
             const container = document.createElement('div');
             container.style.cssText = `
-                position: absolute;
-                top: -9999px;
-                left: -9999px;
+                position: fixed;
+                top: 0;
+                left: 0;
                 width: ${this.canvas.width}px;
                 height: ${this.canvas.height}px;
                 background: white;
+                z-index: 9999;
+                visibility: visible;
             `;
             document.body.appendChild(container);
 
@@ -586,25 +588,39 @@ class DiagramRenderer {
             await new Promise(resolve => setTimeout(resolve, 3000));
             
             console.log('Taking screenshot...');
-            const screenshot = await new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => {
-                    reject(new Error('Screenshot timeout'));
-                }, 10000);
-                
-                calculator.screenshot({
-                    width: this.canvas.width,
-                    height: this.canvas.height,
-                    targetPixelRatio: 1
-                }, (dataUrl) => {
-                    clearTimeout(timeout);
-                    console.log('Screenshot callback called with:', dataUrl ? 'data received' : 'no data');
-                    if (dataUrl) {
-                        resolve(dataUrl);
-                    } else {
-                        reject(new Error('Screenshot returned null'));
-                    }
-                });
-            });
+            
+            // Try multiple screenshot attempts
+            let screenshot = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                console.log(`Screenshot attempt ${attempt}`);
+                try {
+                    screenshot = await new Promise((resolve, reject) => {
+                        const timeout = setTimeout(() => {
+                            reject(new Error(`Screenshot timeout on attempt ${attempt}`));
+                        }, 5000);
+                        
+                        calculator.screenshot({
+                            width: this.canvas.width,
+                            height: this.canvas.height,
+                            targetPixelRatio: 1,
+                            mode: 'contain'
+                        }, (dataUrl) => {
+                            clearTimeout(timeout);
+                            console.log(`Screenshot attempt ${attempt} callback:`, dataUrl ? 'success' : 'failed');
+                            if (dataUrl && dataUrl.startsWith('data:image')) {
+                                resolve(dataUrl);
+                            } else {
+                                reject(new Error(`Invalid screenshot data on attempt ${attempt}`));
+                            }
+                        });
+                    });
+                    break; // Success, exit loop
+                } catch (error) {
+                    console.log(`Screenshot attempt ${attempt} failed:`, error.message);
+                    if (attempt === 3) throw error; // Last attempt failed
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait before retry
+                }
+            }
 
             console.log('Screenshot captured successfully');
 
