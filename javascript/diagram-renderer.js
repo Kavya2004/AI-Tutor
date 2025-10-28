@@ -64,11 +64,6 @@ class DiagramRenderer {
         // Always clear previous diagram
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.canvas.diagramData = null;
-        
-        // Set up coordinate system (center origin)
-        this.ctx.save();
-        this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
-        this.ctx.scale(1, -1); // Flip Y axis for mathematical coordinates
     }
 
     async renderDiagram(instructions) {
@@ -97,8 +92,6 @@ class DiagramRenderer {
             this.renderAnnotations(instructions.annotations);
         }
 
-        this.ctx.restore();
-        
         // Store diagram data for redrawing on resize
         this.canvas.diagramData = instructions;
         
@@ -362,16 +355,20 @@ class DiagramRenderer {
         this.ctx.strokeStyle = '#333';
         this.ctx.lineWidth = 1.5;
         
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        const scale = 20;
+        
         // X-axis
         this.ctx.beginPath();
-        this.ctx.moveTo(xMin * 20, 0.5);
-        this.ctx.lineTo(xMax * 20, 0.5);
+        this.ctx.moveTo(centerX + xMin * scale, centerY);
+        this.ctx.lineTo(centerX + xMax * scale, centerY);
         this.ctx.stroke();
         
         // Y-axis
         this.ctx.beginPath();
-        this.ctx.moveTo(0.5, yMin * 20);
-        this.ctx.lineTo(0.5, yMax * 20);
+        this.ctx.moveTo(centerX, centerY - yMin * scale);
+        this.ctx.lineTo(centerX, centerY - yMax * scale);
         this.ctx.stroke();
         
         // Add tick marks and labels
@@ -431,6 +428,10 @@ class DiagramRenderer {
         this.ctx.beginPath();
         let first = true;
         
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        const scale = 20;
+        
         for (let x = xMin; x <= xMax; x += 0.1) {
             let y;
             
@@ -451,11 +452,14 @@ class DiagramRenderer {
                     continue;
             }
             
+            const px = centerX + x * scale;
+            const py = centerY - y * scale;
+            
             if (first) {
-                this.ctx.moveTo(x * 20, y * 20);
+                this.ctx.moveTo(px, py);
                 first = false;
             } else {
-                this.ctx.lineTo(x * 20, y * 20);
+                this.ctx.lineTo(px, py);
             }
         }
         this.ctx.stroke();
@@ -464,14 +468,18 @@ class DiagramRenderer {
 
     addAxisLabels(xMin, xMax, yMin, yMax) {
         this.ctx.save();
-        this.ctx.scale(1, -1);
         this.ctx.font = '12px Arial';
         this.ctx.textAlign = 'center';
+        this.ctx.fillStyle = '#333';
+        
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        const scale = 20;
         
         // X-axis labels
         for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
             if (x !== 0) {
-                this.ctx.fillText(x.toString(), x * 20, 15);
+                this.ctx.fillText(x.toString(), centerX + x * scale, centerY + 15);
             }
         }
         
@@ -479,7 +487,7 @@ class DiagramRenderer {
         this.ctx.textAlign = 'right';
         for (let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
             if (y !== 0) {
-                this.ctx.fillText(y.toString(), -5, -y * 20 + 5);
+                this.ctx.fillText(y.toString(), centerX - 5, centerY - y * scale + 5);
             }
         }
         
