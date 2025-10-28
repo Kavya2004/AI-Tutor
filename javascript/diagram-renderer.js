@@ -179,6 +179,9 @@ class DiagramRenderer {
     }
 
     renderQuadratic([a, b, c, xMin, xMax]) {
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
         this.ctx.save();
         this.ctx.strokeStyle = '#2d70b3';
         this.ctx.lineWidth = 3;
@@ -189,10 +192,10 @@ class DiagramRenderer {
             const y = a * x * x + (b || 0) * x + (c || 0);
             
             if (first) {
-                this.ctx.moveTo(x * 20, y * 20);
+                this.ctx.moveTo(centerX + x * 20, centerY - y * 20);
                 first = false;
             } else {
-                this.ctx.lineTo(x * 20, y * 20);
+                this.ctx.lineTo(centerX + x * 20, centerY - y * 20);
             }
         }
         this.ctx.stroke();
@@ -200,10 +203,13 @@ class DiagramRenderer {
     }
 
     renderPreciseTriangle([x1, y1, x2, y2, x3, y3], fill = false) {
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
         this.ctx.beginPath();
-        this.ctx.moveTo(Math.round(x1 * 20) + 0.5, Math.round(y1 * 20) + 0.5);
-        this.ctx.lineTo(Math.round(x2 * 20) + 0.5, Math.round(y2 * 20) + 0.5);
-        this.ctx.lineTo(Math.round(x3 * 20) + 0.5, Math.round(y3 * 20) + 0.5);
+        this.ctx.moveTo(Math.round(centerX + x1 * 20) + 0.5, Math.round(centerY - y1 * 20) + 0.5);
+        this.ctx.lineTo(Math.round(centerX + x2 * 20) + 0.5, Math.round(centerY - y2 * 20) + 0.5);
+        this.ctx.lineTo(Math.round(centerX + x3 * 20) + 0.5, Math.round(centerY - y3 * 20) + 0.5);
         this.ctx.closePath();
         if (fill) {
             this.ctx.fill();
@@ -214,11 +220,14 @@ class DiagramRenderer {
     renderPolygon(points, fill = false) {
         if (points.length < 6) return;
         
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
         this.ctx.beginPath();
-        this.ctx.moveTo(points[0] * 20, points[1] * 20);
+        this.ctx.moveTo(centerX + points[0] * 20, centerY - points[1] * 20);
         
         for (let i = 2; i < points.length; i += 2) {
-            this.ctx.lineTo(points[i] * 20, points[i + 1] * 20);
+            this.ctx.lineTo(centerX + points[i] * 20, centerY - points[i + 1] * 20);
         }
         
         this.ctx.closePath();
@@ -229,8 +238,11 @@ class DiagramRenderer {
     }
 
     renderEllipse([centerX, centerY, radiusX, radiusY], fill = false) {
+        const canvasCenterX = this.canvas.width / 2;
+        const canvasCenterY = this.canvas.height / 2;
+        
         this.ctx.beginPath();
-        this.ctx.ellipse(centerX * 20, centerY * 20, radiusX * 20, radiusY * 20, 0, 0, 2 * Math.PI);
+        this.ctx.ellipse(canvasCenterX + centerX * 20, canvasCenterY - centerY * 20, radiusX * 20, radiusY * 20, 0, 0, 2 * Math.PI);
         if (fill) {
             this.ctx.fill();
         }
@@ -242,19 +254,22 @@ class DiagramRenderer {
         this.ctx.strokeStyle = '#e0e0e0';
         this.ctx.lineWidth = 0.5;
         
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
         // Vertical lines
         for (let x = xMin; x <= xMax; x += spacing) {
             this.ctx.beginPath();
-            this.ctx.moveTo(x * 20, yMin * 20);
-            this.ctx.lineTo(x * 20, yMax * 20);
+            this.ctx.moveTo(centerX + x * 20, centerY - yMin * 20);
+            this.ctx.lineTo(centerX + x * 20, centerY - yMax * 20);
             this.ctx.stroke();
         }
         
         // Horizontal lines
         for (let y = yMin; y <= yMax; y += spacing) {
             this.ctx.beginPath();
-            this.ctx.moveTo(xMin * 20, y * 20);
-            this.ctx.lineTo(xMax * 20, y * 20);
+            this.ctx.moveTo(centerX + xMin * 20, centerY - y * 20);
+            this.ctx.lineTo(centerX + xMax * 20, centerY - y * 20);
             this.ctx.stroke();
         }
         
@@ -262,15 +277,21 @@ class DiagramRenderer {
     }
 
     renderPreciseLine([x1, y1, x2, y2]) {
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
         this.ctx.beginPath();
-        this.ctx.moveTo(Math.round(x1 * 20) + 0.5, Math.round(y1 * 20) + 0.5);
-        this.ctx.lineTo(Math.round(x2 * 20) + 0.5, Math.round(y2 * 20) + 0.5);
+        this.ctx.moveTo(Math.round(centerX + x1 * 20) + 0.5, Math.round(centerY - y1 * 20) + 0.5);
+        this.ctx.lineTo(Math.round(centerX + x2 * 20) + 0.5, Math.round(centerY - y2 * 20) + 0.5);
         this.ctx.stroke();
     }
 
     renderPreciseCircle([centerX, centerY, radius], fill = false) {
+        const canvasCenterX = this.canvas.width / 2;
+        const canvasCenterY = this.canvas.height / 2;
+        
         this.ctx.beginPath();
-        this.ctx.arc(centerX * 20, centerY * 20, radius * 20, 0, 2 * Math.PI);
+        this.ctx.arc(canvasCenterX + centerX * 20, canvasCenterY - centerY * 20, radius * 20, 0, 2 * Math.PI);
         if (fill) {
             this.ctx.fill();
         }
@@ -278,8 +299,11 @@ class DiagramRenderer {
     }
 
     renderPreciseRectangle([x, y, width, height], fill = false) {
-        const px = Math.round(x * 20) + 0.5;
-        const py = Math.round(y * 20) + 0.5;
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
+        const px = Math.round(centerX + x * 20) + 0.5;
+        const py = Math.round(centerY - y * 20) + 0.5;
         const pw = Math.round(width * 20);
         const ph = Math.round(height * 20);
         
@@ -290,14 +314,19 @@ class DiagramRenderer {
     }
 
     renderPoint([x, y], label) {
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
         this.ctx.beginPath();
-        this.ctx.arc(x * 20, y * 20, 3, 0, 2 * Math.PI);
+        this.ctx.arc(centerX + x * 20, centerY - y * 20, 3, 0, 2 * Math.PI);
         this.ctx.fill();
         
         if (label) {
             this.ctx.save();
-            this.ctx.scale(1, -1);
-            this.ctx.fillText(label, x * 20 + 5, -y * 20 + 5);
+            this.ctx.font = '12px Arial';
+            this.ctx.fillStyle = '#333';
+            this.ctx.textAlign = 'left';
+            this.ctx.fillText(label, centerX + x * 20 + 5, centerY - y * 20 + 5);
             this.ctx.restore();
         }
     }
@@ -305,21 +334,24 @@ class DiagramRenderer {
     renderCurve(points) {
         if (points.length < 4) return;
         
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
         this.ctx.beginPath();
-        this.ctx.moveTo(points[0] * 20, points[1] * 20);
+        this.ctx.moveTo(centerX + points[0] * 20, centerY - points[1] * 20);
         
         // Handle smooth curves with quadratic bezier
         if (points.length >= 6) {
             for (let i = 2; i < points.length - 2; i += 2) {
-                const cpx = points[i] * 20;
-                const cpy = points[i + 1] * 20;
-                const x = points[i + 2] * 20;
-                const y = points[i + 3] * 20;
+                const cpx = centerX + points[i] * 20;
+                const cpy = centerY - points[i + 1] * 20;
+                const x = centerX + points[i + 2] * 20;
+                const y = centerY - points[i + 3] * 20;
                 this.ctx.quadraticCurveTo(cpx, cpy, x, y);
             }
         } else {
             for (let i = 2; i < points.length; i += 2) {
-                this.ctx.lineTo(points[i] * 20, points[i + 1] * 20);
+                this.ctx.lineTo(centerX + points[i] * 20, centerY - points[i + 1] * 20);
             }
         }
         this.ctx.stroke();
@@ -328,24 +360,30 @@ class DiagramRenderer {
 
 
     renderPreciseArrow([x1, y1, x2, y2]) {
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
         // Draw line
         this.renderPreciseLine([x1, y1, x2, y2]);
         
         // Draw arrowhead
-        const angle = Math.atan2((y2 - y1) * 20, (x2 - x1) * 20);
+        const angle = Math.atan2(-(y2 - y1) * 20, (x2 - x1) * 20);
         const headLength = 12;
         const headAngle = Math.PI / 6;
         
+        const arrowX = centerX + x2 * 20;
+        const arrowY = centerY - y2 * 20;
+        
         this.ctx.beginPath();
-        this.ctx.moveTo(x2 * 20, y2 * 20);
+        this.ctx.moveTo(arrowX, arrowY);
         this.ctx.lineTo(
-            x2 * 20 - headLength * Math.cos(angle - headAngle),
-            y2 * 20 - headLength * Math.sin(angle - headAngle)
+            arrowX - headLength * Math.cos(angle - headAngle),
+            arrowY - headLength * Math.sin(angle - headAngle)
         );
-        this.ctx.moveTo(x2 * 20, y2 * 20);
+        this.ctx.moveTo(arrowX, arrowY);
         this.ctx.lineTo(
-            x2 * 20 - headLength * Math.cos(angle + headAngle),
-            y2 * 20 - headLength * Math.sin(angle + headAngle)
+            arrowX - headLength * Math.cos(angle + headAngle),
+            arrowY - headLength * Math.sin(angle + headAngle)
         );
         this.ctx.stroke();
     }
@@ -379,22 +417,25 @@ class DiagramRenderer {
     renderSmoothCurve(points) {
         if (points.length < 4) return;
         
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
         this.ctx.save();
         this.ctx.strokeStyle = '#2d70b3';
         this.ctx.lineWidth = 3;
         this.ctx.beginPath();
-        this.ctx.moveTo(points[0] * 20, points[1] * 20);
+        this.ctx.moveTo(centerX + points[0] * 20, centerY - points[1] * 20);
         
         // Use quadratic curves for smoothness
         for (let i = 2; i < points.length - 2; i += 2) {
-            const cpx = (points[i] + points[i + 2]) / 2 * 20;
-            const cpy = (points[i + 1] + points[i + 3]) / 2 * 20;
-            this.ctx.quadraticCurveTo(points[i] * 20, points[i + 1] * 20, cpx, cpy);
+            const cpx = centerX + (points[i] + points[i + 2]) / 2 * 20;
+            const cpy = centerY - (points[i + 1] + points[i + 3]) / 2 * 20;
+            this.ctx.quadraticCurveTo(centerX + points[i] * 20, centerY - points[i + 1] * 20, cpx, cpy);
         }
         
         // Final point
         if (points.length >= 4) {
-            this.ctx.lineTo(points[points.length - 2] * 20, points[points.length - 1] * 20);
+            this.ctx.lineTo(centerX + points[points.length - 2] * 20, centerY - points[points.length - 1] * 20);
         }
         
         this.ctx.stroke();
@@ -402,6 +443,9 @@ class DiagramRenderer {
     }
 
     renderParabola([a, h, k, xMin, xMax]) {
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
         this.ctx.beginPath();
         let first = true;
         
@@ -409,10 +453,10 @@ class DiagramRenderer {
             const y = a * (x - h) * (x - h) + k;
             
             if (first) {
-                this.ctx.moveTo(x * 20, y * 20);
+                this.ctx.moveTo(centerX + x * 20, centerY - y * 20);
                 first = false;
             } else {
-                this.ctx.lineTo(x * 20, y * 20);
+                this.ctx.lineTo(centerX + x * 20, centerY - y * 20);
             }
         }
         this.ctx.stroke();
@@ -496,23 +540,23 @@ class DiagramRenderer {
 
     renderTitle(title) {
         this.ctx.save();
-        this.ctx.scale(1, -1);
         this.ctx.font = 'bold 16px Arial';
         this.ctx.textAlign = 'center';
-        this.ctx.fillText(title, 0, -this.canvas.height / 2 + 30);
+        this.ctx.fillStyle = '#333';
+        this.ctx.fillText(title, this.canvas.width / 2, 30);
         this.ctx.restore();
     }
 
     renderAnnotations(annotations) {
         this.ctx.save();
-        this.ctx.scale(1, -1);
         this.ctx.font = '12px Arial';
+        this.ctx.fillStyle = '#333';
         
         annotations.forEach((annotation, index) => {
             this.ctx.fillText(
                 annotation, 
-                -this.canvas.width / 2 + 10, 
-                this.canvas.height / 2 - 30 - (index * 20)
+                10, 
+                this.canvas.height - 30 - (index * 20)
             );
         });
         
@@ -521,9 +565,12 @@ class DiagramRenderer {
 
     renderLabel([x, y], label) {
         this.ctx.save();
-        this.ctx.scale(1, -1);
         this.ctx.font = '12px Arial';
-        this.ctx.fillText(label, x * 20 + 5, -y * 20 - 5);
+        this.ctx.fillStyle = '#333';
+        this.ctx.textAlign = 'left';
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        this.ctx.fillText(label, centerX + x * 20 + 5, centerY - y * 20 - 5);
         this.ctx.restore();
     }
 
