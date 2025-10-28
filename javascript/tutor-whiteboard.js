@@ -851,7 +851,18 @@ function clearWhiteboard(boardType) {
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	if (!ctx || !canvas) return;
 
+	// Clear the entire canvas
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	
+	// Clear diagram data to prevent redrawing
+	canvas.diagramData = null;
+	
+	// Clear drawing data
+	if (boardType === 'teacher') {
+		teacherDrawingData = null;
+	} else {
+		studentDrawingData = null;
+	}
 
 	if (window.sessionManager && window.sessionManager.sessionId) {
 		window.sessionManager.ws.send(
