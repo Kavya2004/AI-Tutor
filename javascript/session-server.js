@@ -1,5 +1,5 @@
 import express from "express";
-import WebSocket from "ws";
+import WebSocket, { WebSocketServer } from "ws";
 import { v4 as uuidv4 } from "uuid";
 import cors from "cors";
 import http from "http";
@@ -7,7 +7,7 @@ import fetch from 'node-fetch';
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocketServer({ server });
 
 app.use(cors({ origin: "https://ai-tutor-teal-one.vercel.app" }));
 app.use(express.json());
