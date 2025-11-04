@@ -26,6 +26,8 @@ const fallbackContent = {
   }
 };
 
+import { checkRateLimit, sanitizeInput, validateRequest, createErrorResponse } from '../middleware/security.js';
+
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -38,23 +40,53 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Method not allowed' });
     }
+
+    // Apply rate limiting
+    const rateLimitResult = checkRateLimit('search', req);
+    if (!rateLimitResult.allowed) {
+        return res.status(429).json({
+            error: 'Rate limit exceeded',
+            retryAfter: rateLimitResult.retryAfter
+        });
+    }
   
     try {
-      const { query } = req.body;
-      if (!query) {
-        return res.status(400).json({ error: 'Search query is required' });
+      // Validate request structure
+      const validation = validateRequest(req, ['query']);
+      if (!validation.valid) {
+          return res.status(400).json({ error: 'Invalid request', details: validation.errors });
       }
+
+      // Sanitize input
+      const { query } = sanitizeInput(req.body);
+      
+      if (!query || typeof query !== 'string' || query.trim().length === 0) {
+        return res.status(400).json({ error: 'Valid search query is required' });
+      }
+
+      // Limit query length
+      const sanitizedQuery = query.trim().substring(0, 500);
   
       const apiKey = process.env.GOOGLE_CSE_API_KEY;
       const cx = process.env.GOOGLE_CSE_ID;
+      
+      // Validate API keys if they exist (optional for this endpoint)
+      if (apiKey && cx) {
+        if (typeof apiKey !== 'string' || apiKey.length < 10 || 
+            typeof cx !== 'string' || cx.length < 10) {
+          console.warn('Invalid Google API credentials detected');
+        }
+      }
       
       let results = [];
       
       // Try Google Custom Search first
       if (apiKey && cx) {
         try {
-          const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}`;
-          const response = await fetch(searchUrl);
+          const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(sanitizedQuery)}`;
+          const response = await fetch(searchUrl, {
+            timeout: 10000 // 10 second timeout
+          });
           
           if (response.ok) {
             const data = await response.json();
@@ -107,7 +139,8 @@ export default async function handler(req, res) {
   
       res.status(200).json({ results });
     } catch (error) {
-      console.error('Search API Error:', error);
+      const errorResponse = createErrorResponse(error, false);
+      console.error('Search API Error:', errorResponse);
       
       // Provide fallback even on complete failure
       const fallbackResults = [{

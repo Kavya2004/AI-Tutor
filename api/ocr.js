@@ -1,19 +1,58 @@
+import { checkRateLimit, sanitizeInput, validateRequest, createErrorResponse } from '../middleware/security.js';
+import { validateRuntimeKeys } from '../config/env-validator.js';
+
 export default async function handler(req, res) {
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+    
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
+
+    // Apply rate limiting
+    const rateLimitResult = checkRateLimit('ocr', req);
+    if (!rateLimitResult.allowed) {
+        return res.status(429).json({
+            error: 'Rate limit exceeded',
+            retryAfter: rateLimitResult.retryAfter
+        });
+    }
     
     try {
-        const { image } = req.body;
+        // Validate request structure
+        const validation = validateRequest(req, ['image']);
+        if (!validation.valid) {
+            return res.status(400).json({ error: 'Invalid request', details: validation.errors });
+        }
+
+        // Sanitize input
+        const { image } = sanitizeInput(req.body);
         
-        if (!image) {
-            return res.status(400).json({ error: 'Image data is required' });
+        if (!image || typeof image !== 'string') {
+            return res.status(400).json({ error: 'Valid image data is required' });
+        }
+
+        // Validate image format
+        if (!image.startsWith('data:image/')) {
+            return res.status(400).json({ error: 'Invalid image format' });
+        }
+
+        // Validate API keys at runtime
+        const keyValidation = validateRuntimeKeys(['MATHPIX_APP_ID', 'MATHPIX_APP_KEY']);
+        if (!keyValidation.valid) {
+            console.error('API key validation failed:', keyValidation.errors);
+            return res.status(500).json({ error: 'API configuration error' });
         }
         
-        // Log the actual credential values (first few chars only for security)
-        console.log('Using credentials:', {
-            appId: process.env.MATHPIX_APP_ID?.substring(0, 8) + '...',
-            appKey: process.env.MATHPIX_APP_KEY?.substring(0, 8) + '...',
+        // Log credentials securely (only lengths for debugging)
+        console.log('OCR API credentials validated:', {
             appIdLength: process.env.MATHPIX_APP_ID?.length,
             appKeyLength: process.env.MATHPIX_APP_KEY?.length
         });
@@ -48,7 +87,10 @@ export default async function handler(req, res) {
         res.status(200).json(result);
         
     } catch (error) {
-        console.error('OCR Error:', error);
-        res.status(500).json({ error: 'OCR processing failed', details: error.message });
+        const errorResponse = createErrorResponse(error, true);
+        res.status(500).json({
+            error: 'OCR processing failed',
+            ...errorResponse
+        });
     }
 }

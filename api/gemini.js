@@ -1,3 +1,6 @@
+import { checkRateLimit, sanitizeInput, validateRequest, createErrorResponse } from '../middleware/security.js';
+import { validateRuntimeKeys } from '../config/env-validator.js';
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,18 +16,44 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Apply rate limiting
+  const rateLimitResult = checkRateLimit('gemini', req);
+  if (!rateLimitResult.allowed) {
+    return res.status(429).json({
+      error: 'Rate limit exceeded',
+      retryAfter: rateLimitResult.retryAfter
+    });
+  }
+
   try {
-      const { messages } = req.body;
+      // Validate request structure
+      const validation = validateRequest(req, ['messages']);
+      if (!validation.valid) {
+          return res.status(400).json({ error: 'Invalid request', details: validation.errors });
+      }
+
+      // Sanitize input
+      const { messages } = sanitizeInput(req.body);
       
-      if (!messages || !Array.isArray(messages)) {
-          return res.status(400).json({ error: 'Messages array is required' });
+      if (!messages || !Array.isArray(messages) || messages.length === 0) {
+          return res.status(400).json({ error: 'Valid messages array is required' });
+      }
+
+      // Validate messages structure
+      for (const msg of messages) {
+          if (!msg.role || !msg.content || typeof msg.content !== 'string') {
+              return res.status(400).json({ error: 'Invalid message format' });
+          }
+      }
+
+      // Validate API keys at runtime
+      const keyValidation = validateRuntimeKeys(['GEMINI_API_KEY']);
+      if (!keyValidation.valid) {
+          console.error('API key validation failed:', keyValidation.errors);
+          return res.status(500).json({ error: 'API configuration error' });
       }
 
       const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-          console.error('GEMINI_API_KEY environment variable is not set');
-          return res.status(500).json({ error: 'Gemini API key not configured' });
-      }
 
        const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
 
@@ -87,10 +116,10 @@ export default async function handler(req, res) {
       res.status(200).json({ response: generatedText });
 
   } catch (error) {
-      console.error('Error in Gemini API handler:', error);
-      res.status(500).json({ 
+      const errorResponse = createErrorResponse(error, true);
+      res.status(500).json({
           error: 'Failed to get response from Gemini',
-          details: error.message 
+          ...errorResponse
       });
   }
 }
