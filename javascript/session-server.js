@@ -1,8 +1,9 @@
-const express = require("express");
-const WebSocket = require("ws");
-const { v4: uuidv4 } = require("uuid");
-const cors = require("cors");
-const http = require("http");
+import express from "express";
+import WebSocket from "ws";
+import { v4 as uuidv4 } from "uuid";
+import cors from "cors";
+import http from "http";
+import fetch from 'node-fetch';
 
 const app = express();
 const server = http.createServer(app);
@@ -12,8 +13,7 @@ app.use(cors({ origin: "https://ai-tutor-teal-one.vercel.app" }));
 app.use(express.json());
 
 const sessions = new Map();
-const sessionConnections = new Map();
-const fetch = require('node-fetch'); 
+const sessionConnections = new Map(); 
 app.post('/api/ocr', async (req, res) => {
   try {
     const { image } = req.body;
@@ -476,4 +476,4 @@ server.listen(PORT, () => {
   );
 });
 
-module.exports = { app, server };
+export { app, server };
