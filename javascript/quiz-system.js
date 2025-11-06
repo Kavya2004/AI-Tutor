@@ -256,6 +256,7 @@ class QuizSystem {
                         return `<div class="${className}">${option}</div>`;
                     }).join('')}
                 </div>
+                ${question.explanation ? `<div class="explanation"><strong>Explanation:</strong> ${question.explanation}</div>` : ''}
                 <div class="quiz-controls">
                     <button class="quiz-btn quiz-btn-secondary" onclick="quizSystem.previousReview()" 
                             ${this.currentQuestionIndex === 0 ? 'style="visibility: hidden;"' : ''}>
@@ -396,6 +397,15 @@ quizStyles.textContent = `
     .difficulty-badge.hard {
         background: #f8d7da;
         color: #721c24;
+    }
+    .explanation {
+        background: #f8f9fa;
+        border-left: 4px solid #007bff;
+        padding: 12px;
+        margin: 15px 0;
+        border-radius: 4px;
+        font-size: 14px;
+        line-height: 1.4;
     }
 `;
 document.head.appendChild(quizStyles);

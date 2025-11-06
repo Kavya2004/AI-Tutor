@@ -381,7 +381,8 @@ Return ONLY a JSON object:
     {
       "question": "Question strictly from ${topic} only?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct": 0
+      "correct": 0,
+      "explanation": "Brief explanation of why this answer is correct"
     }
   ]
 }`;
@@ -401,7 +402,8 @@ Return ONLY a JSON object:
     {
       "question": "Question text here?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct": 0
+      "correct": 0,
+      "explanation": "Brief explanation of why this answer is correct"
     }
   ]
 }`;
