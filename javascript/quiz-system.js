@@ -31,7 +31,7 @@ class QuizSystem {
                             <div class="quiz-progress-bar" id="progressBar"></div>
                         </div>
                     </div>
-                    <div class="quiz-content" id="quizContent">
+                    <div class="quiz-content" id="quizContent" style="overflow-y: auto; max-height: 70vh;">
                         <!-- Quiz content will be dynamically inserted here -->
                     </div>
                 </div>
@@ -406,6 +406,10 @@ quizStyles.textContent = `
         border-radius: 4px;
         font-size: 14px;
         line-height: 1.4;
+    }
+    .quiz-content {
+        overflow-y: auto;
+        max-height: 70vh;
     }
 `;
 document.head.appendChild(quizStyles);
