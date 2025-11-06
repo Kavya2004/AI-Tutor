@@ -102,6 +102,10 @@ class QuizSystem {
         
         document.getElementById('quizContent').innerHTML = questionHTML;
         
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise([document.getElementById('quizContent')]);
+        }
+        
         if (this.currentQuiz.difficulty === 'hard') {
             this.startQuestionTimer();
         }
@@ -228,6 +232,11 @@ class QuizSystem {
         `;
         
         document.getElementById('quizContent').innerHTML = resultsHTML;
+        
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise([document.getElementById('quizContent')]);
+        }
+        
         document.getElementById('progressBar').style.width = '100%';
     }
 
@@ -270,6 +279,10 @@ class QuizSystem {
         `;
         
         document.getElementById('quizContent').innerHTML = reviewHTML;
+        
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise([document.getElementById('quizContent')]);
+        }
     }
 
     nextReview() {
