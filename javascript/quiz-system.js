@@ -5,6 +5,9 @@ class QuizSystem {
         this.userAnswers = [];
         this.score = 0;
         this.timeStarted = null;
+        this.questionTimer = null;
+        this.questionTimeLimit = 120;
+        this.questionTimeRemaining = 0;
         this.init();
     }
 
@@ -20,6 +23,10 @@ class QuizSystem {
                     <button class="quiz-close" onclick="quizSystem.closeQuiz()">&times;</button>
                     <div class="quiz-header">
                         <h2 class="quiz-title" id="quizTitle">Quiz</h2>
+                        <div class="quiz-timer" id="quizTimer" style="display: none;">
+                            <span class="timer-icon">⏱️</span>
+                            <span class="timer-text" id="timerText">2:00</span>
+                        </div>
                         <div class="quiz-progress">
                             <div class="quiz-progress-bar" id="progressBar"></div>
                         </div>
@@ -51,6 +58,13 @@ class QuizSystem {
         
         document.getElementById('quizTitle').textContent = quizData.title;
         document.getElementById('quizModal').style.display = 'block';
+        
+        const timerElement = document.getElementById('quizTimer');
+        if (quizData.difficulty === 'hard') {
+            timerElement.style.display = 'flex';
+        } else {
+            timerElement.style.display = 'none';
+        }
         
         this.showQuestion();
     }
@@ -88,7 +102,10 @@ class QuizSystem {
         
         document.getElementById('quizContent').innerHTML = questionHTML;
         
-        // Restore previous answer if exists
+        if (this.currentQuiz.difficulty === 'hard') {
+            this.startQuestionTimer();
+        }
+        
         if (this.userAnswers[this.currentQuestionIndex] !== undefined) {
             this.selectOption(this.userAnswers[this.currentQuestionIndex], false);
         }
@@ -119,6 +136,8 @@ class QuizSystem {
     nextQuestion() {
         if (this.userAnswers[this.currentQuestionIndex] === undefined) return;
         
+        this.clearQuestionTimer();
+        
         if (this.currentQuestionIndex < this.currentQuiz.questions.length - 1) {
             this.currentQuestionIndex++;
             this.showQuestion();
@@ -129,6 +148,7 @@ class QuizSystem {
 
     previousQuestion() {
         if (this.currentQuestionIndex > 0) {
+            this.clearQuestionTimer();
             this.currentQuestionIndex--;
             this.showQuestion();
         }
@@ -149,18 +169,31 @@ class QuizSystem {
     }
 
     showResults() {
+        this.clearQuestionTimer();
+        
         const percentage = Math.round((this.score / this.currentQuiz.questions.length) * 100);
         const timeElapsed = Math.round((new Date() - this.timeStarted) / 1000);
         
         let message = '';
-        if (percentage >= 90) message = 'Excellent work! 🎉';
-        else if (percentage >= 70) message = 'Good job! 👍';
-        else if (percentage >= 50) message = 'Not bad, keep practicing! 📚';
-        else message = 'Keep studying, you\'ll get there! 💪';
+        if (this.currentQuiz.difficulty === 'hard') {
+            if (percentage >= 90) message = 'Outstanding! You mastered the hard difficulty! 🏆';
+            else if (percentage >= 70) message = 'Great job on the challenging questions! 🎯';
+            else if (percentage >= 50) message = 'Good effort on the hard quiz! Keep practicing! 📚';
+            else message = 'Hard questions are tough! Review and try again! 💪';
+        } else {
+            if (percentage >= 90) message = 'Excellent work! 🎉';
+            else if (percentage >= 70) message = 'Good job! 👍';
+            else if (percentage >= 50) message = 'Not bad, keep practicing! 📚';
+            else message = 'Keep studying, you\'ll get there! 💪';
+        }
+        
+        const difficultyBadge = this.currentQuiz.difficulty ? 
+            `<div class="difficulty-badge ${this.currentQuiz.difficulty}">${this.currentQuiz.difficulty.toUpperCase()}</div>` : '';
         
         const resultsHTML = `
             <div class="quiz-results">
                 <div class="score-display">${percentage}%</div>
+                ${difficultyBadge}
                 <div class="score-message">${message}</div>
                 <div class="results-breakdown">
                     <div class="breakdown-item">
@@ -170,6 +203,10 @@ class QuizSystem {
                     <div class="breakdown-item">
                         <span>Time Taken:</span>
                         <span>${Math.floor(timeElapsed / 60)}:${(timeElapsed % 60).toString().padStart(2, '0')}</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span>Difficulty:</span>
+                        <span>${this.currentQuiz.difficulty ? this.currentQuiz.difficulty.charAt(0).toUpperCase() + this.currentQuiz.difficulty.slice(1) : 'Standard'}</span>
                     </div>
                     <div class="breakdown-item">
                         <span>Accuracy:</span>
@@ -247,11 +284,74 @@ class QuizSystem {
     }
 
     closeQuiz() {
+        this.clearQuestionTimer();
         document.getElementById('quizModal').style.display = 'none';
         this.currentQuiz = null;
         this.currentQuestionIndex = 0;
         this.userAnswers = [];
         this.score = 0;
+    }
+    
+    startQuestionTimer() {
+        this.questionTimeRemaining = this.questionTimeLimit;
+        this.updateTimerDisplay();
+        
+        this.questionTimer = setInterval(() => {
+            this.questionTimeRemaining--;
+            this.updateTimerDisplay();
+            
+            if (this.questionTimeRemaining <= 0) {
+                this.handleTimeUp();
+            }
+        }, 1000);
+    }
+    
+    clearQuestionTimer() {
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+    }
+    
+    updateTimerDisplay() {
+        const minutes = Math.floor(this.questionTimeRemaining / 60);
+        const seconds = this.questionTimeRemaining % 60;
+        const timerText = document.getElementById('timerText');
+        
+        if (timerText) {
+            timerText.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            const timerElement = document.getElementById('quizTimer');
+            if (this.questionTimeRemaining <= 30) {
+                timerElement.style.color = '#dc3545';
+            } else if (this.questionTimeRemaining <= 60) {
+                timerElement.style.color = '#ffc107';
+            } else {
+                timerElement.style.color = '#28a745';
+            }
+        }
+    }
+    
+    handleTimeUp() {
+        this.clearQuestionTimer();
+        
+        if (this.userAnswers[this.currentQuestionIndex] === undefined) {
+            this.userAnswers[this.currentQuestionIndex] = 0;
+        }
+        
+        const timerText = document.getElementById('timerText');
+        if (timerText) {
+            timerText.textContent = 'Time Up!';
+        }
+        
+        setTimeout(() => {
+            if (this.currentQuestionIndex < this.currentQuiz.questions.length - 1) {
+                this.currentQuestionIndex++;
+                this.showQuestion();
+            } else {
+                this.finishQuiz();
+            }
+        }, 1500);
     }
 }
 
@@ -260,6 +360,45 @@ const sampleQuizzes = {};
 
 // Initialize quiz system
 const quizSystem = new QuizSystem();
+
+// Add timer and difficulty badge styles
+const quizStyles = document.createElement('style');
+quizStyles.textContent = `
+    .quiz-timer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: bold;
+        font-size: 16px;
+        color: #28a745;
+        transition: color 0.3s ease;
+    }
+    .timer-icon {
+        font-size: 18px;
+    }
+    .difficulty-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: bold;
+        margin: 10px 0;
+        text-transform: uppercase;
+    }
+    .difficulty-badge.easy {
+        background: #d4edda;
+        color: #155724;
+    }
+    .difficulty-badge.medium {
+        background: #fff3cd;
+        color: #856404;
+    }
+    .difficulty-badge.hard {
+        background: #f8d7da;
+        color: #721c24;
+    }
+`;
+document.head.appendChild(quizStyles);
 
 // Make functions and data globally available
 window.startQuiz = startQuiz;

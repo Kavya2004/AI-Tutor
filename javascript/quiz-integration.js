@@ -94,10 +94,18 @@ class QuizIntegration {
         const lowerMessage = message.toLowerCase();
         
         if (lowerMessage.includes('quiz') || lowerMessage.includes('test') || lowerMessage.includes('assessment')) {
+            // Check for difficulty level in message
+            let difficulty = 'easy';
+            if (lowerMessage.includes('hard') || lowerMessage.includes('difficult') || lowerMessage.includes('challenging') || lowerMessage.includes('timed')) {
+                difficulty = 'hard';
+            } else if (lowerMessage.includes('medium') || lowerMessage.includes('intermediate')) {
+                difficulty = 'medium';
+            }
+            
             // Check for chapter-specific requests
             const chapterMatch = this.extractChapterFromMessage(message);
             if (chapterMatch) {
-                this.generateAIQuiz(chapterMatch);
+                this.generateAIQuiz(chapterMatch, difficulty);
                 return true;
             } else {
                 this.showQuizMenu();
@@ -109,7 +117,7 @@ class QuizIntegration {
     }
 
     createCustomQuiz() {
-        // Show a better popup for topic selection
+         // Show a better popup for topic selection with difficulty levels
         const popup = document.createElement('div');
         popup.className = 'topic-popup';
         popup.innerHTML = `
@@ -129,6 +137,26 @@ class QuizIntegration {
                     <button onclick="document.getElementById('topicInput').value='Chapter 9 - Bayesian Inference'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 9</button>
                     <button onclick="document.getElementById('topicInput').value='Chapter 10 - Introduction to Random Processes'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 10</button>
                     <button onclick="document.getElementById('topicInput').value='Chapter 11 - Some Important Random Processes'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 11</button>
+                </div>
+                <div class="difficulty-section">
+                    <h4>Select Difficulty Level:</h4>
+                    <div class="difficulty-options">
+                        <label class="difficulty-option">
+                            <input type="radio" name="difficulty" value="easy" checked>
+                            <span class="difficulty-label easy">Easy</span>
+                            <small>Basic concepts and definitions</small>
+                        </label>
+                        <label class="difficulty-option">
+                            <input type="radio" name="difficulty" value="medium">
+                            <span class="difficulty-label medium">Medium</span>
+                            <small>Problem-solving and applications</small>
+                        </label>
+                        <label class="difficulty-option">
+                            <input type="radio" name="difficulty" value="hard">
+                            <span class="difficulty-label hard">Hard (Timed)</span>
+                            <small>Advanced problems - 2 minutes per question</small>
+                        </label>
+                    </div>
                 </div>
                 <div class="topic-buttons">
                     <button class="topic-btn-secondary" onclick="this.parentElement.parentElement.parentElement.remove();">Cancel</button>
@@ -203,6 +231,47 @@ class QuizIntegration {
                 color: white;
                 border-color: #337810;
             }
+            .difficulty-section {
+                margin: 20px 0;
+                padding: 15px;
+                background: #f8f9fa;
+                border-radius: 8px;
+            }
+            .difficulty-section h4 {
+                margin: 0 0 12px 0;
+                color: #333;
+                font-size: 14px;
+            }
+            .difficulty-options {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .difficulty-option {
+                display: flex;
+                align-items: center;
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 6px;
+                transition: background 0.2s;
+            }
+            .difficulty-option:hover {
+                background: #e9ecef;
+            }
+            .difficulty-option input[type="radio"] {
+                margin-right: 8px;
+            }
+            .difficulty-label {
+                font-weight: 600;
+                margin-right: 8px;
+            }
+            .difficulty-label.easy { color: #28a745; }
+            .difficulty-label.medium { color: #ffc107; }
+            .difficulty-label.hard { color: #dc3545; }
+            .difficulty-option small {
+                color: #666;
+                font-size: 11px;
+            }
             .topic-buttons {
                 display: flex;
                 gap: 10px;
@@ -250,13 +319,14 @@ class QuizIntegration {
     
     handleTopicSubmit() {
         const topic = document.getElementById('topicInput').value.trim();
+        const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
         if (topic) {
             document.querySelector('.topic-popup').remove();
-            this.generateAIQuiz(topic);
+            this.generateAIQuiz(topic, difficulty);
         }
     }
 
-    async generateAIQuiz(topic) {
+    async generateAIQuiz(topic, difficulty = 'easy') {
         try {
             // Check if we have a sample quiz for this topic first
             const chapterKey = window.getChapterKey ? window.getChapterKey(topic) : topic.toLowerCase();
@@ -275,12 +345,29 @@ class QuizIntegration {
                 }
             }
 
-            // Enhanced prompt for chapter-specific content
+            // Enhanced prompt for chapter-specific content with difficulty levels
             const isChapterRequest = this.detectChapterRequest(topic);
+            let difficultyInstructions = '';
+            
+            switch(difficulty) {
+                case 'easy':
+                    difficultyInstructions = 'Focus on basic definitions, simple concepts, and straightforward applications. Questions should test fundamental understanding.';
+                    break;
+                case 'medium':
+                    difficultyInstructions = 'Include problem-solving questions that require applying concepts to solve problems. Mix conceptual and computational questions.';
+                    break;
+                case 'hard':
+                    difficultyInstructions = 'Create challenging questions that require deep understanding, multi-step problem solving, and advanced applications. Include complex scenarios and edge cases.';
+                    break;
+            }
+            
             let promptContent;
             
             if (isChapterRequest) {
                 promptContent = `Create a 5-question multiple choice quiz STRICTLY about "${topic}" from probabilitycourse.com. 
+
+DIFFICULTY LEVEL: ${difficulty.toUpperCase()}
+${difficultyInstructions}
 
 IMPORTANT: ALL questions must be from ${topic} ONLY. Do NOT include questions from other chapters.
 
@@ -288,7 +375,8 @@ Use readable mathematical notation (not LaTeX) and stay within the specified cha
 
 Return ONLY a JSON object:
 {
-  "title": "${topic} Quiz",
+  "title": "${topic} Quiz (${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)})",
+  "difficulty": "${difficulty}",
   "questions": [
     {
       "question": "Question strictly from ${topic} only?",
@@ -300,11 +388,15 @@ Return ONLY a JSON object:
             } else {
                 promptContent = `Create a 5-question multiple choice quiz STRICTLY about "${topic}". Use readable mathematical notation (like 1/2, P(X=1), etc.) instead of LaTeX.
 
+DIFFICULTY LEVEL: ${difficulty.toUpperCase()}
+${difficultyInstructions}
+
 IMPORTANT: ALL questions must be about ${topic} ONLY. Do not mix topics or include unrelated concepts.
 
 Return ONLY a JSON object:
 {
-  "title": "${topic} Quiz",
+  "title": "${topic} Quiz (${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)})",
+  "difficulty": "${difficulty}",
   "questions": [
     {
       "question": "Question text here?",
@@ -401,6 +493,7 @@ Return ONLY a JSON object:
         
         return {
             title: `${topic} Quiz`,
+            difficulty: 'easy',
             questions: questions.slice(0, 5) // Limit to 5 questions
         };
     }
