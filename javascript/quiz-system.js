@@ -90,7 +90,7 @@ class QuizSystem {
                 </div>
                 <div class="quiz-controls">
                     <button class="quiz-btn quiz-btn-secondary" onclick="quizSystem.previousQuestion()" 
-                            ${this.currentQuestionIndex === 0 ? 'style="visibility: hidden;"' : ''}>
+                            ${this.currentQuestionIndex === 0 || this.currentQuiz.difficulty === 'hard' ? 'style="visibility: hidden;"' : ''}>
                         Previous
                     </button>
                     <button class="quiz-btn quiz-btn-primary" id="nextBtn" onclick="quizSystem.nextQuestion()" disabled>
@@ -134,7 +134,7 @@ class QuizSystem {
     }
 
     nextQuestion() {
-        if (this.userAnswers[this.currentQuestionIndex] === undefined) return;
+        if (this.userAnswers[this.currentQuestionIndex] === undefined && this.currentQuiz.difficulty !== 'hard') return;
         
         this.clearQuestionTimer();
         
@@ -161,11 +161,13 @@ class QuizSystem {
 
     calculateScore() {
         this.score = 0;
-        this.userAnswers.forEach((answer, index) => {
-            if (answer === this.currentQuiz.questions[index].correct) {
+        for (let i = 0; i < this.currentQuiz.questions.length; i++) {
+            const answer = this.userAnswers[i];
+            if (answer !== undefined && answer === this.currentQuiz.questions[i].correct) {
                 this.score++;
             }
-        });
+            // Unanswered questions (undefined) count as 0 points
+        }
     }
 
     showResults() {
@@ -327,17 +329,13 @@ class QuizSystem {
             } else if (this.questionTimeRemaining <= 60) {
                 timerElement.style.color = '#ffc107';
             } else {
-                timerElement.style.color = '#28a745';
+                timerElement.style.color = '#ffffff';
             }
         }
     }
     
     handleTimeUp() {
         this.clearQuestionTimer();
-        
-        if (this.userAnswers[this.currentQuestionIndex] === undefined) {
-            this.userAnswers[this.currentQuestionIndex] = 0;
-        }
         
         const timerText = document.getElementById('timerText');
         if (timerText) {
