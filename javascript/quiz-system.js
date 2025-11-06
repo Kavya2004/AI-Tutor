@@ -172,6 +172,7 @@ class QuizSystem {
 
     showResults() {
         this.clearQuestionTimer();
+        document.getElementById('quizTimer').style.display = 'none';
         
         const percentage = Math.round((this.score / this.currentQuiz.questions.length) * 100);
         const timeElapsed = Math.round((new Date() - this.timeStarted) / 1000);
@@ -231,6 +232,7 @@ class QuizSystem {
     }
 
     reviewAnswers() {
+        document.getElementById('quizTimer').style.display = 'none';
         this.currentQuestionIndex = 0;
         this.showReview();
     }
