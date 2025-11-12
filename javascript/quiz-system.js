@@ -3,6 +3,7 @@ class QuizSystem {
         this.currentQuiz = null;
         this.currentQuestionIndex = 0;
         this.userAnswers = [];
+        this.hintsUsed = [];
         this.score = 0;
         this.timeStarted = null;
         this.questionTimer = null;
@@ -53,6 +54,7 @@ class QuizSystem {
         this.currentQuiz = quizData;
         this.currentQuestionIndex = 0;
         this.userAnswers = [];
+        this.hintsUsed = [];
         this.score = 0;
         this.timeStarted = new Date();
         
@@ -93,6 +95,10 @@ class QuizSystem {
                             ${this.currentQuestionIndex === 0 || this.currentQuiz.difficulty === 'hard' ? 'style="visibility: hidden;"' : ''}>
                         Previous
                     </button>
+                    <button class="quiz-btn quiz-btn-hint" id="hintBtn" onclick="quizSystem.showHint()" 
+                            ${this.hintsUsed[this.currentQuestionIndex] ? 'style="display: none;"' : ''}>
+                        💡 Hint
+                    </button>
                     <button class="quiz-btn quiz-btn-primary" id="nextBtn" onclick="quizSystem.nextQuestion()" disabled>
                         ${this.currentQuestionIndex === this.currentQuiz.questions.length - 1 ? 'Finish Quiz' : 'Next'}
                     </button>
@@ -112,6 +118,16 @@ class QuizSystem {
         
         if (this.userAnswers[this.currentQuestionIndex] !== undefined) {
             this.selectOption(this.userAnswers[this.currentQuestionIndex], false);
+        }
+        
+        // Update hint button visibility
+        const hintBtn = document.getElementById('hintBtn');
+        if (hintBtn) {
+            if (this.hintsUsed[this.currentQuestionIndex]) {
+                hintBtn.style.display = 'none';
+            } else {
+                hintBtn.style.display = 'inline-block';
+            }
         }
     }
 
@@ -168,7 +184,8 @@ class QuizSystem {
         for (let i = 0; i < this.currentQuiz.questions.length; i++) {
             const answer = this.userAnswers[i];
             if (answer !== undefined && answer === this.currentQuiz.questions[i].correct) {
-                this.score++;
+                // Give 0.5 points if hint was used, 1 point otherwise
+                this.score += this.hintsUsed[i] ? 0.5 : 1;
             }
             // Unanswered questions (undefined) count as 0 points
         }
@@ -204,8 +221,12 @@ class QuizSystem {
                 <div class="score-message">${message}</div>
                 <div class="results-breakdown">
                     <div class="breakdown-item">
-                        <span>Correct Answers:</span>
+                        <span>Score:</span>
                         <span>${this.score} / ${this.currentQuiz.questions.length}</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span>Hints Used:</span>
+                        <span>${this.hintsUsed.filter(h => h).length}</span>
                     </div>
                     <div class="breakdown-item">
                         <span>Time Taken:</span>
@@ -307,7 +328,70 @@ class QuizSystem {
         this.currentQuiz = null;
         this.currentQuestionIndex = 0;
         this.userAnswers = [];
+        this.hintsUsed = [];
         this.score = 0;
+    }
+    
+    async showHint() {
+        const question = this.currentQuiz.questions[this.currentQuestionIndex];
+        const hintBtn = document.getElementById('hintBtn');
+        
+        // Mark hint as used
+        this.hintsUsed[this.currentQuestionIndex] = true;
+        hintBtn.style.display = 'none';
+        
+        // Show loading state
+        const hintContainer = document.createElement('div');
+        hintContainer.className = 'hint-container';
+        hintContainer.innerHTML = '<div class="hint-loading">💡 Generating hint...</div>';
+        
+        const optionsContainer = document.getElementById('optionsContainer');
+        optionsContainer.parentNode.insertBefore(hintContainer, optionsContainer.nextSibling);
+        
+        try {
+            // Generate hint using AI
+            const hint = await this.generateHint(question.question, question.options);
+            hintContainer.innerHTML = `<div class="hint-content"><strong>💡 Hint:</strong> ${hint}</div>`;
+        } catch (error) {
+            hintContainer.innerHTML = '<div class="hint-error">Unable to generate hint. Try analyzing the question step by step.</div>';
+        }
+    }
+    
+    async generateHint(questionText, options) {
+        const prompt = `Generate a helpful hint for this multiple choice question. Don't give away the answer directly, but provide guidance on how to approach solving it.
+
+Question: ${questionText}
+
+Options:
+${options.map((opt, i) => `${String.fromCharCode(65 + i)}) ${opt}`).join('\n')}
+
+Provide a concise hint that guides the student toward the solution without revealing the answer:`;
+        
+        const messages = [
+            {
+                role: 'system',
+                content: 'You are a helpful tutor providing hints for quiz questions. Give guidance without revealing the answer directly.'
+            },
+            {
+                role: 'user',
+                content: prompt
+            }
+        ];
+        
+        const response = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ messages })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to generate hint');
+        }
+        
+        const data = await response.json();
+        return data.response || 'Think about the key concepts involved in this question and eliminate obviously incorrect options.';
     }
     
     startQuestionTimer() {
@@ -370,7 +454,26 @@ class QuizSystem {
 }
 
 // Sample quiz data - removed default quizzes, keeping only custom quiz structure
-const sampleQuizzes = {};
+const sampleQuizzes = {
+    'test': {
+        title: 'Test Quiz with Hints',
+        difficulty: 'easy',
+        questions: [
+            {
+                question: 'What is the probability of getting heads when flipping a fair coin?',
+                options: ['0.25', '0.5', '0.75', '1.0'],
+                correct: 1,
+                explanation: 'A fair coin has equal probability for heads and tails, so P(heads) = 1/2 = 0.5'
+            },
+            {
+                question: 'If you roll a standard six-sided die, what is P(rolling a 3)?',
+                options: ['1/3', '1/6', '1/2', '2/3'],
+                correct: 1,
+                explanation: 'There is one favorable outcome (rolling a 3) out of 6 possible outcomes, so P = 1/6'
+            }
+        ]
+    }
+};
 
 // Initialize quiz system
 const quizSystem = new QuizSystem();
@@ -443,6 +546,9 @@ function startQuiz(quizType) {
     
     if (sampleQuizzes[quizType]) {
         quizSystem.startQuiz(sampleQuizzes[quizType]);
+    } else {
+        console.log('Quiz type not found:', quizType);
+        console.log('Available quizzes:', Object.keys(sampleQuizzes));
     }
 }
 
