@@ -352,25 +352,30 @@ class QuizSystem {
             // Generate hint using AI
             const hint = await this.generateHint(question.question, question.options);
             hintContainer.innerHTML = `<div class="hint-content"><strong>💡 Hint:</strong> ${hint}</div>`;
+            
+            // Render LaTeX if MathJax is available
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise([hintContainer]);
+            }
         } catch (error) {
             hintContainer.innerHTML = '<div class="hint-error">Unable to generate hint. Try analyzing the question step by step.</div>';
         }
     }
     
     async generateHint(questionText, options) {
-        const prompt = `Generate a helpful hint for this multiple choice question. Don't give away the answer directly, but provide guidance on how to approach solving it.
+        const prompt = `Generate a concise hint for this question. Use LaTeX for math (e.g., $P(A)$, $\\frac{1}{2}$). Be direct and brief - no "of course", "obviously", or unnecessary phrases.
 
 Question: ${questionText}
 
 Options:
 ${options.map((opt, i) => `${String.fromCharCode(65 + i)}) ${opt}`).join('\n')}
 
-Provide a concise hint that guides the student toward the solution without revealing the answer:`;
+Provide only the essential hint:`;
         
         const messages = [
             {
                 role: 'system',
-                content: 'You are a helpful tutor providing hints for quiz questions. Give guidance without revealing the answer directly.'
+                content: 'Provide concise, direct hints using LaTeX math notation. No filler words or obvious statements.'
             },
             {
                 role: 'user',
@@ -391,7 +396,7 @@ Provide a concise hint that guides the student toward the solution without revea
         }
         
         const data = await response.json();
-        return data.response || 'Think about the key concepts involved in this question and eliminate obviously incorrect options.';
+        return data.response || 'Consider the fundamental definition and eliminate incorrect options.';
     }
     
     startQuestionTimer() {
