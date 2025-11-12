@@ -353,8 +353,8 @@ class QuizSystem {
             const hint = await this.generateHint(question.question, question.options);
             hintContainer.innerHTML = `<div class="hint-content"><strong>💡 Hint:</strong> ${hint}</div>`;
             
-            // Render with MathJax 4.0
-            if (window.MathJax) {
+            // Tell MathJax about new content
+            if (window.MathJax?.typesetPromise) {
                 window.MathJax.typesetPromise([hintContainer]);
             }
         } catch (error) {
