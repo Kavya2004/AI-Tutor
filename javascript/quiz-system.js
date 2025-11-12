@@ -353,10 +353,18 @@ class QuizSystem {
             const hint = await this.generateHint(question.question, question.options);
             hintContainer.innerHTML = `<div class="hint-content"><strong>💡 Hint:</strong> ${hint}</div>`;
             
-            // Render MathJax
-            if (window.MathJax) {
-                window.MathJax.typesetPromise([hintContainer]).catch(() => {});
-            }
+            // Force MathJax render with delay
+            setTimeout(() => {
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([hintContainer]).then(() => {
+                        console.log('MathJax rendered hint');
+                    }).catch((err) => {
+                        console.error('MathJax error:', err);
+                    });
+                } else {
+                    console.error('MathJax not available');
+                }
+            }, 100);
         } catch (error) {
             hintContainer.innerHTML = '<div class="hint-error">Unable to generate hint. Try analyzing the question step by step.</div>';
         }
