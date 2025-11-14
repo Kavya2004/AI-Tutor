@@ -153,8 +153,8 @@ class QuizIntegration {
                         </label>
                         <label class="difficulty-option">
                             <input type="radio" name="difficulty" value="hard">
-                            <span class="difficulty-label hard">Hard (Timed)</span>
-                            <small>Advanced problems - 2 minutes per question</small>
+                            <span class="difficulty-label hard">Hard</span>
+                            <small>Advanced problems and complex scenarios</small>
                         </label>
                     </div>
                 </div>

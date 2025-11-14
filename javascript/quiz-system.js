@@ -62,11 +62,7 @@ class QuizSystem {
         document.getElementById('quizModal').style.display = 'block';
         
         const timerElement = document.getElementById('quizTimer');
-        if (quizData.difficulty === 'hard') {
-            timerElement.style.display = 'flex';
-        } else {
-            timerElement.style.display = 'none';
-        }
+        timerElement.style.display = 'none';
         
         this.showQuestion();
     }
@@ -112,9 +108,7 @@ class QuizSystem {
             window.MathJax.typesetPromise([document.getElementById('quizContent')]);
         }
         
-        if (this.currentQuiz.difficulty === 'hard') {
-            this.startQuestionTimer();
-        }
+
         
         if (this.userAnswers[this.currentQuestionIndex] !== undefined) {
             this.selectOption(this.userAnswers[this.currentQuestionIndex], false);
