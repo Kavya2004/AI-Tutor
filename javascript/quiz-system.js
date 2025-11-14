@@ -368,38 +368,18 @@ class QuizSystem {
     }
     
     async generateHint(questionText, options) {
-        const prompt = `Generate a concise hint for this question. Use LaTeX for math (e.g., $P(A)$, $\\frac{1}{2}$). Be direct and brief - no "of course", "obviously", or unnecessary phrases.
-
-Question: ${questionText}
-
-Options:
-${options.map((opt, i) => `${String.fromCharCode(65 + i)}) ${opt}`).join('\n')}
-
-Provide only the essential hint:`;
-        
-        const messages = [
-            {
-                role: 'system',
-                content: 'Provide concise, direct hints using LaTeX math notation. No filler words or obvious statements.'
-            },
-            {
-                role: 'user',
-                content: prompt
-            }
-        ];
-        
         const response = await fetch('/api/gemini', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ messages })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [{
+                    role: 'user',
+                    content: `Hint for: ${questionText}\nOptions: ${options.join(', ')}\nBrief hint with LaTeX:`
+                }]
+            })
         });
         
-        if (!response.ok) {
-            throw new Error('Failed to generate hint');
-        }
-        
+        if (!response.ok) throw new Error('Failed to generate hint');
         const data = await response.json();
         return data.response || 'Consider the fundamental definition and eliminate incorrect options.';
     }
