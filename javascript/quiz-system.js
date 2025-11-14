@@ -104,8 +104,11 @@ class QuizSystem {
         
         document.getElementById('quizContent').innerHTML = questionHTML;
         
-        if (window.MathJax && window.MathJax.typesetPromise) {
+        // Force MathJax to reprocess questions and options
+        if (window.MathJax?.typesetPromise) {
             window.MathJax.typesetPromise([document.getElementById('quizContent')]);
+        } else if (window.MathJax?.Hub) {
+            window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, document.getElementById('quizContent')]);
         }
         
 
@@ -295,8 +298,11 @@ class QuizSystem {
         
         document.getElementById('quizContent').innerHTML = reviewHTML;
         
-        if (window.MathJax && window.MathJax.typesetPromise) {
+        // Force MathJax to reprocess explanations
+        if (window.MathJax?.typesetPromise) {
             window.MathJax.typesetPromise([document.getElementById('quizContent')]);
+        } else if (window.MathJax?.Hub) {
+            window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, document.getElementById('quizContent')]);
         }
     }
 
@@ -347,9 +353,11 @@ class QuizSystem {
             const hint = await this.generateHint(question.question, question.options);
             hintContainer.innerHTML = `<div class="hint-content"><strong>💡 Hint:</strong> ${hint}</div>`;
             
-            // Render MathJax immediately after DOM update
+            // Force MathJax to reprocess the content
             if (window.MathJax?.typesetPromise) {
                 await window.MathJax.typesetPromise([hintContainer]);
+            } else if (window.MathJax?.Hub) {
+                window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, hintContainer]);
             }
         } catch (error) {
             hintContainer.innerHTML = '<div class="hint-error">Unable to generate hint. Try analyzing the question step by step.</div>';
@@ -476,6 +484,33 @@ const sampleQuizzes = {
 
 // Initialize quiz system
 const quizSystem = new QuizSystem();
+
+// Configure MathJax for proper LaTeX rendering
+if (!window.MathJax) {
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            processEscapes: true,
+            processEnvironments: true
+        },
+        options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+        }
+    };
+    
+    // Load MathJax if not already loaded
+    if (!document.querySelector('script[src*="mathjax"]')) {
+        const script = document.createElement('script');
+        script.src = 'https://polyfill.io/v3/polyfill.min.js?features=es6';
+        document.head.appendChild(script);
+        
+        const mathJaxScript = document.createElement('script');
+        mathJaxScript.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+        mathJaxScript.async = true;
+        document.head.appendChild(mathJaxScript);
+    }
+}
 
 // Add timer and difficulty badge styles
 const quizStyles = document.createElement('style');
