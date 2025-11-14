@@ -189,6 +189,8 @@ class QuizIntegration {
                 border-radius: 15px;
                 max-width: 400px;
                 width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             }
             .topic-popup-content h3 {
@@ -226,9 +228,9 @@ class QuizIntegration {
                 font-size: 14px;
             }
             .chapter-checkboxes {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 10px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
             }
             .chapter-checkboxes label {
                 display: flex;
