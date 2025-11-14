@@ -219,8 +219,10 @@ class QuizIntegration {
             .chapter-selection {
                 margin-bottom: 20px;
                 background: #f8f9fa;
-                padding: 15px;
+                padding: 12px;
                 border-radius: 8px;
+                width: 100%;
+                box-sizing: border-box;
             }
             .chapter-selection h4 {
                 margin: 0 0 12px 0;
@@ -230,19 +232,22 @@ class QuizIntegration {
             .chapter-checkboxes {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 8px;
+                gap: 6px;
+                width: 100%;
+                box-sizing: border-box;
             }
             .chapter-checkboxes label {
                 display: flex;
                 align-items: center;
                 cursor: pointer;
-                padding: 8px 12px;
+                padding: 6px 10px;
                 background: white;
                 border: 1px solid #ddd;
-                border-radius: 20px;
+                border-radius: 15px;
                 font-size: 12px;
                 transition: all 0.2s;
-                min-width: fit-content;
+                width: fit-content;
+                max-width: 100%;
             }
             .chapter-checkboxes label:hover {
                 background: #e9ecef;
