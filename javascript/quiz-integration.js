@@ -240,7 +240,7 @@ class QuizIntegration {
                 display: flex;
                 align-items: center;
                 cursor: pointer;
-                padding: 8px 16px;
+                padding: 12px 24px;
                 background: white;
                 border: 1px solid #ddd;
                 border-radius: 15px;
@@ -248,7 +248,7 @@ class QuizIntegration {
                 transition: all 0.2s;
                 width: fit-content;
                 max-width: 100%;
-                min-width: 90px;
+                min-width: 120px;
             }
             .chapter-checkboxes label:hover {
                 background: #e9ecef;
