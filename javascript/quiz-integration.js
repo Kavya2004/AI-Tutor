@@ -128,17 +128,17 @@ class QuizIntegration {
                 <div class="chapter-selection">
                     <h4>Select Chapters:</h4>
                     <div class="chapter-checkboxes">
-                        <label><input type="checkbox" value="Chapter 1 - Basic Concepts"> Chapter 1</label>
-                        <label><input type="checkbox" value="Chapter 2 - Combinatorial Analysis"> Chapter 2</label>
-                        <label><input type="checkbox" value="Chapter 3 - Discrete Random Variables"> Chapter 3</label>
-                        <label><input type="checkbox" value="Chapter 4 - Continuous Random Variables"> Chapter 4</label>
-                        <label><input type="checkbox" value="Chapter 5 - Joint Distributions"> Chapter 5</label>
-                        <label><input type="checkbox" value="Chapter 6 - Limit Theorems"> Chapter 6</label>
-                        <label><input type="checkbox" value="Chapter 7 - Statistical Inference"> Chapter 7</label>
-                        <label><input type="checkbox" value="Chapter 8 - Estimation"> Chapter 8</label>
-                        <label><input type="checkbox" value="Chapter 9 - Bayesian Inference"> Chapter 9</label>
-                        <label><input type="checkbox" value="Chapter 10 - Random Processes"> Chapter 10</label>
-                        <label><input type="checkbox" value="Chapter 11 - Important Random Processes"> Chapter 11</label>
+                        <label><input type="checkbox" value="Chapter 1 - Basic Concepts"><span>Ch 1</span></label>
+                        <label><input type="checkbox" value="Chapter 2 - Combinatorial Analysis"><span>Ch 2</span></label>
+                        <label><input type="checkbox" value="Chapter 3 - Discrete Random Variables"><span>Ch 3</span></label>
+                        <label><input type="checkbox" value="Chapter 4 - Continuous Random Variables"><span>Ch 4</span></label>
+                        <label><input type="checkbox" value="Chapter 5 - Joint Distributions"><span>Ch 5</span></label>
+                        <label><input type="checkbox" value="Chapter 6 - Limit Theorems"><span>Ch 6</span></label>
+                        <label><input type="checkbox" value="Chapter 7 - Statistical Inference"><span>Ch 7</span></label>
+                        <label><input type="checkbox" value="Chapter 8 - Estimation"><span>Ch 8</span></label>
+                        <label><input type="checkbox" value="Chapter 9 - Bayesian Inference"><span>Ch 9</span></label>
+                        <label><input type="checkbox" value="Chapter 10 - Random Processes"><span>Ch 10</span></label>
+                        <label><input type="checkbox" value="Chapter 11 - Important Random Processes"><span>Ch 11</span></label>
                     </div>
                 </div>
                 <div class="difficulty-section">
@@ -216,25 +216,39 @@ class QuizIntegration {
             }
             .chapter-selection {
                 margin-bottom: 20px;
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 8px;
             }
             .chapter-selection h4 {
-                margin: 0 0 10px 0;
+                margin: 0 0 12px 0;
                 color: #333;
                 font-size: 14px;
             }
             .chapter-checkboxes {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-                max-height: 150px;
-                overflow-y: auto;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
             }
             .chapter-checkboxes label {
                 display: flex;
                 align-items: center;
                 cursor: pointer;
-                padding: 4px;
+                padding: 8px 12px;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 20px;
                 font-size: 12px;
+                transition: all 0.2s;
+                min-width: fit-content;
+            }
+            .chapter-checkboxes label:hover {
+                background: #e9ecef;
+                border-color: #337810;
+            }
+            .chapter-checkboxes input[type="checkbox"]:checked + span {
+                color: #337810;
+                font-weight: 600;
             }
             .chapter-checkboxes input[type="checkbox"] {
                 margin-right: 6px;
