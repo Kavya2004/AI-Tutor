@@ -251,8 +251,11 @@ class QuizSystem {
         
         document.getElementById('quizContent').innerHTML = resultsHTML;
         
-        if (window.MathJax && window.MathJax.typesetPromise) {
+        // Force MathJax to reprocess results
+        if (window.MathJax?.typesetPromise) {
             window.MathJax.typesetPromise([document.getElementById('quizContent')]);
+        } else if (window.MathJax?.Hub) {
+            window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, document.getElementById('quizContent')]);
         }
         
         document.getElementById('progressBar').style.width = '100%';
