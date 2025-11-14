@@ -249,6 +249,7 @@ class QuizIntegration {
                 width: fit-content;
                 max-width: 100%;
                 min-width: 120px;
+                white-space: nowrap;
             }
             .chapter-checkboxes label:hover {
                 background: #e9ecef;
