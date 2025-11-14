@@ -128,17 +128,17 @@ class QuizIntegration {
                 <div class="chapter-selection">
                     <h4>Select Chapters:</h4>
                     <div class="chapter-checkboxes">
-                        <label><input type="checkbox" value="Chapter 1 - Basic Concepts"><span>Ch 1</span></label>
-                        <label><input type="checkbox" value="Chapter 2 - Combinatorial Analysis"><span>Ch 2</span></label>
-                        <label><input type="checkbox" value="Chapter 3 - Discrete Random Variables"><span>Ch 3</span></label>
-                        <label><input type="checkbox" value="Chapter 4 - Continuous Random Variables"><span>Ch 4</span></label>
-                        <label><input type="checkbox" value="Chapter 5 - Joint Distributions"><span>Ch 5</span></label>
-                        <label><input type="checkbox" value="Chapter 6 - Limit Theorems"><span>Ch 6</span></label>
-                        <label><input type="checkbox" value="Chapter 7 - Statistical Inference"><span>Ch 7</span></label>
-                        <label><input type="checkbox" value="Chapter 8 - Estimation"><span>Ch 8</span></label>
-                        <label><input type="checkbox" value="Chapter 9 - Bayesian Inference"><span>Ch 9</span></label>
-                        <label><input type="checkbox" value="Chapter 10 - Random Processes"><span>Ch 10</span></label>
-                        <label><input type="checkbox" value="Chapter 11 - Important Random Processes"><span>Ch 11</span></label>
+                        <label><input type="checkbox" value="Chapter 1 - Basic Concepts"><span>Chapter 1</span></label>
+                        <label><input type="checkbox" value="Chapter 2 - Combinatorial Analysis"><span>Chapter 2</span></label>
+                        <label><input type="checkbox" value="Chapter 3 - Discrete Random Variables"><span>Chapter 3</span></label>
+                        <label><input type="checkbox" value="Chapter 4 - Continuous Random Variables"><span>Chapter 4</span></label>
+                        <label><input type="checkbox" value="Chapter 5 - Joint Distributions"><span>Chapter 5</span></label>
+                        <label><input type="checkbox" value="Chapter 6 - Limit Theorems"><span>Chapter 6</span></label>
+                        <label><input type="checkbox" value="Chapter 7 - Statistical Inference"><span>Chapter 7</span></label>
+                        <label><input type="checkbox" value="Chapter 8 - Estimation"><span>Chapter 8</span></label>
+                        <label><input type="checkbox" value="Chapter 9 - Bayesian Inference"><span>Chapter 9</span></label>
+                        <label><input type="checkbox" value="Chapter 10 - Random Processes"><span>Chapter 10</span></label>
+                        <label><input type="checkbox" value="Chapter 11 - Important Random Processes"><span>Chapter 11</span></label>
                     </div>
                 </div>
                 <div class="difficulty-section">
