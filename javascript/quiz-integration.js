@@ -125,18 +125,21 @@ class QuizIntegration {
                 <h3>🧠 Create Custom Quiz</h3>
                 <p>What topic or chapter would you like to be quizzed on?</p>
                 <input type="text" id="topicInput" placeholder="e.g., Chapter 1, Conditional Probability, Bayes Theorem..." />
-                <div class="topic-suggestions">
-                    <button onclick="document.getElementById('topicInput').value='Chapter 1 - Basic Concepts'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 1</button>
-                    <button onclick="document.getElementById('topicInput').value='Chapter 2 - Combinatorial Analysis'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 2</button>
-                    <button onclick="document.getElementById('topicInput').value='Chapter 3 - Discrete Random Variables'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 3</button>
-                    <button onclick="document.getElementById('topicInput').value='Chapter 4 - Continuous Random Variables'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 4</button>
-                    <button onclick="document.getElementById('topicInput').value='Chapter 5 - Joint Distributions'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 5</button>
-                    <button onclick="document.getElementById('topicInput').value='Chapter 6 - Limit Theorems'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 6</button>
-                    <button onclick="document.getElementById('topicInput').value='Chapter 7 - Statistical Inference'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 7</button>
-                    <button onclick="document.getElementById('topicInput').value='Chapter 8 - Estimation'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 8</button>
-                    <button onclick="document.getElementById('topicInput').value='Chapter 9 - Bayesian Inference'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 9</button>
-                    <button onclick="document.getElementById('topicInput').value='Chapter 10 - Introduction to Random Processes'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 10</button>
-                    <button onclick="document.getElementById('topicInput').value='Chapter 11 - Some Important Random Processes'; this.parentElement.parentElement.querySelector('.topic-btn-primary').click();">Chapter 11</button>
+                <div class="chapter-selection">
+                    <h4>Select Chapters:</h4>
+                    <div class="chapter-checkboxes">
+                        <label><input type="checkbox" value="Chapter 1 - Basic Concepts"> Chapter 1</label>
+                        <label><input type="checkbox" value="Chapter 2 - Combinatorial Analysis"> Chapter 2</label>
+                        <label><input type="checkbox" value="Chapter 3 - Discrete Random Variables"> Chapter 3</label>
+                        <label><input type="checkbox" value="Chapter 4 - Continuous Random Variables"> Chapter 4</label>
+                        <label><input type="checkbox" value="Chapter 5 - Joint Distributions"> Chapter 5</label>
+                        <label><input type="checkbox" value="Chapter 6 - Limit Theorems"> Chapter 6</label>
+                        <label><input type="checkbox" value="Chapter 7 - Statistical Inference"> Chapter 7</label>
+                        <label><input type="checkbox" value="Chapter 8 - Estimation"> Chapter 8</label>
+                        <label><input type="checkbox" value="Chapter 9 - Bayesian Inference"> Chapter 9</label>
+                        <label><input type="checkbox" value="Chapter 10 - Random Processes"> Chapter 10</label>
+                        <label><input type="checkbox" value="Chapter 11 - Important Random Processes"> Chapter 11</label>
+                    </div>
                 </div>
                 <div class="difficulty-section">
                     <h4>Select Difficulty Level:</h4>
@@ -211,25 +214,30 @@ class QuizIntegration {
                 border-color: #337810;
                 outline: none;
             }
-            .topic-suggestions {
-                display: flex;
-                gap: 8px;
+            .chapter-selection {
                 margin-bottom: 20px;
-                flex-wrap: wrap;
             }
-            .topic-suggestions button {
-                padding: 6px 12px;
-                border: 1px solid #ddd;
-                background: #f8f9fa;
-                border-radius: 15px;
+            .chapter-selection h4 {
+                margin: 0 0 10px 0;
+                color: #333;
+                font-size: 14px;
+            }
+            .chapter-checkboxes {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                max-height: 150px;
+                overflow-y: auto;
+            }
+            .chapter-checkboxes label {
+                display: flex;
+                align-items: center;
                 cursor: pointer;
+                padding: 4px;
                 font-size: 12px;
-                transition: all 0.2s;
             }
-            .topic-suggestions button:hover {
-                background: #337810;
-                color: white;
-                border-color: #337810;
+            .chapter-checkboxes input[type="checkbox"] {
+                margin-right: 6px;
             }
             .difficulty-section {
                 margin: 20px 0;
@@ -318,12 +326,23 @@ class QuizIntegration {
     }
     
     handleTopicSubmit() {
-        const topic = document.getElementById('topicInput').value.trim();
+        const selectedChapters = Array.from(document.querySelectorAll('.chapter-checkboxes input[type="checkbox"]:checked'))
+            .map(cb => cb.value);
+        const customTopic = document.getElementById('topicInput').value.trim();
         const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
-        if (topic) {
-            document.querySelector('.topic-popup').remove();
-            this.generateAIQuiz(topic, difficulty);
+        
+        let topic;
+        if (selectedChapters.length > 0) {
+            topic = selectedChapters.length === 1 ? selectedChapters[0] : selectedChapters.join(' + ');
+        } else if (customTopic) {
+            topic = customTopic;
+        } else {
+            alert('Please select chapters or enter a custom topic.');
+            return;
         }
+        
+        document.querySelector('.topic-popup').remove();
+        this.generateAIQuiz(topic, difficulty);
     }
 
     async generateAIQuiz(topic, difficulty = 'easy') {
@@ -364,14 +383,38 @@ class QuizIntegration {
             let promptContent;
             
             if (isChapterRequest) {
-                promptContent = `Create a 5-question multiple choice quiz STRICTLY about "${topic}" from probabilitycourse.com. 
+                const isCombined = topic.toLowerCase().includes('combined') || topic.toLowerCase().includes('review') || topic.toLowerCase().includes('midterm') || topic.toLowerCase().includes('final');
+                
+                if (isCombined) {
+                    promptContent = `Create a 5-question multiple choice quiz covering "${topic}". Mix questions from the specified chapters/topics.
+
+DIFFICULTY: ${difficulty.toUpperCase()}
+${difficultyInstructions}
+
+For combined/review quizzes: Include variety from all mentioned chapters. Use LaTeX for math.
+
+JSON format:
+{
+  "title": "${topic} (${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)})",
+  "difficulty": "${difficulty}",
+  "questions": [
+    {
+      "question": "Question text?",
+      "options": ["A", "B", "C", "D"],
+      "correct": 0,
+      "explanation": "Brief explanation"
+    }
+  ]
+}`;
+                } else {
+                    promptContent = `Create a 5-question multiple choice quiz STRICTLY about "${topic}" from probabilitycourse.com. 
 
 DIFFICULTY LEVEL: ${difficulty.toUpperCase()}
 ${difficultyInstructions}
 
 IMPORTANT: ALL questions must be from ${topic} ONLY. Do NOT include questions from other chapters.
 
-Use readable mathematical notation (not LaTeX) and stay within the specified chapter scope.
+Use LaTeX for math and stay within the specified chapter scope.
 
 Return ONLY a JSON object:
 {
@@ -386,6 +429,7 @@ Return ONLY a JSON object:
     }
   ]
 }`;
+                }
             } else {
                 promptContent = `Create a 5-question multiple choice quiz STRICTLY about "${topic}". Use readable mathematical notation (like 1/2, P(X=1), etc.) instead of LaTeX.
 
