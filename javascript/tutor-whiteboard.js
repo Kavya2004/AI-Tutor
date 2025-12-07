@@ -1,6 +1,6 @@
 let teacherCanvas, teacherCtx, studentCanvas, studentCtx;
 
-// Make canvas variables globally accessible for diagram renderer
+
 window.teacherCanvas = null;
 window.teacherCtx = null;
 window.studentCanvas = null;
@@ -19,7 +19,7 @@ let isAnythingDrawn = false;
 let activeWhiteboard = 'teacher';
 let pendingSymbol = null;
 
-// Symbol management variables
+
 let teacherSymbols = [];
 let studentSymbols = [];
 let selectedSymbol = null;
@@ -28,11 +28,11 @@ let isResizing = false;
 let resizeHandle = null;
 let dragOffset = { x: 0, y: 0 };
 
-// Drawing state storage
+
 let teacherDrawingData = null;
 let studentDrawingData = null;
 
-// Resize handling
+
 let resizeTimeout = null;
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -41,14 +41,14 @@ document.addEventListener('DOMContentLoaded', function () {
 	setupWhiteboardControls();
 });
 
-// Also try to initialize when script loads
+
 if (document.readyState === 'loading') {
 	document.addEventListener('DOMContentLoaded', function () {
 		initializeWhiteboards();
 		setupWhiteboardControls();
 	});
 } else {
-	// DOM already loaded
+
 	setTimeout(() => {
 		initializeWhiteboards();
 		setupWhiteboardControls();
@@ -188,11 +188,11 @@ async function runOcrAndFillChat(boardType) {
 		const dataUrl = canvas.toDataURL('image/png', 0.8);
 
 
-		// Get the correct server URL
+	
 		const serverUrl = getOcrServerUrl();
 
 
-		// Send to your OCR server
+
 		const response = await fetch('/api/ocr', {
 			method: 'POST',
 			headers: {
@@ -211,8 +211,7 @@ async function runOcrAndFillChat(boardType) {
 		const result = await response.json();
 
 
-		// Extract the recognized text from Mathpix response
-		// Extract the recognized text from Mathpix response
+
 		let ocrText = '';
 		if (result.text) {
 			ocrText = result.text;

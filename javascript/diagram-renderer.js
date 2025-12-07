@@ -1,4 +1,4 @@
-// diagram-renderer.js - Cloud-based math diagram renderer
+
 class DiagramRenderer {
     constructor() {
         this.canvas = null;
@@ -10,7 +10,7 @@ class DiagramRenderer {
 
     async generateDiagram(question, targetBoard = 'teacher') {
         try {
-            // Get diagram instructions from Gemini
+
             const response = await fetch('/api/diagram', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -36,7 +36,7 @@ class DiagramRenderer {
                 return { success: false, message: 'Invalid diagram instructions received' };
             }
 
-            // Render the diagram
+
             this.setupCanvas(targetBoard);
             await this.renderDiagram(diagramData.instructions);
             
@@ -61,7 +61,7 @@ class DiagramRenderer {
 
         this.ctx = this.canvas.getContext('2d');
         
-        // Always clear previous diagram
+
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.canvas.diagramData = null;
     }
@@ -71,31 +71,31 @@ class DiagramRenderer {
             throw new Error('Invalid diagram instructions');
         }
 
-        // Set default styles
+
         this.ctx.strokeStyle = '#333';
         this.ctx.fillStyle = '#333';
         this.ctx.lineWidth = 2;
         this.ctx.font = '14px Arial';
 
-        // Render each element
+
         for (const element of instructions.elements) {
             await this.renderElement(element);
         }
 
-        // Add title if provided
+
         if (instructions.title) {
             this.renderTitle(instructions.title);
         }
 
-        // Add annotations
+
         if (instructions.annotations) {
             this.renderAnnotations(instructions.annotations);
         }
 
-        // Store diagram data for redrawing on resize
+
         this.canvas.diagramData = instructions;
         
-        // Mark that something was drawn for OCR detection
+
         if (typeof window.isAnythingDrawn !== 'undefined') {
             window.isAnythingDrawn = true;
         }

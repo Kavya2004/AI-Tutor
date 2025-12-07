@@ -42,7 +42,7 @@ class QuizSystem {
     }
 
     bindEvents() {
-        // Close modal when clicking outside
+
         document.getElementById('quizModal').addEventListener('click', (e) => {
             if (e.target.id === 'quizModal') {
                 this.closeQuiz();
@@ -104,7 +104,7 @@ class QuizSystem {
         
         document.getElementById('quizContent').innerHTML = questionHTML;
         
-        // Force MathJax to reprocess questions and options
+
         if (window.MathJax?.typesetPromise) {
             window.MathJax.typesetPromise([document.getElementById('quizContent')]);
         } else if (window.MathJax?.Hub) {
@@ -117,7 +117,7 @@ class QuizSystem {
             this.selectOption(this.userAnswers[this.currentQuestionIndex], false);
         }
         
-        // Update hint button visibility
+
         const hintBtn = document.getElementById('hintBtn');
         if (hintBtn) {
             if (this.hintsUsed[this.currentQuestionIndex]) {
@@ -129,10 +129,10 @@ class QuizSystem {
     }
 
     selectOption(optionIndex, animate = true) {
-        // Clear previous selections
+
         document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
         
-        // Select new option
+
         const selectedOption = document.querySelector(`[data-index="${optionIndex}"]`);
         selectedOption.classList.add('selected');
         
@@ -143,10 +143,10 @@ class QuizSystem {
             }, 100);
         }
         
-        // Store answer
+
         this.userAnswers[this.currentQuestionIndex] = optionIndex;
         
-        // Enable next button
+
         document.getElementById('nextBtn').disabled = false;
     }
 
@@ -181,10 +181,10 @@ class QuizSystem {
         for (let i = 0; i < this.currentQuiz.questions.length; i++) {
             const answer = this.userAnswers[i];
             if (answer !== undefined && answer === this.currentQuiz.questions[i].correct) {
-                // Give 0.5 points if hint was used, 1 point otherwise
+        
                 this.score += this.hintsUsed[i] ? 0.5 : 1;
             }
-            // Unanswered questions (undefined) count as 0 points
+
         }
     }
 

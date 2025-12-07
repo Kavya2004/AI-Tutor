@@ -90,7 +90,7 @@ class SessionManager {
 
     chatHeader.insertBefore(sessionControls, chatHeader.firstChild);
 
-    // Setup dropdown functionality
+
     this.setupSessionDropdown();
     this.setupVoiceControls();
     this.setupDragHandle();
@@ -115,7 +115,7 @@ class SessionManager {
       arrow.textContent = dropdownContent.classList.contains("show") ? "▲" : "▼";
     });
 
-    // Close dropdown when clicking outside
+
     document.addEventListener("click", (e) => {
       if (!dropdownBtn.contains(e.target) && !dropdownContent.contains(e.target)) {
         dropdownContent.classList.remove("show");
@@ -130,7 +130,7 @@ class SessionManager {
     const autoSpeechBtn = document.getElementById("autoSpeechBtn");
     const voiceSettingsBtn = document.getElementById("voiceSettingsBtn");
 
-    // Initialize auto-speech state
+
     const autoSpeechEnabled = localStorage.getItem('autoSpeech') !== 'false';
     if (autoSpeechBtn) {
       autoSpeechBtn.innerHTML = autoSpeechEnabled ? '🔊 Auto' : '🔇 Auto';
@@ -218,7 +218,7 @@ class SessionManager {
   }
 
   createPublicSessionsList() {
-    // Public sessions button is now created in the main layout
+
   }
   
   async showPublicSessions() {
@@ -1190,7 +1190,7 @@ class SessionManager {
   }
 
   handleSharedWhiteboardAction(data) {
-    // Execute the whiteboard action for other participants
+
     if (window.tutorWhiteboard && data.action && data.targetBoard) {
       setTimeout(() => {
         if (window.switchWhiteboard) {
@@ -1230,7 +1230,7 @@ class SessionManager {
 
   handleSharedDiagram(data) {
 
-    // Generate the same diagram for other participants
+
     if (window.diagramRenderer && data.description && data.targetBoard) {
       setTimeout(async () => {
 

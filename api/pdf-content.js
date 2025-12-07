@@ -1,8 +1,8 @@
-import fetch from 'node-fetch';
-import * as cheerio from 'cheerio';
-import pdf from 'pdf-parse';
+const fetch = require('node-fetch');
+const cheerio = require('cheerio');
+const pdfParse = require('pdf-parse/lib/pdf-parse.js');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   
   if (req.method !== 'POST') {
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
       try {
         const pdfResponse = await fetch(pdfLink.url);
         const pdfBuffer = await pdfResponse.buffer();
-        const pdfData = await pdf(pdfBuffer);
+        const pdfData = await pdfParse(pdfBuffer);
         
         // Search within PDF content
         if (pdfData.text.toLowerCase().includes(query.toLowerCase())) {

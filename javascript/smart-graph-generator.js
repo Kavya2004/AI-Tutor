@@ -1,4 +1,4 @@
-// Smart Graph Generator - Interprets user requests and generates appropriate graphs
+
 class SmartGraphGenerator {
     constructor() {
         this.graphPatterns = {
@@ -22,7 +22,7 @@ class SmartGraphGenerator {
     async processUserRequest(text, boardType = 'teacher') {
 
         
-        // Extract mathematical expressions
+
         const expressions = this.extractExpressions(text);
 
         
@@ -30,7 +30,7 @@ class SmartGraphGenerator {
             return await this.generateFromExpressions(expressions, boardType);
         }
         
-        // Detect graph type from patterns
+
         const graphType = this.detectGraphType(text);
 
         
@@ -38,14 +38,14 @@ class SmartGraphGenerator {
             return await this.generateFromType(graphType, text, boardType);
         }
         
-        // Try to generate a general mathematical visualization
+
         return await this.generateGeneralGraph(text, boardType);
     }
 
     extractExpressions(text) {
         const expressions = [];
         
-        // Extract y = ... expressions
+
         let match;
         this.functionExtractor.lastIndex = 0;
         while ((match = this.functionExtractor.exec(text)) !== null) {
@@ -56,7 +56,7 @@ class SmartGraphGenerator {
             });
         }
         
-        // Extract general equations
+
         this.equationExtractor.lastIndex = 0;
         while ((match = this.equationExtractor.exec(text)) !== null) {
             expressions.push({
@@ -172,7 +172,7 @@ class SmartGraphGenerator {
     }
 
     async generateQuadratic(text, boardType) {
-        // Extract coefficients if provided
+
         const aMatch = text.match(/a\s*=\s*([-\d\.]+)/i);
         const bMatch = text.match(/b\s*=\s*([-\d\.]+)/i);
         const cMatch = text.match(/c\s*=\s*([-\d\.]+)/i);
@@ -183,14 +183,14 @@ class SmartGraphGenerator {
         
         await window.desmosIntegration.plotQuadratic(a, b, c);
         
-        // Set appropriate viewport
+
         window.desmosIntegration.setViewport(-10, 10, -10, 10);
         
         return { coefficients: { a, b, c } };
     }
 
     async generateLinear(text, boardType) {
-        // Extract slope and y-intercept
+
         const mMatch = text.match(/(?:slope|m)\s*=\s*([-\d\.]+)/i);
         const bMatch = text.match(/(?:intercept|b)\s*=\s*([-\d\.]+)/i);
         
@@ -205,7 +205,7 @@ class SmartGraphGenerator {
     }
 
     async generateSine(text, boardType) {
-        // Extract amplitude, frequency, phase
+
         const ampMatch = text.match(/(?:amplitude|A)\s*=\s*([-\d\.]+)/i);
         const freqMatch = text.match(/(?:frequency|f|period)\s*=\s*([-\d\.]+)/i);
         const phaseMatch = text.match(/(?:phase|shift)\s*=\s*([-\d\.]+)/i);

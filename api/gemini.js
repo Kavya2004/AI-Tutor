@@ -2,7 +2,7 @@ import { checkRateLimit, sanitizeInput, validateRequest, createErrorResponse } f
 import { validateRuntimeKeys } from '../config/env-validator.js';
 
 export default async function handler(req, res) {
-  // Enable CORS
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Apply rate limiting
+
   const rateLimitResult = checkRateLimit('gemini', req);
   if (!rateLimitResult.allowed) {
     return res.status(429).json({
@@ -26,27 +26,27 @@ export default async function handler(req, res) {
   }
 
   try {
-      // Validate request structure
+
       const validation = validateRequest(req, ['messages']);
       if (!validation.valid) {
           return res.status(400).json({ error: 'Invalid request', details: validation.errors });
       }
 
-      // Sanitize input
-      const { messages } = sanitizeInput(req.body);
+
+      const { messages, files } = sanitizeInput(req.body);
       
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
           return res.status(400).json({ error: 'Valid messages array is required' });
       }
 
-      // Validate messages structure
+
       for (const msg of messages) {
           if (!msg.role || !msg.content || typeof msg.content !== 'string') {
               return res.status(400).json({ error: 'Invalid message format' });
           }
       }
 
-      // Validate API keys at runtime
+
       const keyValidation = validateRuntimeKeys(['GEMINI_API_KEY']);
       if (!keyValidation.valid) {
 
@@ -59,10 +59,28 @@ export default async function handler(req, res) {
 
       const geminiMessages = messages
           .filter(msg => msg.role !== 'system')
-          .map(msg => ({
-              role: msg.role === 'assistant' ? 'model' : 'user',
-              parts: [{ text: msg.content }]
-          }));
+          .map(msg => {
+              const parts = [{ text: msg.content }];
+              
+              // Add files to the last user message if they exist
+              if (msg.role === 'user' && files && files.length > 0) {
+                  files.forEach(file => {
+                      if (file.type.startsWith('image/')) {
+                          parts.push({
+                              inlineData: {
+                                  mimeType: file.type,
+                                  data: file.data.split(',')[1] // Remove data:image/jpeg;base64, prefix
+                              }
+                          });
+                      }
+                  });
+              }
+              
+              return {
+                  role: msg.role === 'assistant' ? 'model' : 'user',
+                  parts: parts
+              };
+          });
 
       const systemMessage = messages.find(msg => msg.role === 'system');
       if (systemMessage && geminiMessages.length > 0) {

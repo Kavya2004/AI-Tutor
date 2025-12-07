@@ -1,4 +1,4 @@
-// Desmos Integration for Graph Visualization
+
 class DesmosIntegration {
     constructor() {
         this.calculator = null;
@@ -10,15 +10,15 @@ class DesmosIntegration {
     async initialize(boardType = 'teacher') {
         this.currentBoardType = boardType;
         
-        // Load Desmos API if not already loaded
+
         if (!window.Desmos) {
             await this.loadDesmosAPI();
         }
 
-        // Create graph container
+
         this.createGraphContainer(boardType);
         
-        // Initialize calculator
+
         this.calculator = window.Desmos.GraphingCalculator(this.graphContainer, {
             keypad: false,
             expressions: false,
@@ -61,13 +61,13 @@ class DesmosIntegration {
         const panel = document.getElementById(boardType + 'Panel');
         if (!panel) return;
 
-        // Remove existing graph container
+
         const existing = panel.querySelector('.desmos-container');
         if (existing) {
             existing.remove();
         }
 
-        // Create new container
+
         this.graphContainer = document.createElement('div');
         this.graphContainer.className = 'desmos-container';
         this.graphContainer.style.cssText = `
@@ -83,7 +83,7 @@ class DesmosIntegration {
             display: none;
         `;
 
-        // Add close button
+
         const closeBtn = document.createElement('button');
         closeBtn.innerHTML = '✕';
         closeBtn.style.cssText = `
@@ -109,7 +109,7 @@ class DesmosIntegration {
     setupEventListeners() {
         if (!this.calculator) return;
 
-        // Listen for expression changes
+
         this.calculator.observeEvent('change', () => {
             this.captureGraphToCanvas();
         });
@@ -210,7 +210,7 @@ class DesmosIntegration {
         if (!this.calculator || !this.graphContainer) return;
 
         try {
-            // Wait a bit for rendering to complete
+    
             await new Promise(resolve => setTimeout(resolve, 500));
             
             const canvas = this.currentBoardType === 'teacher' ? window.teacherCanvas : window.studentCanvas;
@@ -218,20 +218,20 @@ class DesmosIntegration {
             
             if (!canvas || !ctx) return;
 
-            // Get screenshot from Desmos
+    
             const screenshot = await this.calculator.asyncScreenshot({
                 width: canvas.width,
                 height: canvas.height,
                 targetPixelRatio: 1
             });
 
-            // Create image and draw to canvas
+    
             const img = new Image();
             img.onload = () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 
-                // Mark that something was drawn
+        
                 if (typeof window.isAnythingDrawn !== 'undefined') {
                     window.isAnythingDrawn = true;
                 }

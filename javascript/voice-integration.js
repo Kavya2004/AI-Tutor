@@ -80,17 +80,17 @@ class VoiceTutor {
         const loadVoices = () => {
             this.voices = this.synthesis.getVoices();
             
-            // Priority order for more natural-sounding voices
+
             const preferredVoiceNames = [
                 'Samantha', 'Karen', 'Victoria', 'Allison', 'Ava', 'Susan', 'Joanna', 'Salli',
                 'Google US English', 'Microsoft Zira', 'Microsoft Hazel', 'Alex',
                 'Natural', 'Premium', 'Enhanced'
             ];
             
-            // Find the best available voice
+
             this.preferredVoice = null;
             
-            // First, try to find premium/natural voices
+
             for (const voiceName of preferredVoiceNames) {
                 const voice = this.voices.find(v => 
                     v.lang.startsWith('en') && 
@@ -102,17 +102,17 @@ class VoiceTutor {
                 }
             }
             
-            // Fallback to any English voice that sounds natural
+
             if (!this.preferredVoice) {
                 this.preferredVoice = this.voices.find(voice => 
                     voice.lang.startsWith('en') && 
                     (voice.name.toLowerCase().includes('female') || 
                      voice.name.toLowerCase().includes('woman') ||
-                     voice.localService === false) // Often higher quality
+                     voice.localService === false) 
                 );
             }
             
-            // Final fallback
+
             if (!this.preferredVoice) {
                 this.preferredVoice = this.voices.find(voice => voice.lang.startsWith('en')) || this.voices[0];
             }
@@ -135,7 +135,7 @@ class VoiceTutor {
 
     createSettingsMenu() {
 
-        // Create settings menu attached to chat container
+
         const chatContainer = document.querySelector('.chat-container');
         if (!chatContainer || document.getElementById('speechSettings')) return;
 
@@ -259,7 +259,7 @@ class VoiceTutor {
             z-index: 1000;
         `;
 
-        // Add stop button to chat input area
+
         const inputContainer = document.querySelector('.chat-input-container');
         if (inputContainer && !document.getElementById('stopSpeakingBtn')) {
             const stopSpeakingBtn = document.createElement('button');
@@ -321,10 +321,9 @@ class VoiceTutor {
         document.head.appendChild(style);
 
         document.addEventListener('click', (e) => {
-            if (!settingsContainer.contains(e.target) && !settingsBtn.contains(e.target)) {
+            if (!settingsContainer.contains(e.target)) {
                 settingsContainer.style.display = 'none';
                 settingsContainer.classList.remove('show');
-
             }
         });
         

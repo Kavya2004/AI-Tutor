@@ -78,53 +78,54 @@ Here is the full link mapping:
 let voiceEnabled = true;
 const searchCache = new Map();
 
-document.addEventListener('DOMContentLoaded', function () {
-	initializeChat();
+document.addEventListener('DOMContentLoaded', function() {
+    initializeChat();
 });
 
 function handlePasteEvent(event) {
-	const activeElement = document.activeElement;
-	const chatInput = document.getElementById('chatInput');
-	if (activeElement !== chatInput) return;
+    const activeElement = document.activeElement;
+    const chatInput = document.getElementById('chatInput');
+    if (activeElement !== chatInput) return;
 
-	const items = event.clipboardData?.items;
-	if (!items) return;
+    const items = event.clipboardData?.items;
+    if (!items) return;
 
-	for (const item of items) {
-		if (item.type.indexOf('image') === 0) {
-			const file = item.getAsFile();
-			if (file) {
-				uploadedFiles.push(file);
-				addFileToPreview(file);
-				const filePreview = document.getElementById('filePreview');
-				filePreview.style.display = 'flex';
-			}
-		}
-	}
+    for (const item of items) {
+        if (item.type.indexOf('image') === 0) {
+            const file = item.getAsFile();
+            if (file) {
+                uploadedFiles.push(file);
+                addFileToPreview(file);
+                const filePreview = document.getElementById('filePreview');
+                filePreview.style.display = 'flex';
+            }
+        }
+    }
 }
 
 function initializeChat() {
-	window.processUserMessage = processUserMessage;
-	const sendButton = document.getElementById('sendButton');
-	const chatInput = document.getElementById('chatInput');
+    window.processUserMessage = processUserMessage;
+    const sendButton = document.getElementById('sendButton');
+    const chatInput = document.getElementById('chatInput');
 
-	if (sendButton) {
-		sendButton.addEventListener('click', handleSendMessage);
-	}
+    if (sendButton) {
+        sendButton.addEventListener('click', handleSendMessage);
+    }
 
-	if (chatInput) {
-		chatInput.addEventListener('keypress', handleKeyPress);
-	}
+    if (chatInput) {
+        chatInput.addEventListener('keypress', handleKeyPress);
+    }
 
-	initializeFileUpload();
-	createChatControls();
+    initializeFileUpload();
+    initializeDragDrop();
+    createChatControls();
 
-	addMessage("Hi there! I'm your probability tutor! Ask me anything about probability and statistics!", 'bot');
+    addMessage("Hi there! I'm your probability tutor! Ask me anything about probability and statistics!", 'bot');
 
-	voiceEnabled = localStorage.getItem('autoSpeech') === 'true';
+    voiceEnabled = localStorage.getItem('autoSpeech') === 'true';
 
-	setTimeout(createVoiceToggle, 1500);
-	document.addEventListener('paste', handlePasteEvent);
+    setTimeout(createVoiceToggle, 1500);
+    document.addEventListener('paste', handlePasteEvent);
 }
 let uploadedFiles = [];
 
@@ -137,7 +138,49 @@ function initializeFileUpload() {
 		fileInput.addEventListener('change', handleFileSelect);
 	}
 }
-async function getGeminiResponse(messages) {
+
+function initializeDragDrop() {
+	const chatContainer = document.querySelector('.chat-container');
+	if (!chatContainer) return;
+
+	chatContainer.addEventListener('dragover', (e) => {
+		e.preventDefault();
+		chatContainer.style.backgroundColor = '#f0f8ff';
+	});
+
+	chatContainer.addEventListener('dragleave', (e) => {
+		e.preventDefault();
+		chatContainer.style.backgroundColor = '';
+	});
+
+	chatContainer.addEventListener('drop', (e) => {
+		e.preventDefault();
+		chatContainer.style.backgroundColor = '';
+		const files = Array.from(e.dataTransfer.files);
+		handleDroppedFiles(files);
+	});
+}
+
+function handleDroppedFiles(files) {
+	const filePreview = document.getElementById('filePreview');
+
+	files.forEach((file) => {
+		if (isValidFileType(file)) {
+			uploadedFiles.push(file);
+			addFileToPreview(file);
+		} else {
+			addMessage(
+				`File type "${file.type}" is not supported. Please upload PDF, images, videos, audio, or text files.`,
+				'bot'
+			);
+		}
+	});
+
+	if (uploadedFiles.length > 0) {
+		filePreview.style.display = 'flex';
+	}
+}
+async function getGeminiResponse(messages, files = []) {
 	try {
 		// Use your Vercel API endpoint instead of direct Gemini call
 		const response = await fetch('/api/gemini', {
@@ -145,7 +188,7 @@ async function getGeminiResponse(messages) {
 			headers: {
 				'Content-Type': 'application/json'
 			},
-			body: JSON.stringify({ messages })
+			body: JSON.stringify({ messages, files })
 		});
 
 		if (!response.ok) {
@@ -181,7 +224,7 @@ function handleFileSelect(event) {
 			addFileToPreview(file);
 		} else {
 			addMessage(
-				`File type "${file.type}" is not supported. Please upload PDF, PNG, JPG, or other image files.`,
+				`File type "${file.type}" is not supported. Please upload PDF, images, videos, audio, or text files.`,
 				'bot'
 			);
 		}
@@ -198,13 +241,10 @@ function handleFileSelect(event) {
 function isValidFileType(file) {
 	const validTypes = [
 		'application/pdf',
-		'image/png',
-		'image/jpeg',
-		'image/jpg',
-		'image/gif',
-		'image/bmp',
-		'image/tiff',
-		'image/webp'
+		'image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif',
+		'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm',
+		'audio/wav', 'audio/mp3', 'audio/mpeg',
+		'text/plain', 'text/html', 'text/css', 'application/javascript'
 	];
 	return validTypes.includes(file.type);
 }
@@ -316,32 +356,18 @@ async function processFilesForTutor(files) {
 
 	for (const file of files) {
 		try {
-			const base64 = await fileToBase64(file);
-			if (file.type === 'application/pdf') {
-				processedFiles.push({
-					name: file.name,
-					type: 'pdf',
-					data: base64,
-					content: `PDF file uploaded: ${file.name}. Please describe what you'd like me to help you with from this document.`
-				});
-			} else if (file.type.startsWith('image/')) {
-				const ocrText = await getOcrFromImage(base64);
-				processedFiles.push({
-					name: file.name,
-					type: file.type,
-					data: base64,
-					content:
-						ocrText ||
-						`Image uploaded: ${file.name}. No text was detected, but I can help explain any probability concepts you see in the image.`
-				});
+			if (file.size > 10 * 1024 * 1024) {
+				throw new Error('File too large (max 10MB)');
 			}
-		} catch (error) {
 
+			const base64 = await fileToBase64(file);
 			processedFiles.push({
 				name: file.name,
-				type: 'error',
-				content: `Error processing ${file.name}. Please try uploading the file again.`
+				type: file.type,
+				data: base64
 			});
+		} catch (error) {
+			console.error(`Error processing ${file.name}:`, error);
 		}
 	}
 
@@ -351,9 +377,32 @@ async function processFilesForTutor(files) {
 function fileToBase64(file) {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
-		reader.onload = () => resolve(reader.result);
-		reader.onerror = reject;
-		reader.readAsDataURL(file);
+		const timeout = setTimeout(() => {
+			reader.abort();
+			reject(new Error('File reading timeout'));
+		}, 30000); // 30 second timeout
+		
+		reader.onload = () => {
+			clearTimeout(timeout);
+			resolve(reader.result);
+		};
+		
+		reader.onerror = () => {
+			clearTimeout(timeout);
+			reject(new Error('Failed to read file'));
+		};
+		
+		reader.onabort = () => {
+			clearTimeout(timeout);
+			reject(new Error('File reading was aborted'));
+		};
+		
+		try {
+			reader.readAsDataURL(file);
+		} catch (error) {
+			clearTimeout(timeout);
+			reject(error);
+		}
 	});
 }
 
@@ -938,13 +987,7 @@ async function processUserMessage(message) {
 		const fileNames = processedFiles.map((f) => f.name).join(', ');
 		userMessage = userMessage || `I've uploaded these files: ${fileNames}`;
 
-		// Add file contents to context
-		processedFiles.forEach((file) => {
-			context.push({
-				role: 'user',
-				content: `File: ${file.name}\nContent: ${file.content}`
-			});
-		});
+		// Files will be sent directly to Gemini API
 	}
 
 	// Handle message display/broadcasting (only once!)
@@ -1000,8 +1043,8 @@ async function processUserMessage(message) {
 			});
 		}
 
-		// Get AI response
-		let botResponse = await getGeminiResponse(context);
+		// Get AI response with files
+		let botResponse = await getGeminiResponse(context, processedFiles);
 
 		// Add bot response to context
 		context.push({ role: 'assistant', content: botResponse });
