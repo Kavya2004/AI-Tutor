@@ -19,12 +19,12 @@ class DiagramRenderer {
 
             if (!response.ok) {
                 const errorText = await response.text().catch(() => 'Unknown error');
-                console.error('Diagram API error:', response.status, errorText);
+
                 throw new Error(`API error: ${response.status} - ${errorText}`);
             }
 
             const diagramData = await response.json().catch(err => {
-                console.error('Failed to parse diagram response:', err);
+
                 throw new Error('Invalid response from diagram API');
             });
             
@@ -46,7 +46,7 @@ class DiagramRenderer {
             };
 
         } catch (error) {
-            console.error('Diagram generation error:', error);
+
             return { success: false, message: 'Failed to generate diagram: ' + error.message };
         }
     }
@@ -104,7 +104,7 @@ class DiagramRenderer {
     async renderElement(element) {
         const { type, coordinates, label, color, style, fill } = element;
         
-        console.log('Rendering element:', type, element);
+
         
         // Set element styles
         this.ctx.strokeStyle = color || '#333';
@@ -162,12 +162,8 @@ class DiagramRenderer {
                 this.renderTable(coordinates, element.data);
                 break;
             case 'desmos':
-                console.log('Desmos element found:', element);
                 if (element.expressions) {
-                    console.log('Calling renderDesmosGraph with:', element);
                     await this.renderDesmosGraph(element);
-                } else {
-                    console.log('No expressions found in element:', element);
                 }
                 break;
         }
@@ -576,11 +572,11 @@ class DiagramRenderer {
 
     async renderDesmosGraph(config) {
         try {
-            console.log('Starting Desmos render with config:', config);
+
             
             // Load Desmos API if not available
             if (!window.Desmos) {
-                console.log('Loading Desmos API...');
+
                 await this.loadDesmosAPI();
             }
 
@@ -598,7 +594,7 @@ class DiagramRenderer {
             document.body.appendChild(container);
 
             // Initialize calculator with minimal options
-            console.log('Initializing Desmos calculator...');
+
             const calculator = window.Desmos.GraphingCalculator(container);
             
             // Wait for calculator to fully initialize
@@ -606,19 +602,19 @@ class DiagramRenderer {
 
             // Set viewport
             const viewport = config.viewport || {left: -10, right: 10, bottom: -5, top: 5};
-            console.log('Setting viewport:', viewport);
+
             calculator.setMathBounds(viewport);
 
             // Add expressions
             if (config.expressions) {
-                console.log('Adding expressions:', config.expressions);
+
                 config.expressions.forEach((expr, i) => {
                     const expression = {
                         id: 'expr' + i,
                         latex: expr.latex || expr,
                         color: expr.color || '#2d70b3'
                     };
-                    console.log('Setting expression:', expression);
+
                     calculator.setExpression(expression);
                 });
             }
@@ -626,14 +622,14 @@ class DiagramRenderer {
             // Wait for expressions to render
             await new Promise(resolve => setTimeout(resolve, 2000));
             
-            console.log('Taking screenshot...');
+
             const screenshot = await new Promise((resolve, reject) => {
                 calculator.screenshot({
                     width: this.canvas.width,
                     height: this.canvas.height,
                     targetPixelRatio: 1
                 }, (dataUrl) => {
-                    console.log('Screenshot received:', !!dataUrl);
+
                     if (dataUrl) {
                         resolve(dataUrl);
                     } else {
@@ -647,7 +643,7 @@ class DiagramRenderer {
             img.crossOrigin = 'anonymous';
             await new Promise((resolve, reject) => {
                 img.onload = () => {
-                    console.log('Drawing image to canvas');
+
                     this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
                     resolve();
                 };
@@ -658,10 +654,10 @@ class DiagramRenderer {
             // Cleanup
             calculator.destroy();
             document.body.removeChild(container);
-            console.log('Desmos render completed');
+
 
         } catch (error) {
-            console.error('Desmos rendering failed:', error);
+
             throw error;
         }
     }
@@ -856,11 +852,11 @@ class DiagramRenderer {
             const script = document.createElement('script');
             script.src = 'https://www.desmos.com/api/v1.11/calculator.js?apiKey=3436815955a546ca8def444af3e50649';
             script.onload = () => {
-                console.log('Desmos API loaded successfully');
+
                 resolve();
             };
             script.onerror = (e) => {
-                console.error('Failed to load Desmos API:', e);
+
                 reject(e);
             };
             document.head.appendChild(script);

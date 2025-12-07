@@ -644,7 +644,7 @@ class SessionManager {
     this.ws = new WebSocket(`wss://ai-tutor-53f1.onrender.com/sessions/${this.sessionId}`);
 
     this.ws.onopen = () => {
-      console.log("Connected to session");
+
       this.ws.send(
         JSON.stringify({
           type: "join",
@@ -661,19 +661,19 @@ class SessionManager {
         const data = JSON.parse(event.data);
         this.handleSessionMessage(data);
       } catch (error) {
-        console.error("Error parsing WebSocket message:", error);
+
       }
     };
 
     this.ws.onclose = () => {
-      console.log("Disconnected from session");
+
       if (this.currentSession) {
         setTimeout(() => this.connectToSession(), 3000); 
       }
     };
 
     this.ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
+
       alert("WebSocket connection failed. Please try again.");
     };
   }
@@ -1229,28 +1229,22 @@ class SessionManager {
   }
 
   handleSharedDiagram(data) {
-    console.log('Received shared diagram:', data);
+
     // Generate the same diagram for other participants
     if (window.diagramRenderer && data.description && data.targetBoard) {
       setTimeout(async () => {
-        console.log('Generating shared diagram:', data.description);
+
         if (window.switchWhiteboard) {
           window.switchWhiteboard(data.targetBoard);
         }
         
         try {
           await window.diagramRenderer.generateDiagram(data.description, data.targetBoard);
-          console.log('Shared diagram generated successfully');
+
         } catch (error) {
-          console.error('Error generating shared diagram:', error);
+
         }
       }, 100);
-    } else {
-      console.log('Missing requirements for shared diagram:', {
-        diagramRenderer: !!window.diagramRenderer,
-        description: data.description,
-        targetBoard: data.targetBoard
-      });
     }
   }
 

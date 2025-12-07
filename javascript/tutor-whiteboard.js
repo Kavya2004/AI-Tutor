@@ -36,7 +36,7 @@ let studentDrawingData = null;
 let resizeTimeout = null;
 
 document.addEventListener('DOMContentLoaded', function () {
-	console.log('DOM loaded, initializing whiteboards...');
+
 	initializeWhiteboards();
 	setupWhiteboardControls();
 });
@@ -56,7 +56,7 @@ if (document.readyState === 'loading') {
 }
 
 function setupWhiteboardControls() {
-	console.log('Setting up whiteboard controls...');
+
 	
 	// Teacher whiteboard controls
 	const clearTeacherButton = document.getElementById('clearTeacherButton');
@@ -70,29 +70,29 @@ function setupWhiteboardControls() {
 	const eraserStudentButton = document.getElementById('eraserStudentButton');
 	const expandStudentButton = document.getElementById('expandStudentButton');
 
-	console.log('Student draw button found:', !!drawStudentButton);
+
 
 	if (clearTeacherButton) {
 		clearTeacherButton.addEventListener('click', () => clearWhiteboard('teacher'));
 	}
 
 	if (drawTeacherButton) {
-		console.log('Adding event listener to teacher draw button');
+
 		drawTeacherButton.addEventListener('click', (e) => {
 			e.preventDefault();
 			e.stopPropagation();
-			console.log('Teacher draw button clicked!');
+
 			toggleDrawing('teacher');
 		});
 		
 		// Also add onclick as backup
 		drawTeacherButton.onclick = function(e) {
 			e.preventDefault();
-			console.log('Teacher draw button onclick triggered');
+
 			toggleDrawing('teacher');
 		};
 	} else {
-		console.error('Teacher draw button not found!');
+
 	}
 
 	if (eraserTeacherButton) {
@@ -108,24 +108,24 @@ function setupWhiteboardControls() {
 	}
 
 	if (drawStudentButton) {
-		console.log('Adding event listener to student draw button');
+
 		drawStudentButton.addEventListener('click', (e) => {
 			e.preventDefault();
 			e.stopPropagation();
-			console.log('Student draw button clicked!');
+
 			resizeCanvas(studentCanvas, 'student');
 			toggleDrawing('student');
-			console.log('Student drawing mode after toggle:', studentDrawingMode);
+
 		});
 		
 		// Also add onclick as backup
 		drawStudentButton.onclick = function(e) {
 			e.preventDefault();
-			console.log('Student draw button onclick triggered');
+
 			toggleDrawing('student');
 		};
 	} else {
-		console.error('Student draw button not found!');
+
 	}
 
 	if (eraserStudentButton) {
@@ -145,24 +145,20 @@ function getOcrServerUrl() {
 
 async function runOcrAndFillChat(boardType) {
 	try {
-		console.log(`[OCR] Starting OCR for ${boardType} whiteboard...`);
+
 
 		// Get the correct canvas using the global variables from your whiteboard code
 		const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 		if (!canvas) {
-			console.error(`[OCR] Canvas not found for ${boardType}`);
+	
 			return;
 		}
 
-		console.log(`[OCR] Found canvas:`, {
-			id: canvas.id,
-			width: canvas.width,
-			height: canvas.height
-		});
+
 
 		// Check canvas dimensions first
 		if (canvas.width === 0 || canvas.height === 0) {
-			console.log(`[OCR] Canvas has zero dimensions: ${canvas.width}x${canvas.height}`);
+
 			return;
 		}
 
@@ -184,17 +180,17 @@ async function runOcrAndFillChat(boardType) {
 		}
 
 		if (!hasContent) {
-			console.log(`[OCR] Canvas appears to be empty`);
+	
 			return;
 		}
 
 		// Convert canvas to base64 image
 		const dataUrl = canvas.toDataURL('image/png', 0.8);
-		console.log(`[OCR] Canvas data URL length:`, dataUrl.length);
+
 
 		// Get the correct server URL
 		const serverUrl = getOcrServerUrl();
-		console.log(`[OCR] Using server URL:`, serverUrl);
+
 
 		// Send to your OCR server
 		const response = await fetch('/api/ocr', {
@@ -213,7 +209,7 @@ async function runOcrAndFillChat(boardType) {
 		}
 
 		const result = await response.json();
-		console.log('[OCR] Raw result:', result);
+
 
 		// Extract the recognized text from Mathpix response
 		// Extract the recognized text from Mathpix response
@@ -225,22 +221,22 @@ async function runOcrAndFillChat(boardType) {
 		} else if (result.data && Array.isArray(result.data)) {
 			ocrText = result.data.map((item) => item.value || '').join(' ');
 		} else if (result.error) {
-			console.error('[OCR] Server returned error:', result.error);
+
 			showOcrError(`OCR Error: ${result.error}`);
 			return;
 		} else {
-			console.log('[OCR] Unexpected response format:', result);
+
 			ocrText = JSON.stringify(result); // Fallback to see what we got
 		}
 
 		if (ocrText.trim()) {
-			console.log('[OCR] Recognized text:', ocrText);
+
 			await sendOcrToChat(ocrText, boardType);
 		} else {
-			console.log('[OCR] No text recognized');
+
 		}
 	} catch (error) {
-		console.error('[OCR] Error:', error);
+
 		showOcrError(`Failed to process whiteboard: ${error.message}`);
 	}
 }
@@ -249,7 +245,7 @@ async function runOcrAndFillChat(boardType) {
 async function sendOcrToChat(ocrText, boardType) {
 	const message = `I wrote on the ${boardType} whiteboard: "${ocrText}"`;
 
-	console.log('[OCR->CHAT]', message);
+
 
 	const chatInput =
 		document.querySelector('#chatInput') || // This matches your HTML
@@ -274,15 +270,15 @@ async function sendOcrToChat(ocrText, boardType) {
 			document.querySelector('button[type="submit"]') ||
 			document.querySelector('.send-button');
 		if (sendButton && !sendButton.disabled) {
-			console.log('[OCR] Auto-sending message...');
+
 			setTimeout(() => sendButton.click(), 100);
 		} else {
-			console.log('[OCR] Send button not found or disabled, message added to input');
+
 			// Show a notification that the text was added
 			showOcrSuccess(`Text "${ocrText}" added to chat input`);
 		}
 	} else {
-		console.log('[OCR] Chat input not found, trying to call global functions...');
+
 
 		// Try to call global functions that might exist in your chat system
 		if (typeof window.addOcrMessageToChat === 'function') {
@@ -378,20 +374,16 @@ function showOcrError(message) {
 
 // Debug function to help troubleshoot
 function debugWhiteboardOcr() {
-	console.log('=== WHITEBOARD OCR DEBUG ===');
-	console.log('teacherCanvas:', teacherCanvas);
-	console.log('studentCanvas:', studentCanvas);
-	console.log('isDrawingMode:', isDrawingMode);
-	console.log('isAnythingDrawn:', isAnythingDrawn);
+
 
 	// Test OCR on both canvases
 	if (teacherCanvas) {
-		console.log('Testing teacher canvas OCR...');
+
 		runOcrAndFillChat('teacher');
 	}
 
 	if (studentCanvas) {
-		console.log('Testing student canvas OCR...');
+
 		runOcrAndFillChat('student');
 	}
 }
@@ -404,38 +396,25 @@ window.runOcrAndFillChat = runOcrAndFillChat;
 
 // Debug function for drawing issues
 function debugDrawing(boardType = 'student') {
-	console.log('=== WHITEBOARD DRAWING DEBUG ===');
-	console.log(`Board Type: ${boardType}`);
-	console.log(`Teacher Drawing Mode: ${teacherDrawingMode}`);
-	console.log(`Student Drawing Mode: ${studentDrawingMode}`);
-	console.log(`Teacher Canvas:`, teacherCanvas);
-	console.log(`Student Canvas:`, studentCanvas);
-	console.log(`Teacher Context:`, teacherCtx);
-	console.log(`Student Context:`, studentCtx);
+
 	
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	
 	if (canvas) {
-		console.log(`Canvas dimensions: ${canvas.width}x${canvas.height}`);
-		console.log(`Canvas style cursor: ${canvas.style.cursor}`);
-		console.log(`Canvas getBoundingClientRect:`, canvas.getBoundingClientRect());
+
 	}
 	
 	if (ctx) {
-		console.log(`Context strokeStyle: ${ctx.strokeStyle}`);
-		console.log(`Context lineWidth: ${ctx.lineWidth}`);
-		console.log(`Context globalCompositeOperation: ${ctx.globalCompositeOperation}`);
+
 	}
 	
 	// Test drawing a simple line
 	if (canvas && ctx) {
-		console.log('Testing simple line draw...');
 		ctx.beginPath();
 		ctx.moveTo(50, 50);
 		ctx.lineTo(150, 150);
 		ctx.stroke();
-		console.log('Test line drawn');
 	}
 }
 
@@ -444,68 +423,60 @@ window.debugDrawing = debugDrawing;
 
 // Manual button test function
 function testStudentDrawButton() {
-	console.log('Testing student draw button manually...');
 	const button = document.getElementById('drawStudentButton');
 	if (button) {
-		console.log('Button found, triggering click...');
 		button.click();
-	} else {
-		console.error('Button not found!');
 	}
 }
 
 // Manual button test function for teacher
 function testTeacherDrawButton() {
-	console.log('Testing teacher draw button manually...');
 	const button = document.getElementById('drawTeacherButton');
 	if (button) {
-		console.log('Teacher button found, triggering click...');
 		button.click();
-	} else {
-		console.error('Teacher button not found!');
 	}
 }
 
 window.testStudentDrawButton = testStudentDrawButton;
 window.testTeacherDrawButton = testTeacherDrawButton;
 function initializeWhiteboards() {
-	console.log('Initializing whiteboards...');
+
 	
 	// Initialize teacher whiteboard
 	teacherCanvas = document.getElementById('teacherWhiteboard');
 	if (teacherCanvas) {
-		console.log('Teacher canvas found, initializing...');
+
 		teacherCtx = teacherCanvas.getContext('2d');
 		setupCanvas(teacherCanvas, teacherCtx, 'teacher');
 		// Make globally accessible
 		window.teacherCanvas = teacherCanvas;
 		window.teacherCtx = teacherCtx;
 	} else {
-		console.error('Teacher canvas not found!');
+
 	}
 
 	// Initialize student whiteboard
 	studentCanvas = document.getElementById('studentWhiteboard');
 	if (studentCanvas) {
-		console.log('Student canvas found, initializing...');
+
 		studentCtx = studentCanvas.getContext('2d');
 		setupCanvas(studentCanvas, studentCtx, 'student');
 		// Make globally accessible
 		window.studentCanvas = studentCanvas;
 		window.studentCtx = studentCtx;
 	} else {
-		console.error('Student canvas not found!');
+
 	}
 
 	if (!teacherCanvas && !studentCanvas) {
-		console.error('No whiteboard canvases found');
+
 		return;
 	}
 
 	// Force initial resize after a short delay
 	setTimeout(() => {
 		resizeCanvases();
-		console.log('Initial canvas resize completed');
+
 	}, 200);
 	
 	// Debounced resize handler to prevent excessive operations
@@ -524,12 +495,12 @@ function initializeWhiteboards() {
 	setTimeout(() => {
 		if (teacherCanvas) saveDrawingState('teacher');
 		if (studentCanvas) saveDrawingState('student');
-		console.log('Whiteboard initialization complete');
+
 	}, 300);
 }
 
 function setupCanvas(canvas, ctx, boardType) {
-	console.log(`Setting up ${boardType} canvas...`);
+
 	
 	// Remove any existing event listeners first
 	canvas.removeEventListener('mousedown', handleMouseDown);
@@ -541,7 +512,7 @@ function setupCanvas(canvas, ctx, boardType) {
 	canvas.addEventListener('mousedown', (e) => {
 		e.preventDefault();
 		e.stopPropagation();
-		console.log(`Mouse down on ${boardType} canvas`);
+	
 		handleMouseDown(e, boardType);
 	}, { passive: false });
 	
@@ -580,7 +551,7 @@ function setupCanvas(canvas, ctx, boardType) {
 	// Set initial cursor
 	canvas.style.cursor = 'default';
 	
-	console.log(`${boardType} canvas setup complete`);
+
 }
 
 function switchWhiteboard(boardType) {
@@ -800,7 +771,7 @@ function resizeCanvas(canvas, boardType) {
 	const newWidth = Math.max(400, Math.floor(containerRect.width - 40));
 	const newHeight = Math.max(300, Math.floor(containerRect.height - headerHeight - 40));
 
-	console.log(`Resizing ${boardType} canvas to ${newWidth}x${newHeight}`);
+
 
 	if (canvas.width !== newWidth || canvas.height !== newHeight) {
 		// Save existing content
@@ -832,7 +803,7 @@ function resizeCanvas(canvas, boardType) {
 			}
 		}
 		
-		console.log(`${boardType} canvas resized successfully`);
+
 	}
 }
 
@@ -888,11 +859,11 @@ function broadcastDiagramAction(diagramName, boardType = 'teacher') {
 }
 
 function toggleDrawing(boardType) {
-	console.log(`Toggling drawing for ${boardType}`);
+
 	
 	if (boardType === 'teacher') {
 		teacherDrawingMode = !teacherDrawingMode;
-		console.log(`Teacher drawing mode: ${teacherDrawingMode}`);
+
 		
 		if (teacherDrawingMode) teacherEraserMode = false;
 		
@@ -903,13 +874,13 @@ function toggleDrawing(boardType) {
 			teacherCtx.lineWidth = 4;
 			teacherCtx.lineCap = 'round';
 			teacherCtx.lineJoin = 'round';
-			console.log('Teacher canvas properties set');
+
 		} else {
-			console.error('Teacher canvas or context not available');
+
 		}
 	} else {
 		studentDrawingMode = !studentDrawingMode;
-		console.log(`Student drawing mode: ${studentDrawingMode}`);
+
 		
 		if (studentDrawingMode) studentEraserMode = false;
 		
@@ -920,9 +891,9 @@ function toggleDrawing(boardType) {
 			studentCtx.lineWidth = 4;
 			studentCtx.lineCap = 'round';
 			studentCtx.lineJoin = 'round';
-			console.log('Student canvas properties set');
+
 		} else {
-			console.error('Student canvas or context not available');
+
 		}
 	}
 
@@ -963,7 +934,7 @@ function toggleEraser(boardType) {
 	}
 
 	updateDrawButtons();
-	console.log(`[ERASE] Eraser mode ${isEraserMode ? 'ENABLED' : 'DISABLED'} for ${boardType}`);
+
 }
 
 function updateDrawButtons() {
@@ -1009,19 +980,19 @@ function updateDrawButtons() {
 }
 
 function startDrawing(e, boardType) {
-	console.log(`Starting drawing on ${boardType}`);
+
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	
 	if (!canvas || !ctx) {
-		console.error(`Canvas or context missing for ${boardType}`);
+
 		return;
 	}
 	
 	const rect = canvas.getBoundingClientRect();
 	const x = e.clientX - rect.left;
 	const y = e.clientY - rect.top;
-	console.log(`Drawing at: ${x}, ${y}`);
+
 
 	// If there's a pending symbol, place it at click location
 	if (pendingSymbol) {
@@ -1038,7 +1009,7 @@ function startDrawing(e, boardType) {
 	const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
 	const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
 	if (!currentDrawMode && !currentEraseMode) {
-		console.log('No draw or erase mode enabled');
+
 		return;
 	}
 
@@ -1062,7 +1033,7 @@ function startDrawing(e, boardType) {
 		ctx.lineCap = 'round';
 		ctx.lineJoin = 'round';
 	}
-	console.log('Drawing started successfully');
+
 }
 
 function draw(e, boardType) {
@@ -1074,7 +1045,7 @@ function draw(e, boardType) {
 	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 
 	if (!canvas || !ctx) {
-		console.error(`Canvas or context not found for ${boardType}`);
+
 		return;
 	}
 

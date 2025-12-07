@@ -564,8 +564,8 @@ function startQuiz(quizType) {
     if (sampleQuizzes[quizType]) {
         quizSystem.startQuiz(sampleQuizzes[quizType]);
     } else {
-        console.log('Quiz type not found:', quizType);
-        console.log('Available quizzes:', Object.keys(sampleQuizzes));
+    
+
     }
 }
 

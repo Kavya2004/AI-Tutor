@@ -20,7 +20,7 @@ class VoiceTutor {
 
     initializeVoiceRecognition() {
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            console.error('Speech recognition not supported in this browser');
+
             this.showVoiceError('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
             return;
         }
@@ -34,7 +34,7 @@ class VoiceTutor {
         this.recognition.maxAlternatives = 1;
 
         this.recognition.onstart = () => {
-            console.log('Voice recognition started');
+
             this.isListening = true;
             this.updateVoiceButton();
             this.showVoiceStatus('Listening... Speak your question!');
@@ -42,12 +42,12 @@ class VoiceTutor {
 
         this.recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
-            console.log('Voice input received:', transcript);
+
             this.handleVoiceInput(transcript);
         };
 
         this.recognition.onerror = (event) => {
-            console.error('Voice recognition error:', event.error);
+
             this.isListening = false;
             this.updateVoiceButton();
             
@@ -69,7 +69,7 @@ class VoiceTutor {
         };
 
         this.recognition.onend = () => {
-            console.log('Voice recognition ended');
+
             this.isListening = false;
             this.updateVoiceButton();
             this.hideVoiceStatus();
@@ -117,8 +117,7 @@ class VoiceTutor {
                 this.preferredVoice = this.voices.find(voice => voice.lang.startsWith('en')) || this.voices[0];
             }
             
-            console.log('Available voices:', this.voices.length);
-            console.log('Selected voice:', this.preferredVoice?.name, '| Local:', this.preferredVoice?.localService);
+
         };
 
         loadVoices();
@@ -191,7 +190,7 @@ class VoiceTutor {
                     parseFloat(slider.value).toFixed(1);
                 valueDisplay.textContent = displayValue;
                 onChange(slider.value);
-                console.log(`${label} set to ${slider.value}`);
+
             });
             
             sliderContainer.appendChild(labelEl);
@@ -325,11 +324,11 @@ class VoiceTutor {
             if (!settingsContainer.contains(e.target) && !settingsBtn.contains(e.target)) {
                 settingsContainer.style.display = 'none';
                 settingsContainer.classList.remove('show');
-                console.log('Settings menu closed due to click outside');
+
             }
         });
         
-        console.log('Voice controls created successfully');
+
     }
 
     toggleSettingsMenu() {
@@ -342,9 +341,9 @@ class VoiceTutor {
             } else {
                 settingsContainer.classList.remove('show');
             }
-            console.log(`Settings menu toggled to ${isVisible ? 'hidden' : 'visible'}`);
+
         } else {
-            console.error('Settings container not found');
+
         }
     }
 
@@ -384,7 +383,7 @@ class VoiceTutor {
         try {
             this.recognition.start();
         } catch (error) {
-            console.error('Failed to start voice recognition:', error);
+
             this.showVoiceError('Failed to start voice recognition. Please try again.');
         }
     }
@@ -396,7 +395,7 @@ class VoiceTutor {
     }
 
     handleVoiceInput(transcript) {
-        console.log('Processing voice input:', transcript);
+
         
         const chatInput = document.getElementById('chatInput');
         if (chatInput) {
@@ -418,7 +417,7 @@ class VoiceTutor {
         this.stopSpeaking();
 
         if (!this.synthesis) {
-            console.error('Speech synthesis not available');
+
             return;
         }
 
@@ -521,13 +520,13 @@ class VoiceTutor {
 
         if (index === 0) {
             this.currentUtterance.onstart = () => {
-                console.log('Started speaking');
+
                 this.showStopButton();
             };
         }
 
         this.currentUtterance.onend = () => {
-            console.log(`Finished chunk ${index + 1}/${chunks.length}`);
+
             
             // Add a small pause between chunks for natural flow
             setTimeout(() => {
@@ -538,7 +537,7 @@ class VoiceTutor {
         };
 
         this.currentUtterance.onerror = (event) => {
-            console.error('Speech synthesis error:', event.error);
+
             this.hideStopButton();
             this.currentUtterance = null;
         };
@@ -631,23 +630,23 @@ class VoiceTutor {
 let voiceTutor = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing voice tutor...');
+
     
     setTimeout(() => {
         voiceTutor = new VoiceTutor();
         window.voiceTutor = voiceTutor;
-        console.log('Voice tutor initialized');
+
     }, 1000);
 });
 
 if (document.readyState === 'loading') {
 } else {
-    console.log('DOM already loaded, initializing voice tutor immediately...');
+
     setTimeout(() => {
         if (!voiceTutor) {
             voiceTutor = new VoiceTutor();
             window.voiceTutor = voiceTutor;
-            console.log('Voice tutor initialized (fallback)');
+
         }
     }, 500);
 }

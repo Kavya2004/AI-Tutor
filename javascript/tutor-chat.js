@@ -156,7 +156,7 @@ async function getGeminiResponse(messages) {
 		const data = await response.json();
 		return data.response || 'No response received from Gemini.';
 	} catch (error) {
-		console.error('Error calling Gemini API:', error);
+
 
 		// Provide user-friendly error messages
 		if (error.message.includes('fetch')) {
@@ -336,7 +336,7 @@ async function processFilesForTutor(files) {
 				});
 			}
 		} catch (error) {
-			console.error('Error processing file:', file.name, error);
+
 			processedFiles.push({
 				name: file.name,
 				type: 'error',
@@ -379,7 +379,7 @@ async function getOcrFromImage(base64Image) {
 			return 'No recognizable text found in image.';
 		}
 	} catch (error) {
-		console.error('OCR Error:', error);
+
 		return 'Error reading image text.';
 	}
 }
@@ -1106,7 +1106,7 @@ function executeWhiteboardAction(actionType, targetBoard) {
 		return;
 	}
 
-	console.log(`Executing ${actionType} on ${targetBoard} whiteboard`);
+
 
 	// ADD THIS: Broadcast whiteboard action to session
 	if (window.sessionManager && window.sessionManager.sessionId) {
@@ -1177,7 +1177,7 @@ async function generateAIDiagram(description, targetBoard = 'teacher') {
 
 			// Broadcast diagram action to session if in session mode
 			if (window.sessionManager && window.sessionManager.sessionId && window.sessionManager.ws) {
-				console.log('Broadcasting diagram to session:', description);
+
 				window.sessionManager.ws.send(
 					JSON.stringify({
 						type: 'diagram_generated',
@@ -1186,18 +1186,16 @@ async function generateAIDiagram(description, targetBoard = 'teacher') {
 						userName: window.sessionManager.userName
 					})
 				);
-			} else {
-				console.log('Not in session or WebSocket not ready');
 			}
 
-			console.log('Diagram generated successfully:', result.message);
+
 		} else {
-			console.warn('Diagram generation failed:', result.message);
+
 			// Fallback to text explanation
 			addMessage(`Diagram note: ${result.message}`, 'bot');
 		}
 	} catch (error) {
-		console.error('Error generating AI diagram:', error);
+
 		addMessage('Sorry, I encountered an issue generating the diagram. Let me explain in text instead.', 'bot');
 	}
 }
@@ -1253,7 +1251,7 @@ async function generateChatSummary() {
 
 		addMessage(`📋 **Chat Summary:**\n\n${summaryResponse}`, 'bot');
 	} catch (error) {
-		console.error('Error generating summary:', error);
+
 		addMessage('Sorry, I encountered an issue generating the summary. Please try again.', 'bot');
 	}
 

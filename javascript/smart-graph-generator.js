@@ -20,11 +20,11 @@ class SmartGraphGenerator {
     }
 
     async processUserRequest(text, boardType = 'teacher') {
-        console.log('Processing graph request:', text);
+
         
         // Extract mathematical expressions
         const expressions = this.extractExpressions(text);
-        console.log('Extracted expressions:', expressions);
+
         
         if (expressions.length > 0) {
             return await this.generateFromExpressions(expressions, boardType);
@@ -32,7 +32,7 @@ class SmartGraphGenerator {
         
         // Detect graph type from patterns
         const graphType = this.detectGraphType(text);
-        console.log('Detected graph type:', graphType);
+
         
         if (graphType) {
             return await this.generateFromType(graphType, text, boardType);
@@ -109,7 +109,7 @@ class SmartGraphGenerator {
                 type: 'expressions'
             };
         } catch (error) {
-            console.error('Error generating graph from expressions:', error);
+
             return {
                 success: false,
                 message: 'Failed to generate graph from expressions: ' + error.message
@@ -163,7 +163,7 @@ class SmartGraphGenerator {
                 ...result
             };
         } catch (error) {
-            console.error('Error generating graph from type:', error);
+
             return {
                 success: false,
                 message: 'Failed to generate graph: ' + error.message
@@ -339,7 +339,7 @@ class SmartGraphGenerator {
                 type: 'general'
             };
         } catch (error) {
-            console.error('Error generating general graph:', error);
+
             return {
                 success: false,
                 message: 'Failed to generate graph: ' + error.message

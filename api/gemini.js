@@ -49,7 +49,7 @@ export default async function handler(req, res) {
       // Validate API keys at runtime
       const keyValidation = validateRuntimeKeys(['GEMINI_API_KEY']);
       if (!keyValidation.valid) {
-          console.error('API key validation failed:', keyValidation.errors);
+
           return res.status(500).json({ error: 'API configuration error' });
       }
 
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
           }
       };
 
-      console.log('Making request to Gemini API...');
+
       
       const response = await fetch(endpoint, {
           method: 'POST',
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
 
       if (!response.ok) {
           const errorText = await response.text();
-          console.error('Gemini API error response:', response.status, errorText);
+
           
           if (response.status === 404) {
               throw new Error('Gemini API endpoint not found. Check the model name.');
@@ -108,11 +108,11 @@ export default async function handler(req, res) {
       const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
       
       if (!generatedText) {
-          console.error('No text generated from Gemini response:', data);
+
           throw new Error('No response generated from Gemini');
       }
 
-      console.log('Successfully got response from Gemini');
+
       res.status(200).json({ response: generatedText });
 
   } catch (error) {
