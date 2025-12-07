@@ -355,20 +355,16 @@ async function processFilesForTutor(files) {
 	const processedFiles = [];
 
 	for (const file of files) {
-		try {
-			if (file.size > 10 * 1024 * 1024) {
-				throw new Error('File too large (max 10MB)');
-			}
-
-			const base64 = await fileToBase64(file);
-			processedFiles.push({
-				name: file.name,
-				type: file.type,
-				data: base64
-			});
-		} catch (error) {
-			console.error(`Error processing ${file.name}:`, error);
+		if (file.size > 10 * 1024 * 1024) {
+			throw new Error('File too large (max 10MB)');
 		}
+
+		const base64 = await fileToBase64(file);
+		processedFiles.push({
+			name: file.name,
+			type: file.type,
+			data: base64
+		});
 	}
 
 	return processedFiles;
@@ -967,13 +963,18 @@ async function processUserMessage(message) {
 	// Process uploaded files if any
 	let processedFiles = [];
 	let fileData = [];
+	console.log('Uploaded files count:', uploadedFiles.length);
 	if (uploadedFiles.length > 0) {
-		// Store file data for display
-		for (const file of uploadedFiles) {
-			const base64 = await fileToBase64(file);
-			fileData.push({ name: file.name, type: file.type, data: base64 });
+		console.log('Starting file processing...');
+		try {
+			console.log('Calling processFilesForTutor...');
+			processedFiles = await processFilesForTutor(uploadedFiles);
+			// Use processed files for display
+			fileData = processedFiles;
+		} catch (fileError) {
+			console.error('File processing error:', fileError);
+			addMessage('Error processing files. Continuing without files.', 'bot');
 		}
-		processedFiles = await processFilesForTutor(uploadedFiles);
 		// Clear uploaded files after processing
 		uploadedFiles = [];
 		const filePreview = document.getElementById('filePreview');
@@ -1043,8 +1044,8 @@ async function processUserMessage(message) {
 			});
 		}
 
-		// Get AI response with files
-		let botResponse = await getGeminiResponse(context, processedFiles);
+		// Get AI response with files (only if files processed successfully)
+		let botResponse = await getGeminiResponse(context, processedFiles.length > 0 ? processedFiles : []);
 
 		// Add bot response to context
 		context.push({ role: 'assistant', content: botResponse });
