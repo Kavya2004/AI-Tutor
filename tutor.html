@@ -4,6 +4,7 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Probability and Stats Tutor</title>
+		<link rel="icon" type="image/png" href="images/dice.png">
 		<link rel="stylesheet" href="css/style_sheet.css" />
 		<link rel="stylesheet" href="css/session-styles.css" />
 		<link rel="stylesheet" href="css/quiz-styles.css" />
@@ -14,7 +15,10 @@
 			<div class="tutor-header">
 				<h1>Probability and Stats Tutor</h1>
 				<p>Your friendly guide to probability and statistics!</p>
-				<button class="close-button" onclick="window.close()">✕ Close</button>
+				<div class="mobile-nav" id="mobileNav">
+					<button class="mobile-nav-btn active" id="chatNavBtn" onclick="showMobileSection('chat')">💬 Chat</button>
+					<button class="mobile-nav-btn" id="whiteboardNavBtn" onclick="showMobileSection('whiteboard')">📝 Whiteboard</button>
+				</div>
 			</div>
 			<div class="main-content">
 				<div class="chat-section">
@@ -145,6 +149,10 @@
 			</div>
 		</div>
 
+		<div class="privacy-notice">
+			<p>We do not collect, store, or sell any personal data. This website is for educational use only.</p>
+		</div>
+
 		<script src="javascript/latex-converter.js"></script>
 		<script src="javascript/link-validator.js"></script>
 		<script src="javascript/diagram-renderer.js"></script>
@@ -156,5 +164,6 @@
 		<script src="javascript/session-manager.js"></script>
 		<script src="javascript/quiz-system.js"></script>
 		<script src="javascript/quiz-integration.js"></script>
+		<script src="javascript/mobile-navigation.js"></script>
 	</body>
 </html>
