@@ -182,8 +182,6 @@ function handleDroppedFiles(files) {
 }
 async function getGeminiResponse(messages, files = []) {
 	try {
-		console.log('Making API call with files:', files.length);
-		// Use your Vercel API endpoint instead of direct Gemini call
 		const response = await fetch('/api/gemini', {
 			method: 'POST',
 			headers: {
@@ -191,7 +189,6 @@ async function getGeminiResponse(messages, files = []) {
 			},
 			body: JSON.stringify({ messages, files })
 		});
-		console.log('API response status:', response.status);
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
@@ -426,7 +423,6 @@ async function getOcrFromImage(base64Image) {
 			return 'No recognizable text found in image.';
 		}
 	} catch (error) {
-
 		return 'Error reading image text.';
 	}
 }
@@ -885,7 +881,6 @@ async function getOcrTextFromWhiteboardImage(board) {
 		const canvas =
 			board === 'teacher' ? document.getElementById('teacherWhiteboard') : document.getElementById('studentWhiteboard');
 		if (!canvas) {
-			console.warn(`Canvas not found for ${board} board.`);
 			return null;
 		}
 
@@ -893,7 +888,6 @@ async function getOcrTextFromWhiteboardImage(board) {
 		const text = await getOcrFromImage(base64Image);
 		return text;
 	} catch (err) {
-		console.error(`[Whiteboard OCR] Failed for ${board} board:`, err);
 		return null;
 	}
 }
@@ -947,7 +941,6 @@ async function searchProbabilityCourse(query) {
 		
 		return results;
 	} catch (err) {
-		console.error('Error searching ProbabilityCourse:', err);
 		return [];
 	}
 }
@@ -965,16 +958,11 @@ async function processUserMessage(message) {
 	// Process uploaded files if any
 	let processedFiles = [];
 	let fileData = [];
-	console.log('Uploaded files count:', uploadedFiles.length);
 	if (uploadedFiles.length > 0) {
-		console.log('Starting file processing...');
 		try {
-			console.log('Calling processFilesForTutor...');
 			processedFiles = await processFilesForTutor(uploadedFiles);
-			// Use processed files for display
 			fileData = processedFiles;
 		} catch (fileError) {
-			console.error('File processing error:', fileError);
 			addMessage('Error processing files. Continuing without files.', 'bot');
 		}
 		// Clear uploaded files after processing
@@ -1015,7 +1003,6 @@ async function processUserMessage(message) {
 		let ocrText = null;
 		if (boardToCheck && hasWhiteboardContent(boardToCheck)) {
 			ocrText = await getOcrTextFromWhiteboardImage(boardToCheck);
-			console.log(`[DEBUG] OCR result from ${boardToCheck} board:`, ocrText);
 
 			if (ocrText && ocrText.trim() && ocrText.trim().toLowerCase() !== 'error reading image text.') {
 				context.push({
@@ -1109,7 +1096,6 @@ async function processUserMessage(message) {
 			setTimeout(() => executeWhiteboardAction(whiteboardAction, targetBoard), 500);
 		}
 	} catch (error) {
-		console.error('Error processing message:', error);
 
 		let errorMessage = 'I apologize, but I encountered an issue. ';
 
@@ -1148,7 +1134,6 @@ async function processUserMessage(message) {
 
 function executeWhiteboardAction(actionType, targetBoard) {
 	if (!window.tutorWhiteboard) {
-		console.log('Whiteboard not available');
 		return;
 	}
 
@@ -1197,7 +1182,7 @@ function executeWhiteboardAction(actionType, targetBoard) {
 			}
 			break;
 		default:
-			console.log('Unknown whiteboard action:', actionType);
+			break;
 	}
 }
 
@@ -1209,7 +1194,6 @@ function handleDiceResult(result) {
 async function generateAIDiagram(description, targetBoard = 'teacher') {
 	try {
 		if (!window.diagramRenderer) {
-			console.error('Diagram renderer not available');
 			return;
 		}
 
@@ -1241,7 +1225,6 @@ async function generateAIDiagram(description, targetBoard = 'teacher') {
 			addMessage(`Diagram note: ${result.message}`, 'bot');
 		}
 	} catch (error) {
-
 		addMessage('Sorry, I encountered an issue generating the diagram. Let me explain in text instead.', 'bot');
 	}
 }
@@ -1297,7 +1280,6 @@ async function generateChatSummary() {
 
 		addMessage(`📋 **Chat Summary:**\n\n${summaryResponse}`, 'bot');
 	} catch (error) {
-
 		addMessage('Sorry, I encountered an issue generating the summary. Please try again.', 'bot');
 	}
 
