@@ -14,7 +14,7 @@ class QuizIntegration {
         const chatContainer = document.querySelector('.chat-input-container');
         if (chatContainer) {
             const quizButton = document.createElement('button');
-            quizButton.innerHTML = '🧠 Quiz';
+            quizButton.innerHTML = 'Quiz';
             quizButton.className = 'quiz-trigger-btn';
             quizButton.title = 'Start a quiz';
             quizButton.onclick = () => this.showQuizMenu();
@@ -27,8 +27,8 @@ class QuizIntegration {
             const style = document.createElement('style');
             style.textContent = `
                 .quiz-trigger-btn {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
+                    background: #337810 !important;
+                    color: white !important;
                     border: none;
                     padding: 10px 15px;
                     border-radius: 8px;
@@ -38,8 +38,9 @@ class QuizIntegration {
                     transition: all 0.2s ease;
                 }
                 .quiz-trigger-btn:hover {
+                    background: #2a6209 !important;
                     transform: translateY(-1px);
-                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                    box-shadow: 0 4px 12px rgba(51, 120, 16, 0.3);
                 }
                 .quiz-menu {
                     position: absolute;
@@ -122,7 +123,7 @@ class QuizIntegration {
         popup.className = 'topic-popup';
         popup.innerHTML = `
             <div class="topic-popup-content">
-                <h3>🧠 Create Custom Quiz</h3>
+                <h3>Create Custom Quiz</h3>
                 <p>What topic or chapter would you like to be quizzed on?</p>
                 <input type="text" id="topicInput" placeholder="e.g., Chapter 1, Conditional Probability, Bayes Theorem..." />
                 <div class="chapter-selection">

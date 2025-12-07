@@ -16,7 +16,7 @@ h1 {
 	text-align: center;
 }
 a {
-	color: #337810;
+	color: #74A662;
 }
 
 p {
@@ -693,7 +693,7 @@ a.nostyle {
 
 .link_button {
 	background: none;
-	color: #337810;
+	color: #74A662;
 	border: none;
 	cursor: pointer;
 }
@@ -753,7 +753,7 @@ label {
 	right: 20px;
 	width: 60px;
 	height: 60px;
-	background: var(--dice-bg-color, #337810);
+	background: var(--dice-bg-color, #74A662);
 	border-radius: 50%;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 	cursor: pointer;
@@ -767,7 +767,7 @@ label {
 
 #floating-dice:hover {
 	transform: scale(1.1) rotate(5deg);
-	background: var(--dice-hover-color, #2a6209);
+	background: var(--dice-hover-color, #5d8a4f);
 	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
@@ -1097,7 +1097,7 @@ body {
 .chat-input-container button {
 	flex-shrink: 0; /* Prevent button from shrinking */
 	padding: 12px 20px;
-	background: #007bff;
+	background: #337810;
 	color: white;
 	border: none;
 	border-radius: 25px;

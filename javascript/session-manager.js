@@ -82,7 +82,7 @@ class SessionManager {
                         🎤 Speak
                     </button>
                     <button id="autoSpeechBtn" class="session-btn auto-speech" title="Toggle auto-speech">
-                        🔇 Auto
+                        🔇 Speaker
                     </button>
                 </div>
             </div>
@@ -133,7 +133,7 @@ class SessionManager {
 
     const autoSpeechEnabled = localStorage.getItem('autoSpeech') !== 'false';
     if (autoSpeechBtn) {
-      autoSpeechBtn.innerHTML = autoSpeechEnabled ? '🔊 Auto' : '🔇 Auto';
+      autoSpeechBtn.innerHTML = autoSpeechEnabled ? '🔊 Speaker' : '🔇 Speaker';
       autoSpeechBtn.classList.toggle('active', autoSpeechEnabled);
     }
 
@@ -147,7 +147,7 @@ class SessionManager {
       if (window.voiceTutor) {
         window.voiceTutor.toggleAutoSpeech();
         const enabled = localStorage.getItem('autoSpeech') === 'true';
-        autoSpeechBtn.innerHTML = enabled ? '🔊 Auto' : '🔇 Auto';
+        autoSpeechBtn.innerHTML = enabled ? '🔊 Speaker' : '🔇 Speaker';
         autoSpeechBtn.classList.toggle('active', enabled);
       }
     });
