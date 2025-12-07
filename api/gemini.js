@@ -57,30 +57,29 @@ export default async function handler(req, res) {
 
        const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
 
-      const geminiMessages = messages
+      let geminiMessages = messages
           .filter(msg => msg.role !== 'system')
-          .map(msg => {
-              const parts = [{ text: msg.content }];
-              
-              // Add files to the last user message if they exist
-              if (msg.role === 'user' && files && files.length > 0) {
-                  files.forEach(file => {
-                      if (file.type.startsWith('image/')) {
-                          parts.push({
-                              inlineData: {
-                                  mimeType: file.type,
-                                  data: file.data.split(',')[1] // Remove data:image/jpeg;base64, prefix
-                              }
-                          });
-                      }
-                  });
-              }
-              
-              return {
-                  role: msg.role === 'assistant' ? 'model' : 'user',
-                  parts: parts
-              };
-          });
+          .map(msg => ({
+              role: msg.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: msg.content }]
+          }));
+
+      // Add files to the last user message
+      if (files && files.length > 0 && geminiMessages.length > 0) {
+          const lastUserMsg = geminiMessages[geminiMessages.length - 1];
+          if (lastUserMsg.role === 'user') {
+              files.forEach(file => {
+                  if (file.type.startsWith('image/')) {
+                      lastUserMsg.parts.push({
+                          inlineData: {
+                              mimeType: file.type,
+                              data: file.data.split(',')[1]
+                          }
+                      });
+                  }
+              });
+          }
+      }
 
       const systemMessage = messages.find(msg => msg.role === 'system');
       if (systemMessage && geminiMessages.length > 0) {
@@ -111,7 +110,7 @@ export default async function handler(req, res) {
 
       if (!response.ok) {
           const errorText = await response.text();
-
+          console.error('Gemini API Error:', response.status, errorText);
           
           if (response.status === 404) {
               throw new Error('Gemini API endpoint not found. Check the model name.');
