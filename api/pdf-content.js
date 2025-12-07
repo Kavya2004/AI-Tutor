@@ -1,8 +1,8 @@
-const fetch = require('node-fetch');
-const cheerio = require('cheerio');
-const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+import fetch from 'node-fetch';
+import * as cheerio from 'cheerio';
+import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   
   if (req.method !== 'POST') {

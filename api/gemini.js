@@ -1,8 +1,4 @@
-import { checkRateLimit, sanitizeInput, validateRequest, createErrorResponse } from '../middleware/security.js';
-import { validateRuntimeKeys } from '../config/env-validator.js';
-
 export default async function handler(req, res) {
-
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -16,46 +12,19 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: 'Method not allowed' });
   }
 
-
-  const rateLimitResult = checkRateLimit('gemini', req);
-  if (!rateLimitResult.allowed) {
-    return res.status(429).json({
-      error: 'Rate limit exceeded',
-      retryAfter: rateLimitResult.retryAfter
-    });
-  }
-
   try {
-
-      const validation = validateRequest(req, ['messages']);
-      if (!validation.valid) {
-          return res.status(400).json({ error: 'Invalid request', details: validation.errors });
-      }
-
-
-      const { messages, files } = sanitizeInput(req.body);
+      const { messages, files } = req.body;
       
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
           return res.status(400).json({ error: 'Valid messages array is required' });
       }
 
-
-      for (const msg of messages) {
-          if (!msg.role || !msg.content || typeof msg.content !== 'string') {
-              return res.status(400).json({ error: 'Invalid message format' });
-          }
-      }
-
-
-      const keyValidation = validateRuntimeKeys(['GEMINI_API_KEY']);
-      if (!keyValidation.valid) {
-
-          return res.status(500).json({ error: 'API configuration error' });
+      if (!process.env.GEMINI_API_KEY) {
+          return res.status(500).json({ error: 'API key not configured' });
       }
 
       const apiKey = process.env.GEMINI_API_KEY;
-
-       const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
 
       let geminiMessages = messages
           .filter(msg => msg.role !== 'system')
@@ -70,12 +39,15 @@ export default async function handler(req, res) {
           if (lastUserMsg.role === 'user') {
               files.forEach(file => {
                   if (file.type.startsWith('image/')) {
-                      lastUserMsg.parts.push({
-                          inlineData: {
-                              mimeType: file.type,
-                              data: file.data.split(',')[1]
-                          }
-                      });
+                      const base64Data = file.data.includes(',') ? file.data.split(',')[1] : file.data;
+                      if (base64Data && base64Data.length > 0) {
+                          lastUserMsg.parts.push({
+                              inlineData: {
+                                  mimeType: file.type,
+                                  data: base64Data
+                              }
+                          });
+                      }
                   }
               });
           }
@@ -94,12 +66,10 @@ export default async function handler(req, res) {
               temperature: 0.7,
               topK: 40,
               topP: 0.95,
-              maxOutputTokens: 65536,
+              maxOutputTokens: 8192,
           }
       };
 
-
-      
       const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
@@ -110,33 +80,22 @@ export default async function handler(req, res) {
 
       if (!response.ok) {
           const errorText = await response.text();
-          console.error('Gemini API Error:', response.status, errorText);
-          
-          if (response.status === 404) {
-              throw new Error('Gemini API endpoint not found. Check the model name.');
-          } else if (response.status === 401 || response.status === 403) {
-              throw new Error('Invalid API key or insufficient permissions.');
-          } else {
-              throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-          }
+          throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
       const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
       
       if (!generatedText) {
-
           throw new Error('No response generated from Gemini');
       }
-
 
       res.status(200).json({ response: generatedText });
 
   } catch (error) {
-      const errorResponse = createErrorResponse(error, true);
       res.status(500).json({
           error: 'Failed to get response from Gemini',
-          ...errorResponse
+          message: error.message
       });
   }
 }

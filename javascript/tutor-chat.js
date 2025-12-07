@@ -182,6 +182,7 @@ function handleDroppedFiles(files) {
 }
 async function getGeminiResponse(messages, files = []) {
 	try {
+		console.log('Making API call with files:', files.length);
 		// Use your Vercel API endpoint instead of direct Gemini call
 		const response = await fetch('/api/gemini', {
 			method: 'POST',
@@ -190,6 +191,7 @@ async function getGeminiResponse(messages, files = []) {
 			},
 			body: JSON.stringify({ messages, files })
 		});
+		console.log('API response status:', response.status);
 
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({}));
