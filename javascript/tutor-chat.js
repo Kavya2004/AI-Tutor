@@ -403,7 +403,7 @@ function fileToBase64(file) {
 
 async function getOcrFromImage(base64Image) {
 	try {
-		const response = await fetch('https://ai-tutor-53f1.onrender.com/api/ocr', {
+		const response = await fetch('https://tutor.probabilitycourse.com/api/ocr', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'

@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '.env'))
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+CORS(app, origins=['https://tutor.probabilitycourse.com', 'https://ai-tutor-teal-one.vercel.app', 'http://localhost:3000'], supports_credentials=True)
 
 MATHPIX_APP_ID = os.getenv('MATHPIX_APP_ID')
 MATHPIX_APP_KEY = os.getenv('MATHPIX_APP_KEY')
