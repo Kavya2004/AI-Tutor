@@ -50,6 +50,12 @@ function convertLatexToUnicode(text) {
         return placeholder;
     });
 
+    // Convert LaTeX tables to HTML tables
+    result = convertLatexTables(result);
+    
+    // Also handle simple markdown-style tables
+    result = convertMarkdownTables(result);
+
     // Convert markdown-style formatting
     result = result.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'); // **bold**
     result = result.replace(/\*([^*]+)\*/g, '<em>$1</em>'); // *italic*
@@ -82,4 +88,142 @@ function convertLatexToUnicode(text) {
     return result;
 }
 
+function convertLatexTables(text) {
+    // Match table patterns - look for multiple lines with | characters
+    const tableRegex = /(?:^\s*\|[^\n]*\|\s*$\n?){2,}/gm;
+    
+    return text.replace(tableRegex, (match) => {
+        // Split into rows and clean them up
+        const rows = match.split('\n')
+            .map(row => row.trim())
+            .filter(row => row && row.includes('|'));
+        
+        if (rows.length === 0) return match;
+        
+        let html = '<table>';
+        let headerProcessed = false;
+        
+        rows.forEach((row, index) => {
+            // Clean up the row and split by |
+            const cells = row.split('|')
+                .map(cell => cell.trim())
+                .filter(cell => cell !== '');
+            
+            if (cells.length === 0) return;
+            
+            // Check if this is a separator row (contains only dashes, colons, and spaces)
+            const isSeparator = cells.every(cell => /^[\s\-:]+$/.test(cell));
+            if (isSeparator) return;
+            
+            // Determine if this is a header row
+            const isHeader = !headerProcessed;
+            if (isHeader) headerProcessed = true;
+            
+            const tag = isHeader ? 'th' : 'td';
+            
+            html += '<tr>';
+            cells.forEach(cell => {
+                // Process LaTeX symbols in cell content
+                let processedCell = cell;
+                
+                // Apply symbol conversions
+                for (const [latex, unicode] of Object.entries(symbolMap)) {
+                    processedCell = processedCell.replace(new RegExp(latex.replace('\\', '\\\\'), 'g'), unicode);
+                }
+                
+                // Handle bold text
+                processedCell = processedCell.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+                
+                html += `<${tag}>${processedCell}</${tag}>`;
+            });
+            html += '</tr>';
+        });
+        
+        html += '</table>';
+        return html;
+    });
+}
+
+function convertMarkdownTables(text) {
+    const lines = text.split('\n');
+    const tableLines = [];
+    let inTable = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        // Check if line looks like a table row
+        if (line.includes('|') && line.split('|').length >= 3) {
+            if (!inTable) {
+                inTable = true;
+                tableLines.length = 0; // Reset for new table
+            }
+            tableLines.push(line);
+        } else if (inTable && tableLines.length > 0) {
+            // End of table, process it
+            const tableHtml = processTableLines(tableLines);
+            text = text.replace(tableLines.join('\n'), tableHtml);
+            inTable = false;
+            tableLines.length = 0;
+        }
+    }
+    
+    // Handle table at end of text
+    if (inTable && tableLines.length > 0) {
+        const tableHtml = processTableLines(tableLines);
+        text = text.replace(tableLines.join('\n'), tableHtml);
+    }
+    
+    return text;
+}
+
+function processTableLines(lines) {
+    if (lines.length === 0) return '';
+    
+    const symbolMap = {
+        '\\alpha': 'α', '\\beta': 'β', '\\gamma': 'γ', '\\delta': 'δ',
+        '\\pi': 'π', '\\sigma': 'σ', '\\mu': 'μ', '\\lambda': 'λ'
+    };
+    
+    let html = '<table>';
+    
+    lines.forEach((line, index) => {
+        const cells = line.split('|')
+            .map(cell => cell.trim())
+            .filter(cell => cell !== '');
+        
+        if (cells.length === 0) return;
+        
+        // Check if this is a separator row
+        const isSeparator = cells.every(cell => /^[\s\-:]+$/.test(cell));
+        if (isSeparator) return;
+        
+        // First non-separator row is header
+        const isHeader = index === 0;
+        const tag = isHeader ? 'th' : 'td';
+        
+        html += '<tr>';
+        cells.forEach(cell => {
+            // Process LaTeX symbols and formatting
+            let processedCell = cell;
+            
+            // Apply symbol conversions
+            for (const [latex, unicode] of Object.entries(symbolMap)) {
+                processedCell = processedCell.replace(new RegExp(latex.replace('\\', '\\\\'), 'g'), unicode);
+            }
+            
+            // Handle bold text
+            processedCell = processedCell.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            
+            html += `<${tag}>${processedCell}</${tag}>`;
+        });
+        html += '</tr>';
+    });
+    
+    html += '</table>';
+    return html;
+}
+
 window.convertLatexToUnicode = convertLatexToUnicode;
+window.convertLatexTables = convertLatexTables;
+window.convertMarkdownTables = convertMarkdownTables;
