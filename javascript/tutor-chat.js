@@ -1018,15 +1018,30 @@ async function processUserMessage(message) {
 
 		// Add user message to context for AI
 		if (window.sessionManager && window.sessionManager.sessionId) {
-			// In session mode, add all recent session messages to context
-			const sessionMessages = window.sessionManager.sessionMessages || [];
-			const recentMessages = sessionMessages.slice(-10); // Last 10 messages
+			// Get all chat messages from the current session
+			const chatMessages = document.querySelectorAll('.message');
+			const recentMessages = Array.from(chatMessages).slice(-10); // Last 10 messages
 			
-			recentMessages.forEach(msg => {
-				if (msg.sender === 'user') {
-					context.push({ role: 'user', content: `${msg.userName}: ${msg.message}` });
-				} else if (msg.sender === 'bot') {
-					context.push({ role: 'assistant', content: msg.message });
+			recentMessages.forEach(msgElement => {
+				const isBot = msgElement.classList.contains('bot-message');
+				const isShared = msgElement.classList.contains('shared-message');
+				const content = msgElement.querySelector('.message-content');
+				
+				if (content) {
+					const messageText = content.textContent || content.innerText;
+					
+					if (isBot) {
+						context.push({ role: 'assistant', content: messageText });
+					} else if (isShared) {
+						// Extract username from shared message
+						const authorElement = msgElement.querySelector('.message-author');
+						const textElement = msgElement.querySelector('.message-text');
+						const author = authorElement ? authorElement.textContent : 'Student';
+						const text = textElement ? textElement.textContent : messageText;
+						context.push({ role: 'user', content: `${author}: ${text}` });
+					} else {
+						context.push({ role: 'user', content: messageText });
+					}
 				}
 			});
 			
