@@ -9,7 +9,12 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
-app.use(cors({ origin: "https://ai-tutor-teal-one.vercel.app" }));
+app.use(cors({ 
+  origin: [
+    "https://ai-tutor-teal-one.vercel.app",
+    "https://tutor.probabilitycourse.com"
+  ]
+}));
 app.use(express.json());
 
 const sessions = new Map();
