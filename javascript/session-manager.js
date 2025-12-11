@@ -230,7 +230,7 @@ class SessionManager {
       const publicSessions = await response.json();
       
       if (publicSessions.length === 0) {
-        alert("No public sessions available right now.");
+        this.showNotification("No public sessions available right now.", "info");
         return;
       }
       
@@ -238,7 +238,7 @@ class SessionManager {
       
     } catch (error) {
       console.error("Error fetching public sessions:", error);
-      alert("Failed to load public sessions. Please try again later.");
+      this.showNotification("Failed to load public sessions. Please try again later.", "error");
     }
   }
 
@@ -374,7 +374,7 @@ class SessionManager {
       const isPublic = privacyRadio ? privacyRadio.value === 'public' : true;
       
       if (!userName) {
-        alert("Please enter your name");
+        this.showNotification("Please enter your name", "error");
         return;
       }
 
@@ -470,7 +470,7 @@ class SessionManager {
       );
     } catch (error) {
       console.error("Error creating session:", error);
-      alert("Failed to create session. Please try again.");
+      this.showNotification("Failed to create session. Please try again.", "error");
     }
   }
 
@@ -507,7 +507,7 @@ class SessionManager {
       );
     } catch (error) {
       console.error("Error creating session:", error);
-      alert("Failed to create session. Please try again.");
+      this.showNotification("Failed to create session. Please try again.", "error");
     }
   }
 
@@ -579,7 +579,7 @@ class SessionManager {
       const isPublic = privacyRadio ? privacyRadio.value === 'public' : true;
       
       if (!sessionTitle) {
-        alert("Please enter a session title");
+        this.showNotification("Please enter a session title", "error");
         return;
       }
       
@@ -589,6 +589,12 @@ class SessionManager {
   }
 
   async joinSession(sessionId) {
+    if (!this.userName || this.userName.trim().length === 0) {
+      this.showNotification("Please enter your name first", "error");
+      this.showNameModal("join");
+      return;
+    }
+    
     try {
       const response = await fetch(
         `https://ai-tutor-53f1.onrender.com/api/sessions/${sessionId}/join`,
@@ -596,9 +602,9 @@ class SessionManager {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            userName: this.userName,
-            avatar: this.selectedAvatar,
-            color: this.selectedColor,
+            userName: this.userName.trim(),
+            avatar: this.selectedAvatar || "👤",
+            color: this.selectedColor || "#6c757d",
             timestamp: new Date().toISOString(),
           }),
         },
@@ -620,7 +626,7 @@ class SessionManager {
       this.addSystemMessage(`${this.userName} joined the session`);
     } catch (error) {
       console.error("Error joining session:", error);
-      alert("Failed to join session. Please check the session ID.");
+      this.showNotification("Failed to join session. Please check the session ID.", "error");
     }
   }
 
@@ -674,7 +680,7 @@ class SessionManager {
 
     this.ws.onerror = (error) => {
 
-      alert("WebSocket connection failed. Please try again.");
+      this.showNotification("Connection failed. Please try again.", "error");
     };
   }
 
@@ -1052,15 +1058,107 @@ class SessionManager {
   }
 
   shareSession() {
-    const link = `https://ai-tutor-teal-one.vercel.app/tutor.html?session=${this.sessionId}`;
+    const link = `https://tutor.probabilitycourse.com/tutor.html?session=${this.sessionId}`;
     navigator.clipboard
       .writeText(link)
       .then(() => {
-        alert("Session link copied to clipboard!");
+        this.showNotification("✅ Session link copied to clipboard!", "success");
       })
       .catch(() => {
-        prompt("Copy this link to share:", link);
+        this.showCopyModal(link);
       });
+  }
+
+  showNotification(message, type = "info") {
+    const notification = document.createElement("div");
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: ${type === "success" ? "#28a745" : type === "error" ? "#dc3545" : "#007bff"};
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 10000;
+      font-size: 14px;
+      font-weight: 500;
+      max-width: 300px;
+      animation: slideIn 0.3s ease;
+    `;
+    notification.textContent = message;
+    
+    const style = document.createElement("style");
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.style.animation = "slideIn 0.3s ease reverse";
+      setTimeout(() => notification.remove(), 300);
+    }, 3000);
+  }
+
+  showCopyModal(link) {
+    const modal = document.createElement("div");
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+      <div style="
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      ">
+        <h3 style="margin: 0 0 16px 0; color: #333;">Share Session</h3>
+        <p style="margin: 0 0 16px 0; color: #666;">Copy this link to share:</p>
+        <input type="text" value="${link}" readonly style="
+          width: 100%;
+          padding: 12px;
+          border: 2px solid #e9ecef;
+          border-radius: 6px;
+          font-family: monospace;
+          font-size: 12px;
+          margin-bottom: 16px;
+          box-sizing: border-box;
+        " onclick="this.select()">
+        <div style="text-align: right;">
+          <button onclick="this.closest('div').parentElement.remove()" style="
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+          ">Close</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.remove();
+    };
   }
 
   async downloadSession() {
@@ -1086,7 +1184,7 @@ class SessionManager {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error downloading session:", error);
-      alert("Failed to download session. Please try again.");
+      this.showNotification("Failed to download session. Please try again.", "error");
     }
   }
 
