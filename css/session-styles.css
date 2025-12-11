@@ -440,17 +440,35 @@
     font-size: 12px;
 }
 
-.message-author {
+.user-message .message-author {
     font-weight: 600;
     color: #ffffff;
     text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
-.message-time {
-    color: #ffffff;
+.user-message .message-time {
+    color: rgba(255,255,255,0.8);
     font-size: 11px;
     font-weight: 500;
-    opacity: 0.9;
+}
+
+.user-message .message-text {
+    color: #ffffff;
+}
+
+.bot-message .message-author {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.bot-message .message-time {
+    color: #666;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.bot-message .message-text {
+    color: #333;
 }
 
 .message-text {
