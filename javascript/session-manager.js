@@ -871,6 +871,12 @@ class SessionManager {
     content.className = "message-content";
 
     const time = new Date(timestamp).toLocaleTimeString();
+    
+    // Convert LaTeX to Unicode for bot messages
+    let displayText = message;
+    if (sender === 'bot' && window.convertLatexToUnicode) {
+      displayText = window.convertLatexToUnicode(message);
+    }
 
     let filesHtml = '';
     if (files && files.length > 0) {
@@ -887,7 +893,10 @@ class SessionManager {
                 <span class="message-author">${userName}</span>
                 <span class="message-time">${time}</span>
             </div>
-            <div class="message-text">${message.replace(/\n/g, "<br>")}</div>
+            <div class="message-text">${displayText.replace(/\n/g, "<br>").replace(/<https?:\/\/[^>]+>/g, (match) => {
+              const url = match.slice(1, -1);
+              return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+            })}</div>
             ${filesHtml}
         `;
 
@@ -1325,8 +1334,13 @@ class SessionManager {
       yPosition += 6;
       
       doc.setFont(undefined, 'normal');
-      // Clean message text from HTML entities and emojis
-      const cleanMessage = message.message
+      // Convert LaTeX and clean message text
+      let cleanMessage = message.message;
+      if (message.sender === 'bot' && window.convertLatexToUnicode) {
+        cleanMessage = window.convertLatexToUnicode(cleanMessage);
+      }
+      
+      cleanMessage = cleanMessage
         .replace(/&gt;/g, '>')
         .replace(/&lt;/g, '<')
         .replace(/&amp;/g, '&')
