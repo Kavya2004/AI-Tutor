@@ -731,9 +731,9 @@ class SessionManager {
     }
 
     this.ws = new WebSocket(`wss://ai-tutor-53f1.onrender.com/sessions/${this.sessionId}`);
+    this.lastPingTime = Date.now();
 
     this.ws.onopen = () => {
-
       this.ws.send(
         JSON.stringify({
           type: "join",
@@ -743,28 +743,54 @@ class SessionManager {
           isHost: this.isHost,
         }),
       );
+      
+      // Start heartbeat
+      this.startHeartbeat();
     };
 
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        this.lastPingTime = Date.now();
         this.handleSessionMessage(data);
       } catch (error) {
-
+        console.error('WebSocket message error:', error);
       }
     };
 
     this.ws.onclose = () => {
-
-      if (this.currentSession) {
+      this.stopHeartbeat();
+      if (this.sessionId) {
         setTimeout(() => this.connectToSession(), 3000); 
       }
     };
 
     this.ws.onerror = (error) => {
-
-      this.showNotification("Connection failed. Please try again.", "error");
+      console.error('WebSocket error:', error);
+      this.showNotification("Connection failed. Reconnecting...", "error");
     };
+  }
+  
+  startHeartbeat() {
+    this.heartbeatInterval = setInterval(() => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        // Check if connection is stale
+        if (Date.now() - this.lastPingTime > 60000) { // 1 minute
+          this.ws.close();
+          return;
+        }
+        
+        // Send ping
+        this.ws.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 30000); // Every 30 seconds
+  }
+  
+  stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
   }
 
   handleSessionMessage(data) {
@@ -1474,6 +1500,7 @@ class SessionManager {
       this.ws.close();
     }
 
+    this.stopHeartbeat();
     this.currentSession = null;
     this.sessionId = null;
     this.currentSessionTitle = null;
