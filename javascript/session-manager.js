@@ -517,10 +517,93 @@ class SessionManager {
       return;
     }
 
-    const sessionId = prompt("Enter Session ID:");
-    if (sessionId) {
-      this.joinSession(sessionId);
-    }
+    this.showSessionIdModal();
+  }
+
+  showSessionIdModal() {
+    const modal = document.createElement("div");
+    modal.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+      <div style="
+        background: white;
+        padding: 24px;
+        border-radius: 12px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      ">
+        <h3 style="margin: 0 0 16px 0; color: #333; font-size: 18px;">Join Session</h3>
+        <p style="margin: 0 0 16px 0; color: #666;">Enter the Session ID to join:</p>
+        <input type="text" id="sessionIdPrompt" placeholder="Session ID" style="
+          width: 100%;
+          padding: 12px;
+          border: 2px solid #e9ecef;
+          border-radius: 8px;
+          font-size: 14px;
+          margin-bottom: 20px;
+          box-sizing: border-box;
+          outline: none;
+        " autofocus>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button onclick="this.closest('div').parentElement.remove()" style="
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+          ">Cancel</button>
+          <button id="joinSessionConfirm" style="
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+          ">Join</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const input = modal.querySelector('#sessionIdPrompt');
+    const joinBtn = modal.querySelector('#joinSessionConfirm');
+    
+    const handleJoin = () => {
+      const sessionId = input.value.trim();
+      if (sessionId) {
+        this.joinSession(sessionId);
+        modal.remove();
+      } else {
+        this.showNotification("Please enter a Session ID", "error");
+      }
+    };
+    
+    joinBtn.onclick = handleJoin;
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleJoin();
+    });
+    
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.remove();
+    };
+    
+    setTimeout(() => input.focus(), 100);
   }
 
   showNameModal(action) {
