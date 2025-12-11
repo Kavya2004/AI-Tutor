@@ -1306,7 +1306,14 @@ class SessionManager {
       
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
-      const summaryLines = doc.splitTextToSize(summary, 170);
+      
+      // Convert LaTeX in summary
+      let cleanSummary = summary;
+      if (window.convertLatexToUnicode) {
+        cleanSummary = window.convertLatexToUnicode(summary);
+      }
+      
+      const summaryLines = doc.splitTextToSize(cleanSummary, 170);
       doc.text(summaryLines, margin, yPosition);
       yPosition += summaryLines.length * 4 + 15;
     }

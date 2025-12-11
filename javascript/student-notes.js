@@ -230,21 +230,81 @@ class NotebookManager {
         }
     }
 
-    saveNotes() {
+    async saveNotes() {
         const textContent = document.getElementById('studentNotes')?.value || '';
         const timestamp = new Date().toLocaleString();
-
-        const content = `Probability & Stats Notes - ${timestamp}\n\n${textContent}`;
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `probability-notes-${new Date().toISOString().split('T')[0]}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        let yPosition = 20;
+        const pageHeight = doc.internal.pageSize.height;
+        const margin = 20;
+        
+        // Title
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text('Probability & Stats Notes', margin, yPosition);
+        yPosition += 10;
+        
+        // Date
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Date: ${timestamp}`, margin, yPosition);
+        yPosition += 15;
+        
+        // Text content
+        if (textContent.trim()) {
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('Written Notes:', margin, yPosition);
+            yPosition += 10;
+            
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            const lines = doc.splitTextToSize(textContent, 170);
+            
+            for (let i = 0; i < lines.length; i++) {
+                if (yPosition > pageHeight - 30) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                doc.text(lines[i], margin, yPosition);
+                yPosition += 5;
+            }
+            yPosition += 10;
+        }
+        
+        // Canvas drawing
+        if (this.canvas && this.canvas.width > 0 && this.canvas.height > 0) {
+            const ctx = this.canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+            const hasDrawing = imageData.data.some((channel, index) => 
+                index % 4 !== 3 && channel !== 0
+            );
+            
+            if (hasDrawing) {
+                if (yPosition > pageHeight - 100) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('Drawings & Diagrams:', margin, yPosition);
+                yPosition += 10;
+                
+                const imgData = this.canvas.toDataURL('image/png');
+                const imgWidth = 170;
+                const imgHeight = (this.canvas.height * imgWidth) / this.canvas.width;
+                
+                doc.addImage(imgData, 'PNG', margin, yPosition, imgWidth, Math.min(imgHeight, 200));
+            }
+        }
+        
+        // Save PDF
+        const filename = `probability-notes-${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(filename);
     }
 
     expandNotes() {
