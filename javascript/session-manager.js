@@ -1255,19 +1255,130 @@ class SessionManager {
       }
 
       const data = await response.json();
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `tutor-session-${this.sessionId}-${new Date().toISOString().split("T")[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await this.generateSessionPDF(data);
     } catch (error) {
       console.error("Error downloading session:", error);
       this.showNotification("Failed to download session. Please try again.", "error");
+    }
+  }
+
+  async generateSessionPDF(sessionData) {
+    // Create PDF content
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    let yPosition = 20;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 20;
+    
+    // Title
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text(`Session Notes: ${sessionData.sessionTitle || sessionData.sessionId}`, margin, yPosition);
+    yPosition += 10;
+    
+    // Session info
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Host: ${sessionData.hostName}`, margin, yPosition);
+    yPosition += 6;
+    doc.text(`Date: ${new Date(sessionData.createdAt).toLocaleDateString()}`, margin, yPosition);
+    yPosition += 6;
+    doc.text(`Participants: ${sessionData.participants.map(p => p.userName).join(', ')}`, margin, yPosition);
+    yPosition += 15;
+    
+    // Messages
+    doc.setFontSize(14);
+    doc.setFont(undefined, 'bold');
+    doc.text('Session Messages:', margin, yPosition);
+    yPosition += 10;
+    
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    
+    for (const message of sessionData.messages) {
+      if (yPosition > pageHeight - 30) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      const timestamp = new Date(message.timestamp).toLocaleTimeString();
+      const sender = message.sender === 'bot' ? '🤖 AI Tutor' : `👤 ${message.userName}`;
+      
+      doc.setFont(undefined, 'bold');
+      doc.text(`[${timestamp}] ${sender}:`, margin, yPosition);
+      yPosition += 6;
+      
+      doc.setFont(undefined, 'normal');
+      const lines = doc.splitTextToSize(message.message, 170);
+      doc.text(lines, margin + 5, yPosition);
+      yPosition += lines.length * 4 + 5;
+    }
+    
+    // Whiteboard content
+    if (sessionData.whiteboardActions && sessionData.whiteboardActions.length > 0) {
+      if (yPosition > pageHeight - 50) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      yPosition += 10;
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('Whiteboard Actions:', margin, yPosition);
+      yPosition += 10;
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      
+      for (const action of sessionData.whiteboardActions) {
+        if (yPosition > pageHeight - 20) {
+          doc.addPage();
+          yPosition = 20;
+        }
+        
+        const timestamp = new Date(action.timestamp).toLocaleTimeString();
+        doc.text(`[${timestamp}] ${action.userName}: ${action.action} on ${action.targetBoard}`, margin, yPosition);
+        yPosition += 6;
+      }
+    }
+    
+    // Capture canvas content if available
+    await this.addCanvasesToPDF(doc);
+    
+    // Save PDF
+    const filename = `session-notes-${this.sessionId}-${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
+    
+    this.showNotification("Session notes downloaded as PDF!", "success");
+  }
+  
+  async addCanvasesToPDF(doc) {
+    const canvases = ['teacherCanvas', 'studentCanvas'];
+    
+    for (const canvasId of canvases) {
+      const canvas = document.getElementById(canvasId);
+      if (canvas && canvas.width > 0 && canvas.height > 0) {
+        // Check if canvas has content
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const hasContent = imageData.data.some((channel, index) => 
+          index % 4 !== 3 && channel !== 0
+        );
+        
+        if (hasContent) {
+          doc.addPage();
+          doc.setFontSize(14);
+          doc.setFont(undefined, 'bold');
+          doc.text(`${canvasId === 'teacherCanvas' ? 'Teacher' : 'Student'} Whiteboard:`, 20, 20);
+          
+          const imgData = canvas.toDataURL('image/png');
+          const imgWidth = 170;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          doc.addImage(imgData, 'PNG', 20, 30, imgWidth, Math.min(imgHeight, 250));
+        }
+      }
     }
   }
 
