@@ -279,9 +279,16 @@ class NotebookManager {
         if (this.canvas && this.canvas.width > 0 && this.canvas.height > 0) {
             const ctx = this.canvas.getContext('2d');
             const imageData = ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
-            const hasDrawing = imageData.data.some((channel, index) => 
-                index % 4 !== 3 && channel !== 0
-            );
+            
+            // Check for any non-transparent pixels
+            let hasDrawing = false;
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const alpha = imageData.data[i + 3];
+                if (alpha > 0) {
+                    hasDrawing = true;
+                    break;
+                }
+            }
             
             if (hasDrawing) {
                 if (yPosition > pageHeight - 100) {
