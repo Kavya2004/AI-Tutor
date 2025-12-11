@@ -1333,11 +1333,20 @@ class SessionManager {
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
       
-      // Convert LaTeX in summary
+      // Convert LaTeX and strip HTML tags from summary
       let cleanSummary = summary;
       if (window.convertLatexToUnicode) {
         cleanSummary = window.convertLatexToUnicode(summary);
       }
+      
+      // Strip HTML tags
+      cleanSummary = cleanSummary
+        .replace(/<[^>]*>/g, '')
+        .replace(/&gt;/g, '>')
+        .replace(/&lt;/g, '<')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
       
       const summaryLines = doc.splitTextToSize(cleanSummary, 170);
       doc.text(summaryLines, margin, yPosition);
