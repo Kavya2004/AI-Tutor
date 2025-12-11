@@ -990,6 +990,9 @@ async function processUserMessage(message) {
 		addMessage(userMessage, 'user', fileData);
 	}
 
+	// Always process with AI regardless of session mode
+	// This ensures the AI responds to all user messages in sessions
+
 	showLoading();
 
 	try {
@@ -1014,7 +1017,25 @@ async function processUserMessage(message) {
 		}
 
 		// Add user message to context for AI
-		context.push({ role: 'user', content: message });
+		if (window.sessionManager && window.sessionManager.sessionId) {
+			// In session mode, add all recent session messages to context
+			const sessionMessages = window.sessionManager.sessionMessages || [];
+			const recentMessages = sessionMessages.slice(-10); // Last 10 messages
+			
+			recentMessages.forEach(msg => {
+				if (msg.sender === 'user') {
+					context.push({ role: 'user', content: `${msg.userName}: ${msg.message}` });
+				} else if (msg.sender === 'bot') {
+					context.push({ role: 'assistant', content: msg.message });
+				}
+			});
+			
+			// Add current message
+			context.push({ role: 'user', content: `${window.sessionManager.userName}: ${message}` });
+		} else {
+			// Not in session, just add current message
+			context.push({ role: 'user', content: message });
+		}
 		// Search for matching ProbabilityCourse.com sections
 		const searchResults = await searchProbabilityCourse(message);
 
@@ -1082,7 +1103,7 @@ async function processUserMessage(message) {
 		
 		// Handle bot response display/broadcasting
 		if (window.sessionManager && window.sessionManager.sessionId) {
-			// In session mode, broadcast bot response
+			// In session mode, broadcast bot response to all participants
 			window.sessionManager.broadcastMessage(botResponse, 'bot');
 		} else {
 			// Not in session, add message locally

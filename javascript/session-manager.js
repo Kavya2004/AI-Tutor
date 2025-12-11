@@ -1287,6 +1287,21 @@ class SessionManager {
     doc.text(`Participants: ${sessionData.participants.map(p => p.userName).join(', ')}`, margin, yPosition);
     yPosition += 15;
     
+    // Generate and add session summary
+    const summary = await this.generateSessionSummary(sessionData);
+    if (summary) {
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('Session Summary:', margin, yPosition);
+      yPosition += 10;
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      const summaryLines = doc.splitTextToSize(summary, 170);
+      doc.text(summaryLines, margin, yPosition);
+      yPosition += summaryLines.length * 4 + 15;
+    }
+    
     // Messages
     doc.setFontSize(14);
     doc.setFont(undefined, 'bold');
@@ -1303,14 +1318,23 @@ class SessionManager {
       }
       
       const timestamp = new Date(message.timestamp).toLocaleTimeString();
-      const sender = message.sender === 'bot' ? '🤖 AI Tutor' : `👤 ${message.userName}`;
+      const sender = message.sender === 'bot' ? 'AI Tutor' : message.userName;
       
       doc.setFont(undefined, 'bold');
       doc.text(`[${timestamp}] ${sender}:`, margin, yPosition);
       yPosition += 6;
       
       doc.setFont(undefined, 'normal');
-      const lines = doc.splitTextToSize(message.message, 170);
+      // Clean message text from HTML entities and emojis
+      const cleanMessage = message.message
+        .replace(/&gt;/g, '>')
+        .replace(/&lt;/g, '<')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '');
+      
+      const lines = doc.splitTextToSize(cleanMessage, 170);
       doc.text(lines, margin + 5, yPosition);
       yPosition += lines.length * 4 + 5;
     }
@@ -1351,6 +1375,42 @@ class SessionManager {
     doc.save(filename);
     
     this.showNotification("Session notes downloaded as PDF!", "success");
+  }
+  
+  async generateSessionSummary(sessionData) {
+    try {
+      if (!sessionData.messages || sessionData.messages.length === 0) {
+        return "No messages in this session.";
+      }
+      
+      let chatContent = '';
+      sessionData.messages.forEach(msg => {
+        const sender = msg.sender === 'bot' ? 'AI Tutor' : msg.userName;
+        chatContent += `${sender}: ${msg.message}\n`;
+      });
+      
+      const summaryPrompt = `Please provide a concise summary of this tutoring session, highlighting the main topics discussed, key concepts learned, participants' contributions, and any problems solved:\n\n${chatContent}`;
+      
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: [
+            { role: 'system', content: 'You are summarizing a collaborative tutoring session. Be concise and focus on learning outcomes and participant contributions.' },
+            { role: 'user', content: summaryPrompt }
+          ]
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.response || "Unable to generate summary.";
+      }
+      
+      return "Summary generation unavailable.";
+    } catch (error) {
+      return "Error generating session summary.";
+    }
   }
   
   async addCanvasesToPDF(doc) {
