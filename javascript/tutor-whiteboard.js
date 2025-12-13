@@ -530,15 +530,20 @@ function setupCanvas(canvas, ctx, boardType) {
 	// Touch events
 	canvas.addEventListener('touchstart', (e) => {
 		e.preventDefault();
+		e.stopPropagation();
 		handleTouchStart(e, boardType);
 	}, { passive: false });
 	
 	canvas.addEventListener('touchmove', (e) => {
 		e.preventDefault();
-		handleMouseMove(e, boardType);
+		e.stopPropagation();
+		handleTouchMove(e, boardType);
 	}, { passive: false });
 	
-	canvas.addEventListener('touchend', () => handleMouseUp(boardType));
+	canvas.addEventListener('touchend', (e) => {
+		e.preventDefault();
+		handleMouseUp(boardType);
+	}, { passive: false });
 
 	// Set initial canvas properties
 	ctx.strokeStyle = '#333';
@@ -717,24 +722,34 @@ function updateExpandButton() {
 
 function handleTouchStart(e, boardType) {
 	e.preventDefault();
+	e.stopPropagation();
 	const touch = e.touches[0];
-	const mouseEvent = new MouseEvent('mousedown', {
-		clientX: touch.clientX,
-		clientY: touch.clientY
-	});
 	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
-	canvas.dispatchEvent(mouseEvent);
+	const rect = canvas.getBoundingClientRect();
+	
+	// Create proper touch event with canvas-relative coordinates
+	const touchEvent = {
+		clientX: touch.clientX,
+		clientY: touch.clientY,
+		preventDefault: () => {},
+		stopPropagation: () => {}
+	};
+	
+	handleMouseDown(touchEvent, boardType);
 }
 
 function handleTouchMove(e, boardType) {
 	e.preventDefault();
+	e.stopPropagation();
 	const touch = e.touches[0];
-	const mouseEvent = new MouseEvent('mousemove', {
+	
+	const touchEvent = {
 		clientX: touch.clientX,
-		clientY: touch.clientY
-	});
-	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
-	canvas.dispatchEvent(mouseEvent);
+		clientY: touch.clientY,
+		preventDefault: () => {}
+	};
+	
+	handleMouseMove(touchEvent, boardType);
 }
 
 function resizeCanvases() {
