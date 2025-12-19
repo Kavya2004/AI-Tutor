@@ -223,7 +223,7 @@ class SessionManager {
   
   async showPublicSessions() {
     try {
-      const response = await fetch("https://tutor.probabilitycourse.com/api/sessions/public");
+      const response = await fetch("https://ai-tutor-53f1.onrender.com/api/sessions/public");
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -439,7 +439,7 @@ class SessionManager {
       const isPublic = document.getElementById("publicSessionCheckbox").checked;         
       
       const response = await fetch(
-        "https://tutor.probabilitycourse.com/api/sessions/create",
+        "https://ai-tutor-53f1.onrender.com/api/sessions/create",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -466,7 +466,7 @@ class SessionManager {
       this.updateSessionUI();
 
       this.addSystemMessage(
-        `Session created! Share this link with others: https://ai-tutor-teal-one.vercel.app/tutor.html?session=${this.sessionId}`,
+        `Session created! Share this link with others: https://tutor.probabilitycourse.com/tutor.html?session=${this.sessionId}`,
       );
     } catch (error) {
       console.error("Error creating session:", error);
@@ -477,7 +477,7 @@ class SessionManager {
   async createNewSessionWithParams(sessionTitle, isPublic) {
     try {
       const response = await fetch(
-        "https://tutor.probabilitycourse.com/api/sessions/create",
+        "https://ai-tutor-53f1.onrender.com/api/sessions/create",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -503,7 +503,7 @@ class SessionManager {
       this.updateSessionUI();
   
       this.addSystemMessage(
-        `Session created! Share this link with others: https://ai-tutor-teal-one.vercel.app/tutor.html?session=${this.sessionId}`,
+        `Session created! Share this link with others: https://tutor.probabilitycourse.com/tutor.html?session=${this.sessionId}`,
       );
     } catch (error) {
       console.error("Error creating session:", error);
@@ -680,7 +680,7 @@ class SessionManager {
     
     try {
       const response = await fetch(
-        `https://tutor.probabilitycourse.com/api/sessions/${sessionId}/join`,
+        `https://ai-tutor-53f1.onrender.com/api/sessions/${sessionId}/join`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -730,7 +730,7 @@ class SessionManager {
       this.ws.close();
     }
 
-    this.ws = new WebSocket(`wss://tutor.probabilitycourse.com/sessions/${this.sessionId}`);
+    this.ws = new WebSocket(`wss://ai-tutor-53f1.onrender.com/sessions/${this.sessionId}`);
     this.lastPingTime = Date.now();
 
     this.ws.onopen = () => {
@@ -1282,7 +1282,7 @@ class SessionManager {
   async downloadSession() {
     try {
       const response = await fetch(
-        `https://tutor.probabilitycourse.com/api/sessions/${this.sessionId}/download`,
+        `https://ai-tutor-53f1.onrender.com/api/sessions/${this.sessionId}/download`,
       );
 
       if (!response.ok) {
