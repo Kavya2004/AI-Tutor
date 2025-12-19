@@ -279,6 +279,11 @@ class SessionManager {
         const sessionId = item.dataset.sessionId;
         document.getElementById('publicSessionsModal').remove();
         
+        // Update URL
+        const url = new URL(window.location);
+        url.searchParams.set('session', sessionId);
+        window.history.pushState({}, '', url);
+        
         if (!this.userName) {
           this.showNameModal("join");
           setTimeout(() => {
@@ -714,13 +719,17 @@ class SessionManager {
   }
 
   joinSessionFromURL(sessionId) {
+    console.log('Attempting to join session from URL:', sessionId);
+    console.log('Current userName:', this.userName);
     if (!this.userName) {
+      console.log('No username, showing name modal');
       setTimeout(() => {
         this.showNameModal("join");
         document.getElementById("sessionIdInput").value = sessionId;
         document.getElementById("sessionIdInput").style.display = "none";
       }, 500);
     } else {
+      console.log('Username exists, joining session directly');
       this.joinSession(sessionId);
     }
   }
