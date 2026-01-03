@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       }
 
       const apiKey = process.env.GEMINI_API_KEY;
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent?key=${apiKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
     
       let geminiMessages = messages
           .filter(msg => msg.role !== 'system')
