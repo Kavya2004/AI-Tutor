@@ -3,7 +3,6 @@ let context = [
 	{
 		role: 'system',
 		content: `You are an AI tutor specializing in introductory physics. You have been extensively trained on university-level question-answer pairs in this subject area. Your role is to guide students through concepts interactively, using both whiteboards and conversation. You are supportive, brief, and thoughtful in your responses.
-You must always cite from the relevant physics textbook link(s) I provide in the context. This includes both web pages and PDF documents.
 
 You have access to two whiteboards:
 
@@ -38,13 +37,11 @@ Do not simply recite full answers as you've seen in training. Instead, help the 
 
 REFERENCE LINKS INSTRUCTIONS:
 
-You have access to the uploaded physics textbook "College Physics 2e" (college-physics-2e.pdf). Relevant excerpts from it will be provided in context.
-When answering, ALWAYS ground your response in the textbook content provided. Quote or paraphrase directly from it when relevant.
+You have access to the student's physics course materials including lecture slides, textbook chapters, and other uploaded resources. Relevant excerpts will be provided in context under "COURSE MATERIALS".
+When answering, ALWAYS ground your response in the provided course material excerpts. Quote or paraphrase directly from them when relevant. Prefer the course materials over general knowledge.
+Do NOT invent, paraphrase, or rename source materials. If you refer to a source in your response text, use its EXACT name as listed in the COURSE MATERIALS context — nothing else.
 
-CITATION RULE — THIS IS MANDATORY AND NON-NEGOTIABLE:
-Every single response you give MUST end with a citation line in EXACTLY this plain text format and nothing else — no tables, no markdown, no bold, no headers:
-📖 Source: College Physics 2e | Chapter [number]: [Chapter Name] | Page [number]
-If multiple pages or chapters are relevant, list each on its own line in the same format. You must NEVER use a table, grid, or any other formatting for the citation. Plain text only, exactly as shown above.`
+CITATION RULE: Do NOT write any citation lines or source references in your response. Citations are handled automatically by the system from the provided COURSE MATERIALS context.`
 	}
 ];
 
@@ -507,8 +504,24 @@ function addMessage(text, sender, files = [], citation = null) {
 	content.className = 'message-content';
 
 	let citationHTML = '';
-	if (sender === 'bot' && citation) {
-		citationHTML = `<span class="citation-pill" onclick="showBookRef(${citation.page})" title="Open in textbook viewer">📖 Ch.${citation.ch}: ${citation.name} · p.${citation.page}</span>`;
+	if (sender === 'bot' && citation && citation.length > 0) {
+		citationHTML = citation.map(c => {
+			const pageLabel = c.page ? ` · p.${c.page}` : '';
+			const icon = getSourceIcon(c.name);
+			const isTextbook = /college physics/i.test(c.name || '');
+
+			if (c.url) {
+				return `<a class="citation-pill" href="${c.url}" target="_blank" rel="noopener noreferrer" title="Watch video">${icon} ${c.name}</a>`;
+			}
+			if (isTextbook && c.page) {
+				return `<span class="citation-pill" onclick="showBookRef(${c.page})" style="cursor:pointer" title="Open textbook page">${icon} ${c.name}${pageLabel}</span>`;
+			}
+			if (c.text) {
+				const safeText = (c.text || '').replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/'/g, "\\'");
+				return `<span class="citation-pill" onclick="showTextRef(\`${safeText}\`, '${(c.name||'').replace(/'/g, "\\'")}'${c.page ? `, ${c.page}` : ''})" style="cursor:pointer" title="View excerpt">${icon} ${c.name}${pageLabel}</span>`;
+			}
+			return `<span class="citation-pill" title="Source reference">${icon} ${c.name}${pageLabel}</span>`;
+		}).join('');
 	}
 
 	content.innerHTML = displayText
@@ -731,6 +744,11 @@ function startProgressAnimation() {
 }
 
 function showLoadingForQuiz() {
+	if (loadingInterval) {
+		clearInterval(loadingInterval);
+		loadingInterval = null;
+	}
+
 	const loadingIndicator = document.getElementById('loadingIndicator');
 	const progressFill = document.getElementById('progressFill');
 	const loadingMessage = document.getElementById('loadingMessage');
@@ -886,8 +904,8 @@ async function searchPhysicsTextbook(query) {
 	}
 	
 	try {
-		// Search both web pages and PDFs
-		const [webRes, pdfRes] = await Promise.all([
+		// Search web pages, PDFs, and Pinecone in parallel
+		const [webRes, pdfRes, pineconeRes] = await Promise.all([
 			fetch('/api/search', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -897,7 +915,12 @@ async function searchPhysicsTextbook(query) {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ query })
-			})
+			}),
+			fetch('/api/pinecone', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ query })
+			}).catch(() => null)
 		]);
 
 		let results = [];
@@ -917,6 +940,20 @@ async function searchPhysicsTextbook(query) {
 				content: pdf.content
 			}));
 			results = [...results, ...pdfResults];
+		}
+
+		if (pineconeRes && pineconeRes.ok) {
+			const pineconeData = await pineconeRes.json();
+			const pineconeResults = (pineconeData.chunks || []).map(chunk => ({
+				title: chunk.source,
+				link: chunk.url || chunk.source,
+				pageNumber: chunk.page,
+				snippet: chunk.text.substring(0, 200),
+				content: chunk.text,
+				url: chunk.url,
+				fromPinecone: true
+			}));
+			results = [...pineconeResults, ...results];
 		}
 		
 		// Cache results (limit cache size)
@@ -1042,24 +1079,27 @@ async function processUserMessage(message) {
 		const searchResults = await searchPhysicsTextbook(message);
 
 		if (searchResults.length > 0) {
-			let refsText = 'Relevant sections from College Physics 2e:\n';
-			let bookPage = null;
-			searchResults.forEach((r, idx) => {
-				refsText += `${idx + 1}. ${r.title} - ${r.link}\n   ${r.snippet}\n`;
-				if (r.content) {
-					refsText += `   Content excerpt: ${r.content.substring(0, 500)}...\n`;
-				}
-				if (r.pageNumber && !bookPage) bookPage = r.pageNumber;
-				if (r.pageNumber) refsText += `   PDF Page: ${r.pageNumber}\n`;
+			const pineconeChunks = searchResults.filter(r => r.fromPinecone);
+			const textbookChunks = searchResults.filter(r => !r.fromPinecone);
+
+			let refsText = 'COURSE MATERIALS — use these as your primary reference:\n';
+
+			pineconeChunks.forEach((r, idx) => {
+				refsText += `${idx + 1}. Source: ${r.title}${r.pageNumber ? ` | Page ${r.pageNumber}` : ''}\n${r.content.substring(0, 800)}\n\n`;
 			});
-			refsText += '\nREMINDER: End your response with ONLY this plain text line (no table, no markdown formatting): 📖 Source: College Physics 2e | Chapter [number]: [Chapter Name] | Page [number]';
+
+			textbookChunks.forEach((r, idx) => {
+				const label = r.title || 'College Physics 2e';
+				const page = r.pageNumber ? ` | Page ${r.pageNumber}` : '';
+				refsText += `${pineconeChunks.length + idx + 1}. Source: ${label}${page}\n${(r.content || r.snippet || '').substring(0, 500)}\n\n`;
+			});
+
+			refsText += 'Use the above materials to ground your response. Do NOT mention source names or citations in your response text — citations are handled separately.';
 
 			context.push({
 				role: 'system',
 				content: refsText
 			});
-
-			if (bookPage) showBookRef(bookPage);
 		}
 
 		// Get AI response with files (only if files processed successfully)
@@ -1101,15 +1141,14 @@ async function processUserMessage(message) {
 		// Clean up any remaining whiteboard tags
 		botResponse = botResponse.replace(/\[(?:TEACHER_BOARD|STUDENT_BOARD|GENERATE_DIAGRAM):[^\]]+\]/g, '').trim();
 
-		// Extract citation BEFORE stripping (before convertLatexToUnicode can turn it into a table)
-		const citationMatch = botResponse.match(/📖\s*Source:\s*College Physics 2e\s*\|\s*Chapter\s*(\d+):\s*([^|\n]+)\|\s*Page\s*([\d,\s]+)/i);
-		const extractedCitation = citationMatch
-			? { ch: citationMatch[1].trim(), name: citationMatch[2].trim(), page: parseInt(citationMatch[3]) }
-			: null;
+		// Extract citation from Pinecone results (ignore whatever Gemini wrote)
+		const extractedCitation = searchResults
+			.filter(r => r.fromPinecone)
+			.filter((r, i, arr) => arr.findIndex(x => x.title === r.title) === i)
+			.map(r => ({ name: r.title, page: r.pageNumber || null, url: r.url || null, text: r.content || r.snippet || null }));
 		// Strip ALL citation formats before any rendering
 		botResponse = botResponse
 			.replace(/📖\s*Source:[^\n]*/gi, '')
-			.replace(/(?:\|[^\n]*(?:Source|College Physics|Chapter|PAGE)[^\n]*\|?\n?)+/gi, '')
 			.replace(/^[-|\s]+$/gm, '')
 			.trim();
 
@@ -1229,42 +1268,45 @@ function handleDiceResult(result) {
 	const message = `I rolled a ${result}! What does this tell us about probability?`;
 	processUserMessage(message);
 }
-// AI Diagram Generation Function
+// AI Diagram Generation Function — uses Gemini image generation
 async function generateAIDiagram(description, targetBoard = 'teacher') {
 	try {
-		if (!window.diagramRenderer) {
-			return;
-		}
+		if (window.switchWhiteboard) window.switchWhiteboard(targetBoard);
 
-		const result = await window.diagramRenderer.generateDiagram(description, targetBoard);
+		const res = await fetch('/api/image-gen', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ prompt: `Clear educational physics diagram: ${description}. White background, labeled, simple and clean.` })
+		});
+		const data = await res.json();
+		if (!res.ok || !data.image) throw new Error(data.error || 'No image returned');
 
-		if (result && result.success) {
-			// Switch to the target whiteboard
-			if (window.switchWhiteboard) {
-				window.switchWhiteboard(targetBoard);
-			}
+		const canvas = targetBoard === 'teacher'
+			? document.getElementById('teacherWhiteboard')
+			: document.getElementById('studentWhiteboard');
+		if (!canvas) throw new Error('Canvas not found');
 
-			// Broadcast diagram action to session if in session mode
-			if (window.sessionManager && window.sessionManager.sessionId && window.sessionManager.ws) {
+		const ctx = canvas.getContext('2d');
+		const img = new Image();
+		img.onload = () => {
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+			const x = (canvas.width - img.width * scale) / 2;
+			const y = (canvas.height - img.height * scale) / 2;
+			ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+		};
+		img.src = data.image;
 
-				window.sessionManager.ws.send(
-					JSON.stringify({
-						type: 'diagram_generated',
-						description: description,
-						targetBoard: targetBoard,
-						userName: window.sessionManager.userName
-					})
-				);
-			}
-
-
-		} else {
-
-			// Fallback to text explanation
-			addMessage(`Diagram note: ${result.message}`, 'bot');
+		if (window.sessionManager && window.sessionManager.sessionId && window.sessionManager.ws) {
+			window.sessionManager.ws.send(JSON.stringify({
+				type: 'diagram_generated',
+				description,
+				targetBoard,
+				userName: window.sessionManager.userName
+			}));
 		}
 	} catch (error) {
-		addMessage('Sorry, I encountered an issue generating the diagram. Let me explain in text instead.', 'bot');
+		addMessage('Sorry, I had trouble generating the diagram. Let me explain in text instead.', 'bot');
 	}
 }
 
@@ -1350,22 +1392,72 @@ window.addOcrMessageToChat = function (ocrText, boardType) {
 	}
 };
 
+function getSourceIcon(sourceName) {
+	if (!sourceName) return '📖';
+	const s = sourceName.toLowerCase();
+	if (s.includes('youtube') || s.includes('video') || s.includes('lecture video')) return '🎦';
+	if (s.includes('slide') || s.includes('ppt')) return '🖥️';
+	if (s.includes('textbook') || s.includes('book') || s.includes('college physics')) return '📚';
+	if (s.includes('note') || s.includes('summary') || s.includes('review')) return '📝';
+	if (s.includes('problem') || s.includes('exercise') || s.includes('hw') || s.includes('homework')) return '✏️';
+	if (s.includes('exam') || s.includes('quiz') || s.includes('test') || s.includes('midterm') || s.includes('final')) return '📋';
+	if (s.includes('lab') || s.includes('experiment')) return '🔬';
+	if (s.includes('lecture') || s.includes('class') || s.includes('lec')) return '🎫';
+	return '📄';
+}
+
 let _pdfCurrentPage = 1;
 let _pdfTotalPages = 0;
 
+function showTextRef(text, sourceName, page) {
+	const existing = document.getElementById('textRefOverlay');
+	if (existing) existing.remove();
+
+	const overlay = document.createElement('div');
+	overlay.id = 'textRefOverlay';
+	overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9000;display:flex;align-items:center;justify-content:center';
+
+	const panel = document.createElement('div');
+	panel.style.cssText = 'width:640px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;border-radius:10px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.45);background:#f8f9fa';
+
+	const header = document.createElement('div');
+	header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#014148;color:white;font-size:13px;font-weight:600';
+	header.innerHTML = `<span>${getSourceIcon(sourceName)} ${sourceName}${page ? ` · p.${page}` : ''}</span>`;
+
+	const closeBtn = document.createElement('button');
+	closeBtn.innerHTML = '×';
+	closeBtn.style.cssText = 'background:none;border:none;color:white;font-size:20px;cursor:pointer;line-height:1;padding:0 4px';
+	closeBtn.onclick = () => overlay.remove();
+	header.appendChild(closeBtn);
+
+	const body = document.createElement('div');
+	body.style.cssText = 'flex:1;overflow-y:auto;padding:20px 24px;background:#fff;font-size:14px;line-height:1.8;color:#222;white-space:pre-wrap;font-family:Georgia,serif';
+	body.textContent = text;
+
+	panel.appendChild(header);
+	panel.appendChild(body);
+	overlay.appendChild(panel);
+	document.body.appendChild(overlay);
+	overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+window.showTextRef = showTextRef;
+
 async function showBookRef(pageNumber) {
 	const overlay = document.getElementById('bookRefOverlay');
-	if (!overlay) return;
-	overlay.style.display = 'flex';
-	await renderBookPage(pageNumber);
-}
-
-async function renderBookPage(pageNumber) {
-	const wrap = document.getElementById('bookRefTextWrap');
 	const label = document.getElementById('bookRefPageLabel');
-	if (!wrap) return;
+	const title = document.getElementById('bookRefTitle');
+	const nav = document.getElementById('bookRefNav');
+	const iframe = document.getElementById('bookRefIframe');
+	if (!overlay) return;
 
-	wrap.innerHTML = '<p style="color:#aaa;padding:20px;text-align:center">Loading...</p>';
+	overlay.style.display = 'flex';
+	if (nav) nav.style.display = 'flex';
+	if (iframe) { iframe.src = ''; iframe.style.display = 'none'; }
+	if (title) title.textContent = '📖 College Physics 2e';
+	_pdfCurrentPage = pageNumber;
+
+	const textDiv = getOrCreateTextDiv();
+	textDiv.innerHTML = '<p style="color:#aaa;text-align:center;padding:40px">Loading...</p>';
 
 	try {
 		const res = await fetch('/api/pdf-page', {
@@ -1378,21 +1470,40 @@ async function renderBookPage(pageNumber) {
 		_pdfCurrentPage = data.page;
 		_pdfTotalPages = data.total;
 		if (label) label.textContent = `Page ${_pdfCurrentPage} / ${_pdfTotalPages}`;
-		wrap.innerHTML = `<p>${data.text.replace(/\n/g, '<br>')}</p>`;
+		textDiv.innerHTML = `<p>${data.text.replace(/\n/g, '<br>')}</p>`;
 	} catch (e) {
-		wrap.innerHTML = `<p style="color:#c00;padding:20px">Failed to load page: ${e.message}</p>`;
+		textDiv.innerHTML = `<p style="color:#c00">Failed to load: ${e.message}</p>`;
 	}
 }
 
+function getOrCreateTextDiv() {
+	let textDiv = document.getElementById('bookRefTextDiv');
+	if (!textDiv) {
+		textDiv = document.createElement('div');
+		textDiv.id = 'bookRefTextDiv';
+		textDiv.style.cssText = 'flex:1;overflow-y:auto;padding:24px;background:#fff;font-size:15px;line-height:1.9;color:#222;font-family:Georgia,serif;white-space:pre-wrap;';
+		document.getElementById('bookRefPanel').appendChild(textDiv);
+	}
+	textDiv.style.display = 'block';
+	return textDiv;
+}
+
+function showUrlRef(url, name) {
+	window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 function bookRefChangePage(delta) {
-	renderBookPage(_pdfCurrentPage + delta);
+	showBookRef(_pdfCurrentPage + delta);
 }
 
 function closeBookRef() {
 	const overlay = document.getElementById('bookRefOverlay');
+	const iframe = document.getElementById('bookRefIframe');
 	if (overlay) overlay.style.display = 'none';
+	if (iframe) iframe.src = '';
 }
 
 window.closeBookRef = closeBookRef;
 window.bookRefChangePage = bookRefChangePage;
 window.showBookRef = showBookRef;
+window.showUrlRef = showUrlRef;
