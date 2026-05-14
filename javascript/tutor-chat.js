@@ -1141,10 +1141,14 @@ async function processUserMessage(message) {
 		// Clean up any remaining whiteboard tags
 		botResponse = botResponse.replace(/\[(?:TEACHER_BOARD|STUDENT_BOARD|GENERATE_DIAGRAM):[^\]]+\]/g, '').trim();
 
-		// Extract citation from Pinecone results (ignore whatever Gemini wrote)
+		// Extract citations from ALL search results — Pinecone first, then textbook
+		const seenTitles = new Set();
 		const extractedCitation = searchResults
-			.filter(r => r.fromPinecone)
-			.filter((r, i, arr) => arr.findIndex(x => x.title === r.title) === i)
+			.filter(r => {
+				if (!r.title || seenTitles.has(r.title)) return false;
+				seenTitles.add(r.title);
+				return true;
+			})
 			.map(r => ({ name: r.title, page: r.pageNumber || null, url: r.url || null, text: r.content || r.snippet || null }));
 		// Strip ALL citation formats before any rendering
 		botResponse = botResponse
