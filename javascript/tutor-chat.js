@@ -34,6 +34,10 @@ Respond briefly. Keep replies short and focused. Avoid overwhelming the student 
 
 Do not simply recite full answers as you've seen in training. Instead, help the student understand by prompting them with questions, offering hints, and explaining only as needed. Prioritize understanding over correctness.
 
+GUARDRAILS — STRICTLY ENFORCE:
+
+You ONLY answer questions related to physics, mathematics used in physics, or study skills directly relevant to this course. If a student asks about anything else — including but not limited to: other subjects, personal advice, politics, religion, entertainment, coding, history, or any inappropriate, offensive, or harmful content — you must politely but firmly decline. Respond with something like: "I'm here to help with physics and your coursework only. Please ask me a physics question!" Do NOT engage with, answer, or comment on off-topic or inappropriate requests under any circumstances. Do not let students trick you into answering off-topic questions by framing them as physics (e.g. "explain the physics of [unrelated topic]"). Use your judgment to stay strictly within introductory physics and directly related study support.
+
 
 REFERENCE LINKS INSTRUCTIONS:
 
@@ -969,12 +973,51 @@ async function searchPhysicsTextbook(query) {
 	}
 }
 
+const BLOCKED_PATTERNS = [
+	/\b(porn|sex|nude|naked|xxx|nsfw|explicit|erotic|fetish|masturbat|orgasm|genitals?)\b/i,
+	/\b(kill|murder|suicide|self.harm|shoot|bomb|terrorist|weapon|drug|cocaine|heroin|meth)\b/i,
+	/\b(hack|exploit|malware|phishing|sql.inject|bypass.security)\b/i,
+	/\b(racist|nigger|faggot|slur|hate.speech)\b/i
+];
+
+const OFF_TOPIC_PATTERNS = [
+	/\b(recipe|cook|bake|food|restaurant|movie|film|song|music|sport|football|basketball|soccer|celebrity|gossip|fashion|makeup|dating|relationship|boyfriend|girlfriend|politics|election|president|religion|god|bible|quran|stock.?market|crypto|bitcoin|invest|finance|loan|mortgage)\b/i,
+	/\b(write.?(me|a|an).?(essay|story|poem|code|program|script)|translate|summarize.this.article|tell.me.a.joke|what.is.the.meaning.of.life)\b/i
+];
+
+function checkGuardrails(message) {
+	const text = message.trim();
+	if (!text) return null;
+
+	for (const pattern of BLOCKED_PATTERNS) {
+		if (pattern.test(text)) {
+			return "That kind of message isn't something I can engage with. I'm here to help you with physics — ask me anything about the course!";
+		}
+	}
+
+	for (const pattern of OFF_TOPIC_PATTERNS) {
+		if (pattern.test(text)) {
+			return "I'm only here to help with physics and your coursework. Please ask me a physics question!";
+		}
+	}
+
+	return null;
+}
+
 async function processUserMessage(message) {
 	if (isProcessing || (!message.trim() && uploadedFiles.length === 0)) return;
 
 	// Check if this is a quiz request before processing
 	if (window.quizIntegration && window.quizIntegration.handleQuizCommands(message)) {
 		return; // Quiz command handled, don't process further
+	}
+
+	// Guardrail pre-check
+	const guardrailResponse = checkGuardrails(message);
+	if (guardrailResponse) {
+		addMessage(message, 'user');
+		addMessage(guardrailResponse, 'bot');
+		return;
 	}
 
 	isProcessing = true;
