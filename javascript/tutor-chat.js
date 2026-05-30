@@ -45,7 +45,15 @@ You have access to the student's physics course materials including lecture slid
 When answering, ALWAYS ground your response in the provided course material excerpts. Quote or paraphrase directly from them when relevant. Prefer the course materials over general knowledge.
 Do NOT invent, paraphrase, or rename source materials. If you refer to a source in your response text, use its EXACT name as listed in the COURSE MATERIALS context — nothing else.
 
-CITATION RULE: Do NOT write any citation lines or source references in your response. Citations are handled automatically by the system from the provided COURSE MATERIALS context.`
+CITATION RULE: Do NOT write any citation lines or source references in your response. Citations are handled automatically by the system from the provided COURSE MATERIALS context.
+
+SOCRATIC TEACHING STYLE — STRICTLY ENFORCE:
+Never provide a complete, step-by-step solution unprompted. Your job is to guide the student to discover the answer themselves.
+- Ask one focused question at a time to check understanding
+- Give hints and partial information, not full answers
+- If a student asks "just give me the answer", redirect: "Let's work through it together — what do you already know about [concept]?"
+- Only provide a full worked example after the student has attempted the problem and shown their reasoning
+- Celebrate when students figure something out themselves`
 	}
 ];
 
@@ -377,7 +385,7 @@ function fileToBase64(file) {
 
 async function getOcrFromImage(base64Image) {
 	try {
-		const response = await fetch('https://tutor.probabilitycourse.com/api/ocr', {
+		const response = await fetch('/api/ocr', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
@@ -974,34 +982,57 @@ async function searchPhysicsTextbook(query) {
 }
 
 const BLOCKED_PATTERNS = [
-	/\b(porn|sex|nude|naked|xxx|nsfw|explicit|erotic|fetish|masturbat|orgasm|genitals?)\b/i,
-	/\b(kill|murder|suicide|self.harm|shoot|bomb|terrorist|weapon|drug|cocaine|heroin|meth)\b/i,
-	/\b(hack|exploit|malware|phishing|sql.inject|bypass.security)\b/i,
-	/\b(racist|nigger|faggot|slur|hate.speech)\b/i
+    /\b(porn|sex(?:ual)?|nude|naked|xxx|nsfw|explicit|erotic|fetish|masturbat|orgasm|genital)/i,
+    /\b(kill|murder|suicide|self.?harm|shoot|stab|bomb|terrorist|weapon|drug|cocaine|heroin|meth|fentanyl)/i,
+    /\b(hack|exploit|malware|phishing|sql.?inject|bypass.?security|ddos|ransomware)/i,
+    /\b(racist|slur|hate.?speech|white.?supremac)/i
 ];
 
 const OFF_TOPIC_PATTERNS = [
-	/\b(recipe|cook|bake|food|restaurant|movie|film|song|music|sport|football|basketball|soccer|celebrity|gossip|fashion|makeup|dating|relationship|boyfriend|girlfriend|politics|election|president|religion|god|bible|quran|stock.?market|crypto|bitcoin|invest|finance|loan|mortgage)\b/i,
-	/\b(write.?(me|a|an).?(essay|story|poem|code|program|script)|translate|summarize.this.article|tell.me.a.joke|what.is.the.meaning.of.life)\b/i
+    // Other academic subjects
+    /\b(calculus|differential equation|linear algebra|abstract algebra|number theory)\b(?!.*physics)/i,
+    /\b(history|geography|literature|english essay|biology|chemistry|economics|accounting|finance|law)\b/i,
+    // Entertainment & lifestyle
+    /\b(recipe|cook|bake|restaurant|movie|film|song|music|sport|football|basketball|soccer|celebrity|gossip|fashion|makeup|dating|relationship|boyfriend|girlfriend)\b/i,
+    // Politics & religion
+    /\b(politics|election|president|congress|democrat|republican|religion|god|bible|quran|prayer|church)\b/i,
+    // Finance & crypto
+    /\b(stock.?market|crypto|bitcoin|ethereum|invest|finance|loan|mortgage|trade stocks)\b/i,
+    // Coding & CS (not physics-related)
+    /\b(write.?(me.?)?(a.?)?(program|code|script|app|website)|debug.?my.?code|python|javascript|java\b|html|css|react|node\.js)\b/i,
+    // Generic off-topic requests
+    /\b(tell.?me.?a.?joke|what.?is.?the.?meaning.?of.?life|translate.?this|summarize.?this.?article|write.?(me.?)?an?.?(essay|story|poem))\b/i,
+    // Tricks to bypass (e.g. "explain the physics of cooking")
+    /explain.?the.?physics.?of.?\b(cook|food|recipe|makeup|fashion|sport(?!s?\.?\s+physics)|celebrity)\b/i
+];
+
+// Phrases that are always allowed even if they pattern-match above
+const ALWAYS_ALLOWED = [
+    /\b(quantum|wave|particle|momentum|energy|force|acceleration|velocity|gravity|electro|magnetic|optic|thermodynamic|kinetic|potential|newton|einstein|maxwell|circuit|current|voltage|resistanc|capacitor|inductor|nuclear|atomic|relativity|fluid|pressure|buoyancy|torque|angular|centripetal|oscillat|frequency|amplitude|refract|reflect|diffract|interfere|photon|electron|proton|neutron|nucleus|decay|radiation|spectrum|lens|mirror|doppler|bernoulli|archimedes)\b/i
 ];
 
 function checkGuardrails(message) {
-	const text = message.trim();
-	if (!text) return null;
+    const text = message.trim();
+    if (!text) return null;
 
-	for (const pattern of BLOCKED_PATTERNS) {
-		if (pattern.test(text)) {
-			return "That kind of message isn't something I can engage with. I'm here to help you with physics — ask me anything about the course!";
-		}
-	}
+    // If the message is clearly physics, skip off-topic checks
+    const isPhysics = ALWAYS_ALLOWED.some(p => p.test(text));
 
-	for (const pattern of OFF_TOPIC_PATTERNS) {
-		if (pattern.test(text)) {
-			return "I'm only here to help with physics and your coursework. Please ask me a physics question!";
-		}
-	}
+    for (const pattern of BLOCKED_PATTERNS) {
+        if (pattern.test(text)) {
+            return "That kind of message isn't something I can engage with. I'm here to help you with physics — ask me anything about the course!";
+        }
+    }
 
-	return null;
+    if (!isPhysics) {
+        for (const pattern of OFF_TOPIC_PATTERNS) {
+            if (pattern.test(text)) {
+                return "I'm only here to help with physics and your coursework. Please ask me a physics question!";
+            }
+        }
+    }
+
+    return null;
 }
 
 async function processUserMessage(message) {
