@@ -163,7 +163,7 @@
 				</div>
 			</div>
 			<!-- Session Registration Modal -->
-			<div id="sessionRegistrationModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; display:flex; align-items:center; justify-content:center;">
+			<div id="sessionRegistrationModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
 			<div style="background:white; border-radius:12px; padding:32px; width:420px; max-width:90vw; box-shadow:0 16px 48px rgba(0,0,0,0.3);">
 				<h2 style="margin:0 0 8px; color:#212721; font-size:1.4em;">Join Physics Tutor</h2>
 				<p style="color:#666; margin:0 0 24px; font-size:14px;">Enter your details to start or join a session</p>
@@ -199,15 +199,6 @@
 		<script src="javascript/quiz-integration.js"></script>
 		<script src="javascript/mobile-navigation.js"></script>
 		<script>
-		// Show registration modal on load if user not registered
-		window.addEventListener('DOMContentLoaded', function() {
-			const saved = sessionStorage.getItem('tutorUser');
-			if (!saved) {
-				document.getElementById('sessionRegistrationModal').style.display = 'flex';
-			} else {
-				window.tutorUser = JSON.parse(saved);
-			}
-		});
 
 		function submitRegistration() {
 			const name = document.getElementById('regName').value.trim();
