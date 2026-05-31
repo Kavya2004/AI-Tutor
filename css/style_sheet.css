@@ -16,7 +16,7 @@ h1 {
 	text-align: center;
 }
 a {
-	color: #74A662;
+	color: #881c1c;
 }
 
 p {
@@ -445,7 +445,7 @@ a.nostyle {
 .solvedprob ul a {
 	/*background: #F4F4F4;*/
 	background: #d9e5eb;
-	color: green; /*color: #353535;*/
+	color: #881c1c; /*color: #353535;*/
 	padding: 7px 15px;
 	border: 1px solid #8e8e8e;
 }
@@ -691,7 +691,7 @@ a.nostyle {
 
 .link_button {
 	background: none;
-	color: #74A662;
+	color: #881c1c;
 	border: none;
 	cursor: pointer;
 }
@@ -751,7 +751,7 @@ label {
 	right: 20px;
 	width: 60px;
 	height: 60px;
-	background: var(--dice-bg-color, #74A662);
+	background: var(--dice-bg-color, #881c1c);
 	border-radius: 50%;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 	cursor: pointer;
@@ -1164,7 +1164,7 @@ body {
 
 /* Enhanced Generate Summary Button */
 #chatControls button:last-child {
-    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    background: linear-gradient(135deg, #881c1c 0%, #6b1515 100%);
     color: white;
     border: none;
     padding: 10px 18px;
@@ -1178,7 +1178,7 @@ body {
 }
 
 #chatControls button:last-child:hover {
-    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    background: linear-gradient(135deg, #6b1515 0%, #4a0e0e 100%);
     transform: translateY(-3px) scale(1.05);
 }
 
@@ -2346,7 +2346,7 @@ body {
 
 /* Upload button inline with input */
 .upload-btn {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, #881c1c 0%, #6b1515 100%);
     color: white;
     border: none;
     padding: 12px;
@@ -2363,7 +2363,7 @@ body {
 }
 
 .upload-btn:hover {
-    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    background: linear-gradient(135deg, #6b1515 0%, #4a0e0e 100%);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
