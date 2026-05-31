@@ -523,8 +523,12 @@ function addMessage(text, sender, files = [], citation = null) {
 			const isTextbook = /college physics/i.test(c.name || '');
 
 			if (c.url) {
-				return `<a class="citation-pill" href="${c.url}" target="_blank" rel="noopener noreferrer" title="Watch video">${icon} ${c.name}</a>`;
-			}
+			return `<span class="citation-pill"
+				onclick="showDriveRef('${c.url}','${(c.name||'').replace(/'/g,"\\'")}'${c.page ? `, ${c.page}` : ''})"
+				style="cursor:pointer">
+				${icon} ${c.name}${pageLabel}
+			</span>`;
+		}
 			if (isTextbook && c.page) {
 				return `<span class="citation-pill" onclick="showBookRef(${c.page})" style="cursor:pointer" title="Open textbook page">${icon} ${c.name}${pageLabel}</span>`;
 			}
@@ -1470,53 +1474,53 @@ window.addOcrMessageToChat = function (ocrText, boardType) {
 	}
 };
 
-function getSourceIcon(sourceName) {
-	if (!sourceName) return '📖';
-	const s = sourceName.toLowerCase();
-	if (s.includes('youtube') || s.includes('video') || s.includes('lecture video')) return '🎦';
-	if (s.includes('slide') || s.includes('ppt')) return '🖥️';
-	if (s.includes('textbook') || s.includes('book') || s.includes('college physics')) return '📚';
-	if (s.includes('note') || s.includes('summary') || s.includes('review')) return '📝';
-	if (s.includes('problem') || s.includes('exercise') || s.includes('hw') || s.includes('homework')) return '✏️';
-	if (s.includes('exam') || s.includes('quiz') || s.includes('test') || s.includes('midterm') || s.includes('final')) return '📋';
-	if (s.includes('lab') || s.includes('experiment')) return '🔬';
-	if (s.includes('lecture') || s.includes('class') || s.includes('lec')) return '🎫';
-	return '📄';
+function getSourceIcon(name) {
+    if (!name) return '📄';
+    const n = name.toLowerCase();
+    if (n.includes('slide') || n.includes('lecture')) return '🖥️';
+    if (n.includes('textbook') || n.includes('college physics') || n.includes('2e')) return '📖';
+    if (n.includes('video') || n.includes('youtube')) return '▶️';
+    if (n.includes('note')) return '📝';
+    return '📄';
+}
+
+function showDriveRef(url, name, page) {
+    const overlay = document.getElementById('bookRefOverlay');
+    const iframe = document.getElementById('bookRefIframe');
+    const title = document.getElementById('bookRefTitle');
+    const pageLabel = document.getElementById('bookRefPageLabel');
+
+    if (!overlay || !iframe) return;
+
+    iframe.src = url;
+    title.textContent = getSourceIcon(name) + ' ' + name;
+    pageLabel.textContent = page ? 'p.' + page : '';
+
+    overlay.style.display = 'flex';
 }
 
 let _pdfCurrentPage = 1;
 let _pdfTotalPages = 0;
 
-function showTextRef(text, sourceName, page) {
-	const existing = document.getElementById('textRefOverlay');
-	if (existing) existing.remove();
+function showTextRef(text, name, page) {
+    const overlay = document.getElementById('bookRefOverlay');
+    const iframe = document.getElementById('bookRefIframe');
+    const title = document.getElementById('bookRefTitle');
+    const pageLabel = document.getElementById('bookRefPageLabel');
 
-	const overlay = document.createElement('div');
-	overlay.id = 'textRefOverlay';
-	overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9000;display:flex;align-items:center;justify-content:center';
+    if (!overlay) return;
 
-	const panel = document.createElement('div');
-	panel.style.cssText = 'width:640px;max-width:92vw;max-height:80vh;display:flex;flex-direction:column;border-radius:10px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.45);background:#f8f9fa';
+    const html =
+        `<html><body style="font-family:Georgia,serif;padding:24px;line-height:1.7;font-size:15px;color:#222;">`
+        + `<h3 style="color:#881c1c;margin-bottom:12px;">${name || 'Source'}${page ? ' — p.' + page : ''}</h3>`
+        + `<div>${text.replace(/\n/g,'<br>')}</div></body></html>`;
 
-	const header = document.createElement('div');
-	header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#014148;color:white;font-size:13px;font-weight:600';
-	header.innerHTML = `<span>${getSourceIcon(sourceName)} ${sourceName}${page ? ` · p.${page}` : ''}</span>`;
+    iframe.srcdoc = html;
 
-	const closeBtn = document.createElement('button');
-	closeBtn.innerHTML = '×';
-	closeBtn.style.cssText = 'background:none;border:none;color:white;font-size:20px;cursor:pointer;line-height:1;padding:0 4px';
-	closeBtn.onclick = () => overlay.remove();
-	header.appendChild(closeBtn);
+    title.textContent = getSourceIcon(name) + ' ' + name;
+    pageLabel.textContent = page ? 'p.' + page : '';
 
-	const body = document.createElement('div');
-	body.style.cssText = 'flex:1;overflow-y:auto;padding:20px 24px;background:#fff;font-size:14px;line-height:1.8;color:#222;white-space:pre-wrap;font-family:Georgia,serif';
-	body.textContent = text;
-
-	panel.appendChild(header);
-	panel.appendChild(body);
-	overlay.appendChild(panel);
-	document.body.appendChild(overlay);
-	overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    overlay.style.display = 'flex';
 }
 window.showTextRef = showTextRef;
 
@@ -1571,17 +1575,32 @@ function showUrlRef(url, name) {
 }
 
 function bookRefChangePage(delta) {
-	showBookRef(_pdfCurrentPage + delta);
+    const iframe = document.getElementById('bookRefIframe');
+    const label = document.getElementById('bookRefPageLabel');
+
+    const currentPage =
+        parseInt(label.textContent.replace('p.','')) || 1;
+
+    const newPage = Math.max(1, currentPage + delta);
+
+    label.textContent = 'p.' + newPage;
+
+    if (iframe.src && iframe.src.includes('page=')) {
+        iframe.src = iframe.src.replace(
+            /page=\d+/,
+            'page=' + newPage
+        );
+    }
 }
 
 function closeBookRef() {
-	const overlay = document.getElementById('bookRefOverlay');
-	const iframe = document.getElementById('bookRefIframe');
-	if (overlay) overlay.style.display = 'none';
-	if (iframe) iframe.src = '';
+    const overlay = document.getElementById('bookRefOverlay');
+    if (overlay) overlay.style.display = 'none';
 }
 
 window.closeBookRef = closeBookRef;
 window.bookRefChangePage = bookRefChangePage;
 window.showBookRef = showBookRef;
 window.showUrlRef = showUrlRef;
+window.showDriveRef = showDriveRef;
+window.showTextRef = showTextRef;

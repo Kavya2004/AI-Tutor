@@ -162,6 +162,23 @@
 					<div class="progress-fill" id="progressFill"></div>
 				</div>
 			</div>
+			<!-- Session Registration Modal -->
+			<div id="sessionRegistrationModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; display:flex; align-items:center; justify-content:center;">
+			<div style="background:white; border-radius:12px; padding:32px; width:420px; max-width:90vw; box-shadow:0 16px 48px rgba(0,0,0,0.3);">
+				<h2 style="margin:0 0 8px; color:#212721; font-size:1.4em;">Join Physics Tutor</h2>
+				<p style="color:#666; margin:0 0 24px; font-size:14px;">Enter your details to start or join a session</p>
+				<div style="margin-bottom:16px;">
+				<label style="display:block; font-size:13px; font-weight:600; color:#212721; margin-bottom:6px;">Full Name</label>
+				<input id="regName" type="text" placeholder="Your name" style="width:100%; padding:10px 14px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px; outline:none;" />
+				</div>
+				<div style="margin-bottom:24px;">
+				<label style="display:block; font-size:13px; font-weight:600; color:#212721; margin-bottom:6px;">UMass Email</label>
+				<input id="regEmail" type="email" placeholder="yourname@umass.edu" style="width:100%; padding:10px 14px; border:2px solid #e5e7eb; border-radius:8px; font-size:14px; outline:none;" />
+				<p id="regEmailError" style="color:#881c1c; font-size:12px; margin:4px 0 0; display:none;">Please use a @umass.edu email address</p>
+				</div>
+				<button id="regSubmitBtn" onclick="submitRegistration()" style="width:100%; padding:12px; background:#881c1c; color:white; border:none; border-radius:8px; font-size:15px; font-weight:600; cursor:pointer;">Continue</button>
+			</div>
+			</div>
 		</div>
 
 		<div class="privacy-notice">
@@ -181,5 +198,47 @@
 		<script src="javascript/quiz-system.js"></script>
 		<script src="javascript/quiz-integration.js"></script>
 		<script src="javascript/mobile-navigation.js"></script>
+		<script>
+		// Show registration modal on load if user not registered
+		window.addEventListener('DOMContentLoaded', function() {
+			const saved = sessionStorage.getItem('tutorUser');
+			if (!saved) {
+				document.getElementById('sessionRegistrationModal').style.display = 'flex';
+			} else {
+				window.tutorUser = JSON.parse(saved);
+			}
+		});
+
+		function submitRegistration() {
+			const name = document.getElementById('regName').value.trim();
+			const email = document.getElementById('regEmail').value.trim().toLowerCase();
+			const errEl = document.getElementById('regEmailError');
+
+			if (!name) { alert('Please enter your name'); return; }
+			if (!email.endsWith('@umass.edu')) {
+				errEl.style.display = 'block';
+				return;
+			}
+			errEl.style.display = 'none';
+
+			fetch('/api/register-user', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name, email })
+			})
+			.then(r => r.json())
+			.then(data => {
+				window.tutorUser = { name, email, userId: data.userId };
+				sessionStorage.setItem('tutorUser', JSON.stringify(window.tutorUser));
+				document.getElementById('sessionRegistrationModal').style.display = 'none';
+			})
+			.catch(() => {
+				// Store locally even if DB fails so app still works
+				window.tutorUser = { name, email };
+				sessionStorage.setItem('tutorUser', JSON.stringify(window.tutorUser));
+				document.getElementById('sessionRegistrationModal').style.display = 'none';
+			});
+		}
+		</script>
 	</body>
 </html>
