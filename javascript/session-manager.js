@@ -86,17 +86,6 @@ class SessionManager {
                         💾 Save
                     </button>
                 </div>
-                <div class="voice-controls-row">
-                    <button id="customizeProfileBtn" class="session-btn customize-profile">
-                        🎨 Profile
-                    </button>
-                    <button id="voiceInputBtn" class="session-btn voice-input" title="Click to speak">
-                        🎤 Speak
-                    </button>
-                    <button id="autoSpeechBtn" class="session-btn auto-speech" title="Toggle auto-speech">
-                        🔇 Speaker
-                    </button>
-                </div>
             </div>
         `;
 
@@ -148,12 +137,6 @@ class SessionManager {
       autoSpeechBtn.innerHTML = autoSpeechEnabled ? '🔊 Speaker' : '🔇 Speaker';
       autoSpeechBtn.classList.toggle('active', autoSpeechEnabled);
     }
-
-    voiceInputBtn?.addEventListener("click", () => {
-      if (window.voiceTutor) {
-        window.voiceTutor.toggleVoiceInput();
-      }
-    });
 
     autoSpeechBtn?.addEventListener("click", () => {
       if (window.voiceTutor) {
@@ -436,12 +419,8 @@ class SessionManager {
   }
 
   async createSession() {
-    if (!this.userName) {
-      this.showNameModal("create");
-      return;
-    }
     this.showSessionCreationModal();
-  }
+}
 
   async createNewSession() {
     try {
@@ -524,99 +503,46 @@ class SessionManager {
   }
 
   showJoinModal() {
-    if (!this.userName) {
-      this.showNameModal("join");
-      return;
-    }
-
     this.showSessionIdModal();
   }
 
   showSessionIdModal() {
     const modal = document.createElement("div");
-    modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-    `;
+    modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;`;
     
     modal.innerHTML = `
-      <div style="
-        background: white;
-        padding: 24px;
-        border-radius: 12px;
-        max-width: 400px;
-        width: 90%;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      ">
-        <h3 style="margin: 0 0 16px 0; color: #333; font-size: 18px;">Join Session</h3>
-        <p style="margin: 0 0 16px 0; color: #666;">Enter the Session ID to join:</p>
-        <input type="text" id="sessionIdPrompt" placeholder="Session ID" style="
-          width: 100%;
-          padding: 12px;
-          border: 2px solid #e9ecef;
-          border-radius: 8px;
-          font-size: 14px;
-          margin-bottom: 20px;
-          box-sizing: border-box;
-          outline: none;
-        " autofocus>
-        <div style="display: flex; gap: 12px; justify-content: flex-end;">
-          <button onclick="this.closest('div').parentElement.remove()" style="
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-          ">Cancel</button>
-          <button id="joinSessionConfirm" style="
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-          ">Join</button>
+      <div style="background:white;padding:24px;border-radius:12px;max-width:400px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+        <h3 style="margin:0 0 16px;color:#212721;font-size:18px;">Join Session</h3>
+        <input type="text" id="joinNameInput" placeholder="Your full name" style="width:100%;padding:12px;border:2px solid #e9ecef;border-radius:8px;font-size:14px;margin-bottom:12px;box-sizing:border-box;outline:none;">
+        <input type="email" id="joinEmailInput" placeholder="yourname@umass.edu" style="width:100%;padding:12px;border:2px solid #e9ecef;border-radius:8px;font-size:14px;margin-bottom:12px;box-sizing:border-box;outline:none;">
+        <input type="text" id="sessionIdPrompt" placeholder="Session ID" style="width:100%;padding:12px;border:2px solid #e9ecef;border-radius:8px;font-size:14px;margin-bottom:20px;box-sizing:border-box;outline:none;">
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+          <button onclick="this.closest('div').parentElement.remove()" style="background:#6c757d;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;">Cancel</button>
+          <button id="joinSessionConfirm" style="background:#881c1c;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;">Join</button>
         </div>
       </div>
     `;
     
     document.body.appendChild(modal);
     
-    const input = modal.querySelector('#sessionIdPrompt');
-    const joinBtn = modal.querySelector('#joinSessionConfirm');
-    
     const handleJoin = () => {
-      const sessionId = input.value.trim();
-      if (sessionId) {
-        this.joinSession(sessionId);
-        modal.remove();
-      } else {
-        this.showNotification("Please enter a Session ID", "error");
-      }
+      const name = modal.querySelector('#joinNameInput').value.trim();
+      const email = modal.querySelector('#joinEmailInput').value.trim();
+      const sessionId = modal.querySelector('#sessionIdPrompt').value.trim();
+      if (!name) { this.showNotification("Please enter your name", "error"); return; }
+      if (!email.endsWith("@umass.edu")) { this.showNotification("Please use a @umass.edu email", "error"); return; }
+      if (!sessionId) { this.showNotification("Please enter a Session ID", "error"); return; }
+      this.userName = name;
+      this.userEmail = email;
+      this.joinSession(sessionId);
+      modal.remove();
     };
     
-    joinBtn.onclick = handleJoin;
-    input.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') handleJoin();
-    });
-    
-    modal.onclick = (e) => {
-      if (e.target === modal) modal.remove();
-    };
-    
-    setTimeout(() => input.focus(), 100);
-  }
+    modal.querySelector('#joinSessionConfirm').onclick = handleJoin;
+    modal.querySelector('#sessionIdPrompt').addEventListener('keypress', (e) => { if (e.key === 'Enter') handleJoin(); });
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+    setTimeout(() => modal.querySelector('#joinNameInput').focus(), 100);
+}
 
   showNameModal(action) {
     const modal = document.getElementById("sessionModal");
@@ -661,8 +587,9 @@ class SessionManager {
     titleInput.style.display = "block";
     // privacyDiv.style.display = "block";
     
-    nameInput.value = "";
-    nameInput.style.display = "none";
+    nameInput.value = this.userName || "";
+    nameInput.style.display = "block";
+    nameInput.placeholder = "Your full name";
 
     const emailInput = document.getElementById("userEmailInput");
     emailInput.value = "";
@@ -676,10 +603,16 @@ class SessionManager {
     confirmBtn.onclick = () => {
       const sessionTitle = titleInput.value.trim();
       const userEmail = document.getElementById("userEmailInput").value.trim();
+      const userName = document.getElementById("userNameInput").value.trim();
       const isPublic = true;
       // const privacyRadio = document.querySelector('input[name="sessionPrivacy"]:checked');
       // const isPublic = privacyRadio ? privacyRadio.value === 'public' : true;
-      
+
+      if (!userName) {
+        this.showNotification("Please enter your name", "error");
+        return;
+      }
+
       if (!sessionTitle) {
         this.showNotification("Please enter a table number", "error");
         return;
@@ -690,6 +623,7 @@ class SessionManager {
         return;
       }
 
+      this.userName = userName;
       this.userEmail = userEmail;
       this.createNewSessionWithParams(`Table ${sessionTitle}`, isPublic);
       modal.style.display = "none";
