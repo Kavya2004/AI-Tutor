@@ -453,7 +453,7 @@ function createChatControls() {
 		padding: 6px 12px;
 		border: 1px solid #ddd;
 		border-radius: 15px;
-		background: #337810;
+		background: #881c1c;
 		color: white;
 		cursor: pointer;
 		font-size: 12px;
@@ -467,13 +467,24 @@ function createChatControls() {
 		padding: 6px 12px;
 		border: 1px solid #ddd;
 		border-radius: 15px;
-		background: #014148;
+		background: #881c1c;
 		color: white;
 		cursor: pointer;
 		font-size: 12px;
 		transition: all 0.3s ease;
 	`;
 	summaryBtn.addEventListener('click', generateChatSummary);
+
+	const speakBtn = document.createElement('button');
+	speakBtn.id = 'voiceInputBtn';
+	speakBtn.innerHTML = '🎤 Speak';
+	speakBtn.style.cssText = 'padding:6px 12px;border:1px solid #881c1c;border-radius:15px;background:#881c1c;color:white;cursor:pointer;font-size:12px;transition:all 0.3s ease;';
+	speakBtn.addEventListener('click', () => {
+		if (window.voiceTutor) { window.voiceTutor.toggleVoiceInput(); }
+	});
+	controlsDiv.appendChild(speakBtn);
+	controlsDiv.appendChild(saveBtn);
+	controlsDiv.appendChild(summaryBtn);
 
 	controlsDiv.appendChild(saveBtn);
 	controlsDiv.appendChild(summaryBtn);
@@ -868,8 +879,8 @@ function toggleVoiceResponse() {
 	if (toggleBtn) {
 		toggleBtn.innerHTML = voiceEnabled ? '🎤' : '🔇';
 		toggleBtn.title = voiceEnabled ? 'Voice On - Click to disable' : 'Voice Off - Click to enable';
-		toggleBtn.style.background = voiceEnabled ? '#337810' : '#666';
-		toggleBtn.style.borderColor = voiceEnabled ? '#337810' : '#666';
+		toggleBtn.style.background = voiceEnabled ? '#881c1c' : '#6c757d';
+		toggleBtn.style.borderColor = voiceEnabled ? '#881c1c' : '#6c757d';
 	}
 
 	if (!voiceEnabled && window.voiceTutor) {
@@ -1012,7 +1023,7 @@ const OFF_TOPIC_PATTERNS = [
 
 // Phrases that are always allowed even if they pattern-match above
 const ALWAYS_ALLOWED = [
-    /\b(quantum|wave|particle|momentum|energy|force|acceleration|velocity|gravity|electro|magnetic|optic|thermodynamic|kinetic|potential|newton|einstein|maxwell|circuit|current|voltage|resistanc|capacitor|inductor|nuclear|atomic|relativity|fluid|pressure|buoyancy|torque|angular|centripetal|oscillat|frequency|amplitude|refract|reflect|diffract|interfere|photon|electron|proton|neutron|nucleus|decay|radiation|spectrum|lens|mirror|doppler|bernoulli|archimedes)\b/i
+    /\b(quantum|wave|particle|momentum|energy|force|acceleration|velocity|gravity|electro|magnetic|optic|thermodynamic|kinetic|potential|newton|einstein|maxwell|circuit|current|voltage|resistanc|capacitor|inductor|nuclear|atomic|relativity|fluid|pressure|buoyancy|torque|angular|centripetal|oscillat|frequency|amplitude|refract|reflect|diffract|interfere|photon|electron|proton|neutron|nucleus|decay|radiation|spectrum|lens|mirror|doppler|bernoulli|archimedes|calculus|derivativ|integral|differential|vector)\b/i
 ];
 
 function checkGuardrails(message) {
