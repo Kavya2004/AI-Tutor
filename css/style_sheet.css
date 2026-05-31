@@ -16,7 +16,7 @@ h1 {
 	text-align: center;
 }
 a {
-	color: #881c1c;
+	color: #74A662;
 }
 
 p {
@@ -152,11 +152,11 @@ a.nostyle {
 	background-attachment: fixed;
 }
 
-/*#navigation_wrapper     { height: 36px; background: #212721; clear: both;  font-size: 16px;  margin-bottom: 0; top: 0; position:relative;}*/
+/*#navigation_wrapper     { height: 36px; background: #014148; clear: both;  font-size: 16px;  margin-bottom: 0; top: 0; position:relative;}*/
 
 #navigation {
 	height: 36px;
-	background: #212721;
+	background: #014148;
 	clear: both;
 	font-size: 16px;
 	font-family: sans-serif;
@@ -228,7 +228,7 @@ a.nostyle {
 	width: 170px;
 	height: 150px;
 	display: none;
-	background-color: #212721;
+	background-color: #014148;
 	position: absolute;
 	color: #f2fcf7;
 	margin-top: 5px;
@@ -257,7 +257,7 @@ a.nostyle {
 	width: 160px;
 	height: 100px;
 	display: none;
-	background-color: #212721;
+	background-color: #014148;
 	position: absolute;
 	color: #f2fcf7;
 	margin-top: 1px;
@@ -327,7 +327,7 @@ a.nostyle {
 	padding: 7px 7px 7px 25px;
 }
 #menu a:hover {
-	background: #212721;
+	background: #014148;
 	color: #eee;
 }
 #menu .active {
@@ -370,7 +370,7 @@ a.nostyle {
 	padding: 7px 7px 7px 25px;
 }
 #menu_risk a:hover {
-	background: #212721;
+	background: #014148;
 	color: #eee;
 }
 #menu_risk .active {
@@ -378,7 +378,7 @@ a.nostyle {
 }
 
 #footer {
-	background: url(//www.probabilitycourse.com/images/Template/HeaderBg.png) repeat-x; /*background: #212721; border-bottom: 2px solid #999; */
+	background: url(//www.probabilitycourse.com/images/Template/HeaderBg.png) repeat-x; /*background: #014148; border-bottom: 2px solid #999; */
 	clear: both;
 	font-size: 13px;
 }
@@ -432,6 +432,8 @@ a.nostyle {
 	padding: 10px 0 10px;
 }
 
+.solvedprob {
+}
 .solvedprob ul {
 	cursor: pointer;
 	list-style: none;
@@ -445,7 +447,7 @@ a.nostyle {
 .solvedprob ul a {
 	/*background: #F4F4F4;*/
 	background: #d9e5eb;
-	color: #881c1c; /*color: #353535;*/
+	color: green; /*color: #353535;*/
 	padding: 7px 15px;
 	border: 1px solid #8e8e8e;
 }
@@ -506,10 +508,10 @@ a.nostyle {
     appearance: none;
     width: 18px;
     height: 18px;
-    background: linear-gradient(135deg, #007bff, #0056b3);
+    background: linear-gradient(135deg, #881c1c, #6b1515);
     border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 2px 6px rgba(136, 28, 28, 0.3);
     transition: all 0.2s ease;
 }
 
@@ -546,7 +548,7 @@ a.nostyle {
 .notes-toolbar input[type="color"]:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border-color: #007bff;
+    border-color: #881c1c;
 }
 
 .notes-toolbar input[type="color"]::-webkit-color-swatch-wrapper {
@@ -691,7 +693,7 @@ a.nostyle {
 
 .link_button {
 	background: none;
-	color: #881c1c;
+	color: #74A662;
 	border: none;
 	cursor: pointer;
 }
@@ -751,7 +753,7 @@ label {
 	right: 20px;
 	width: 60px;
 	height: 60px;
-	background: var(--dice-bg-color, #881c1c);
+	background: var(--dice-bg-color, #74A662);
 	border-radius: 50%;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 	cursor: pointer;
@@ -889,23 +891,23 @@ body {
 	position: relative;
 }
 .tutor-header {
-	background: linear-gradient(135deg, #212721);
+    background: linear-gradient(135deg, #881c1c 0%, #6b1515 100%);
 	color: #ffffff;
-	padding: 10px 20px;
+	padding: 20px;
 	text-align: center;
 	box-shadow: 0 2px 10px rgba(237, 234, 234, 0.2);
 	position: relative;
 	z-index: 100;
 }
 .tutor-header h1 {
-	font-size: 1.6em;
+	font-size: 2.5em;
 	margin-bottom: 10px;
 	text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 	color: #ffffff;
 	font-weight: bold;
 }
 .tutor-header p {
-	font-size: 0.95em;
+	font-size: 1.2em;
 	color: #e8f5e8;
 	font-weight: 500;
 }
@@ -931,8 +933,7 @@ body {
 	overflow: hidden;
 }
 .chat-section {
-    width: 650px;
-    max-width: 55vw;
+    flex: 1;
     background: #ffffff;
     border-right: 1px solid #e5e7eb;
     display: flex;
@@ -974,12 +975,12 @@ body {
 .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 12px;
+    padding: 20px;
     background: #fafbfc;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 16px;
 }
 
 .message {
@@ -1018,11 +1019,11 @@ body {
 }
 .message-content {
     background: white;
-    padding: 8px 12px;
+    padding: 12px 16px;
     border-radius: 18px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     line-height: 1.5;
-    font-size: 13px;
+    font-size: 14px;
     color: #374151;
     border: 1px solid #f3f4f6;
     position: relative;
@@ -1081,7 +1082,7 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px;
+    padding: 20px;
     background: white;
     border-top: 1px solid #e5e7eb;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
@@ -1120,7 +1121,7 @@ body {
 }
 #chatInput:focus {
 	border-color: #881c1c;
-	box-shadow: 0 0 0 3px rgba(51, 120, 16, 0.1);
+	box-shadow: 0 0 0 3px rgba(136, 28, 28, 0.1);
     background: white;
 }
 /* Enhanced Save Chat Button */
@@ -1139,7 +1140,7 @@ body {
 }
 
 #chatControls button:first-child:hover {
-    background: linear-gradient(135deg, #6b1515 0%, #1e4607 100%);
+    background: linear-gradient(135deg, #6b1515 0%, #5a1212 100%);
     transform: translateY(-3px) scale(1.05);
 }
 
@@ -1178,7 +1179,7 @@ body {
 }
 
 #chatControls button:last-child:hover {
-    background: linear-gradient(135deg, #6b1515 0%, #4a0e0e 100%);
+    background: linear-gradient(135deg, #6b1515 0%, #5a1212 100%);
     transform: translateY(-3px) scale(1.05);
 }
 
@@ -1227,7 +1228,7 @@ body {
 }
 
 #sendButton:hover {
-    background: linear-gradient(135deg, #6b1515 0%, #1e4607 100%);
+    background: linear-gradient(135deg, #6b1515 0%, #5a1212 100%);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
@@ -1247,7 +1248,7 @@ body {
 	display: flex;
 	justify-content: space-between;
 	align-items: flex-start;
-	padding: 10px 16px;
+	padding: 16px 24px;
 	background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 	border-bottom: 2px solid #dee2e6;
 	flex-wrap: wrap;
@@ -1257,7 +1258,7 @@ body {
 
 .whiteboard-header h3 {
 	color: #2c3e50;
-	font-size: 1em;
+	font-size: 1.4em;
 	font-weight: 700;
 	margin: 0;
 	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -1366,17 +1367,17 @@ body {
 	align-items: center;
 	margin-top: 8px;
 	padding: 12px;
-	background: rgba(0, 123, 255, 0.05);
+	background: rgba(136, 28, 28, 0.05);
 	border-radius: 8px;
-	border: 1px solid rgba(0, 123, 255, 0.1);
+	border: 1px solid rgba(136, 28, 28, 0.1);
 }
 
 .math-buttons button {
 	min-width: 40px;
 	height: 40px;
-	border: 2px solid #007bff;
+	border: 2px solid #881c1c;
 	background: white;
-	color: #007bff;
+	color: #881c1c;
 	border-radius: 8px;
 	font-size: 18px;
 	font-weight: bold;
@@ -1388,7 +1389,7 @@ body {
 }
 
 .math-buttons button:hover {
-	background: #007bff;
+	background: #881c1c;
 	color: white;
 	transform: scale(1.05);
 }
@@ -1467,7 +1468,7 @@ body {
 	transform: translate(-50%, -50%);
 	z-index: 1000;
 	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-	border: 1px solid rgba(51, 120, 16, 0.1);
+	border: 1px solid rgba(136, 28, 28, 0.1);
 	min-width: 280px;
 }
 
@@ -1534,7 +1535,7 @@ body {
 #whiteboard:hover,
 #teacherWhiteboard:hover,
 #studentWhiteboard:hover {
-	box-shadow: 0 0 20px rgba(0, 123, 255, 0.1);
+	box-shadow: 0 0 20px rgba(136, 28, 28, 0.1);
 }
 .chat-messages::-webkit-scrollbar {
     width: 6px;
@@ -1556,7 +1557,7 @@ body {
 /* Tablet and small desktop */
 @media (max-width: 1200px) {
 	.chat-section {
-		flex: 0 0 400px;
+		flex: 1;
 		min-width: 300px;
 	}
 	
@@ -1633,12 +1634,12 @@ body {
 
 .mobile-nav-btn.active {
 	background: white;
-	color: #212721;
+	color: #881c1c;
 	border-color: white;
 }
 
 /* Mobile landscape and small tablets */
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
 	.mobile-nav {
 		display: flex;
 	}
@@ -1652,10 +1653,12 @@ body {
 		width: 100%;
 		max-width: 100%;
 		flex: 1;
+		display: flex;
 	}
-
+	
 	.whiteboard-section {
 		width: 100%;
+		height: calc(100vh - 180px);
 		flex: none;
 		display: none !important;
 	}
@@ -1731,14 +1734,14 @@ body {
 
 .session-actions {
 	display: grid !important;
-	grid-template-columns: repeat(3, 1fr) !important;
+	grid-template-columns: repeat(4, 1fr) !important;
 	gap: 6px !important;
 	width: 100% !important;
 }
 
 .voice-controls-row {
 	display: grid !important;
-	grid-template-columns: repeat(3, 1fr) !important;
+	grid-template-columns: repeat(4, 1fr) !important;
 	gap: 6px !important;
 	width: 100% !important;
 }
@@ -1750,7 +1753,7 @@ body {
 		min-width: 70px !important;
 	}
 }
-
+}
 
 /* Mobile portrait */
 @media (max-width: 600px) {
@@ -1860,7 +1863,7 @@ body {
 /* Resize handle for chat section */
 .resize-handle {
 	position: absolute;
-	right: -5px;
+	right: -15px;
 	top: 50%;
 	transform: translateY(-50%);
 	width: 30px;
@@ -1880,7 +1883,7 @@ body {
 }
 
 .resize-handle:hover {
-	background: linear-gradient(135deg, #007bff, #0056b3);
+	background: linear-gradient(135deg, #881c1c, #0056b3);
 	color: white;
 	transform: translateY(-50%) scale(1.05);
 	box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
@@ -1924,16 +1927,9 @@ body {
 }
 
 .chat-section {
-	flex: 0 0 50%;
-	width: 50%;
-	max-width: 50%;
-	min-width: 280px;
-	background: #ffffff;
-	border-right: 1px solid #e5e7eb;
-	display: flex;
-	flex-direction: column;
-	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	flex: 1;
 	position: relative;
+	min-width: 280px;
 }
 
 /* Whiteboard Tabs Styling */
@@ -1947,7 +1943,7 @@ body {
 
 .tab-button {
 	flex: 1; /* Make tabs flexible */
-	padding: 8px 14px;
+	padding: 12px 20px;
 	border: none;
 	background: transparent;
 	cursor: pointer;
@@ -1965,7 +1961,7 @@ body {
 }
 
 .tab-button.active {
-	background: #212721;
+	background: #014148;
 	color: white;
 	font-weight: bold;
 }
@@ -2151,7 +2147,7 @@ body {
 }
 
 .mode-btn.active {
-	background: #212721;
+	background: #014148;
 	color: white;
 	box-shadow: 0 2px 4px rgba(1, 65, 72, 0.3);
 }
@@ -2248,32 +2244,6 @@ body {
 	z-index: 1;
 }
 
-/* Voice control styles */
-#voiceControls button:hover {
-	transform: translateY(-1px);
-	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-#voiceToggle {
-    padding: 6px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    background: white;
-    color: #374151;
-}
-
-#voiceToggle:hover {
-    background: #f3f4f6;
-    transform: translateY(-1px);
-}
-
-#voiceInputBtn.listening {
-	animation: pulse 1.5s infinite;
-}
-
 @keyframes pulse {
 	0% {
 		transform: scale(1);
@@ -2346,7 +2316,7 @@ body {
 
 /* Upload button inline with input */
 .upload-btn {
-    background: linear-gradient(135deg, #881c1c 0%, #6b1515 100%);
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white;
     border: none;
     padding: 12px;
@@ -2363,7 +2333,7 @@ body {
 }
 
 .upload-btn:hover {
-    background: linear-gradient(135deg, #6b1515 0%, #4a0e0e 100%);
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
@@ -2432,13 +2402,15 @@ body {
 }
 
 .whiteboard-section {
-	flex: 0 0 50%;
-	width: 50%;
+	flex: 1;
 	display: flex;
 	flex-direction: column;
-	background: white;
+	background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+	border-radius: 0;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+	overflow: hidden;
+	border: 1px solid #e9ecef;
 }
-
 /* Chapter images */
 #chapter_image {
 	width: 65%;
@@ -2584,7 +2556,7 @@ figure figcaption {
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    background: #212721;
+    background: #014148;
     color: white;
     font-size: 13px;
     font-weight: 600;
@@ -2653,58 +2625,4 @@ figure figcaption {
 	background: #881c1c;
 	color: #fff;
 	border-color: #881c1c;
-}
-
-/* ── Mobile improvements ───────────────────── */
-@media (max-width: 900px) {
-    /* Tap target size fix */
-    #sendButton, .upload-btn, .tab-button, .mobile-nav-btn {
-        min-height: 44px;
-        min-width: 44px;
-    }
-
-    /* Input stays above keyboard */
-    .chat-input-container {
-        position: sticky;
-        bottom: 0;
-        background: white;
-        z-index: 10;
-        padding: 10px;
-    }
-
-    /* Prevent iOS zoom on input focus */
-    #chatInput, input[type="text"], input[type="email"] {
-        font-size: 16px !important;
-    }
-
-    /* Full-height chat section */
-    .chat-section {
-        height: calc(100dvh - 130px);
-        overflow: hidden;
-    }
-
-    .chat-messages {
-        flex: 1;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    /* Session controls hidden on mobile (as already done) */
-    .session-controls { display: none !important; }
-
-    /* Registration modal full-screen friendly */
-    #sessionRegistrationModal > div {
-        width: 95vw !important;
-        padding: 24px !important;
-    }
-
-    /* Whiteboard math buttons wrap nicely */
-    .math-buttons {
-        overflow-x: auto;
-        flex-wrap: nowrap;
-        padding: 8px;
-    }
-    .math-buttons button {
-        flex-shrink: 0;
-    }
 }
