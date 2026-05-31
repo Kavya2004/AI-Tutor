@@ -152,11 +152,11 @@ a.nostyle {
 	background-attachment: fixed;
 }
 
-/*#navigation_wrapper     { height: 36px; background: #014148; clear: both;  font-size: 16px;  margin-bottom: 0; top: 0; position:relative;}*/
+/*#navigation_wrapper     { height: 36px; background: #212721; clear: both;  font-size: 16px;  margin-bottom: 0; top: 0; position:relative;}*/
 
 #navigation {
 	height: 36px;
-	background: #014148;
+	background: #212721;
 	clear: both;
 	font-size: 16px;
 	font-family: sans-serif;
@@ -228,7 +228,7 @@ a.nostyle {
 	width: 170px;
 	height: 150px;
 	display: none;
-	background-color: #014148;
+	background-color: #212721;
 	position: absolute;
 	color: #f2fcf7;
 	margin-top: 5px;
@@ -257,7 +257,7 @@ a.nostyle {
 	width: 160px;
 	height: 100px;
 	display: none;
-	background-color: #014148;
+	background-color: #212721;
 	position: absolute;
 	color: #f2fcf7;
 	margin-top: 1px;
@@ -327,7 +327,7 @@ a.nostyle {
 	padding: 7px 7px 7px 25px;
 }
 #menu a:hover {
-	background: #014148;
+	background: #212721;
 	color: #eee;
 }
 #menu .active {
@@ -370,7 +370,7 @@ a.nostyle {
 	padding: 7px 7px 7px 25px;
 }
 #menu_risk a:hover {
-	background: #014148;
+	background: #212721;
 	color: #eee;
 }
 #menu_risk .active {
@@ -378,7 +378,7 @@ a.nostyle {
 }
 
 #footer {
-	background: url(//www.probabilitycourse.com/images/Template/HeaderBg.png) repeat-x; /*background: #014148; border-bottom: 2px solid #999; */
+	background: url(//www.probabilitycourse.com/images/Template/HeaderBg.png) repeat-x; /*background: #212721; border-bottom: 2px solid #999; */
 	clear: both;
 	font-size: 13px;
 }
@@ -432,8 +432,6 @@ a.nostyle {
 	padding: 10px 0 10px;
 }
 
-.solvedprob {
-}
 .solvedprob ul {
 	cursor: pointer;
 	list-style: none;
@@ -891,7 +889,7 @@ body {
 	position: relative;
 }
 .tutor-header {
-	background: linear-gradient(135deg, #0d5a47);
+	background: linear-gradient(135deg, #212721);
 	color: #ffffff;
 	padding: 20px;
 	text-align: center;
@@ -955,7 +953,7 @@ body {
 
 .chat-header {
     padding: 16px 20px;
-	background: linear-gradient(135deg, #337810 0%, #2a6209 100%);
+	background: linear-gradient(135deg, #881c1c 0%, #6b1515 100%);
 	color: white;
     border-bottom: 1px solid #e5e7eb;
     display: flex;
@@ -1011,11 +1009,11 @@ body {
 }
 
 .user-message .message-avatar {
-	background: linear-gradient(135deg, #337810 0%, #2a6209 100%);
+	background: linear-gradient(135deg, #881c1c 0%, #6b1515 100%);
 	color: white;
 }
 .bot-message .message-avatar {
-    background: linear-gradient(135deg, #337810 0%, #2a6209 100%);
+    background: linear-gradient(135deg, #881c1c 0%, #6b1515 100%);
     color: white;
 }
 .message-content {
@@ -1030,7 +1028,7 @@ body {
     position: relative;
 }
 .user-message .message-content {
-    background: linear-gradient(135deg, #337810 0%, #2a6209 100%);
+    background: linear-gradient(135deg, #881c1c 0%, #6b1515 100%);
     color: white;
     border: none;
 }
@@ -1059,7 +1057,7 @@ body {
     width: 0;
     height: 0;
     border: 6px solid transparent;
-    border-left-color: #337810;
+    border-left-color: #881c1c;
 }
 .typing-animation {
 	animation: fadeIn 1s ease-in;
@@ -1099,7 +1097,7 @@ body {
 .chat-input-container button {
 	flex-shrink: 0; /* Prevent button from shrinking */
 	padding: 12px 20px;
-	background: #337810;
+	background: #881c1c;
 	color: white;
 	border: none;
 	border-radius: 25px;
@@ -1121,13 +1119,13 @@ body {
     max-height: 120px;
 }
 #chatInput:focus {
-	border-color: #337810;
+	border-color: #881c1c;
 	box-shadow: 0 0 0 3px rgba(51, 120, 16, 0.1);
     background: white;
 }
 /* Enhanced Save Chat Button */
 #chatControls button:first-child {
-    background: linear-gradient(135deg, #337810 0%, #2a6209 100%);
+    background: linear-gradient(135deg, #881c1c 0%, #6b1515 100%);
     color: white;
     border: none;
     padding: 10px 18px;
@@ -1141,7 +1139,7 @@ body {
 }
 
 #chatControls button:first-child:hover {
-    background: linear-gradient(135deg, #2a6209 0%, #1e4607 100%);
+    background: linear-gradient(135deg, #6b1515 0%, #1e4607 100%);
     transform: translateY(-3px) scale(1.05);
 }
 
@@ -1214,7 +1212,7 @@ body {
     font-style: italic;
 }
 #sendButton {
-    background: linear-gradient(135deg, #337810 0%, #2a6209 100%);
+    background: linear-gradient(135deg, #881c1c 0%, #6b1515 100%);
     color: white;
     border: none;
     padding: 12px 20px;
@@ -1229,7 +1227,7 @@ body {
 }
 
 #sendButton:hover {
-    background: linear-gradient(135deg, #2a6209 0%, #1e4607 100%);
+    background: linear-gradient(135deg, #6b1515 0%, #1e4607 100%);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
@@ -1316,15 +1314,15 @@ body {
 	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 .whiteboard-controls button:nth-child(1) { /* Draw button */
-	border-color: #28a745;
-	color: #28a745;
+	border-color: #881c1c;
+	color: #881c1c;
 }
 
 .whiteboard-controls button:nth-child(1):hover,
 .whiteboard-controls button:nth-child(1).active {
-	background: linear-gradient(135deg, #28a745, #20c997);
+	background: linear-gradient(135deg, #881c1c, #a83232);
 	color: white;
-	border-color: #20c997;
+	border-color: #a83232;
 }
 
 .whiteboard-controls button:nth-child(2) { /* Eraser button */
@@ -1356,9 +1354,9 @@ body {
 }
 
 .whiteboard-controls button:nth-child(4):hover {
-	background: linear-gradient(135deg, #17a2b8, #20c997);
+	background: linear-gradient(135deg, #17a2b8, #a83232);
 	color: white;
-	border-color: #20c997;
+	border-color: #a83232;
 }
 /* Math buttons styling */
 .math-buttons {
@@ -1446,7 +1444,7 @@ body {
 .loading-dots span {
     width: 6px;
     height: 6px;
-    background: #337810;
+    background: #881c1c;
     border-radius: 50%;
     animation: bounce 1.4s ease-in-out infinite both;
 }
@@ -1488,7 +1486,7 @@ body {
 #loadingMessage {
 	font-size: 16px;
 	font-weight: 600;
-	color: #337810;
+	color: #881c1c;
 }
 
 #loadingTime {
@@ -1508,7 +1506,7 @@ body {
 
 .progress-fill {
 	height: 100%;
-	background: linear-gradient(90deg, #337810, #2a6209, #337810);
+	background: linear-gradient(90deg, #881c1c, #6b1515, #881c1c);
 	border-radius: 3px;
 	width: 0%;
 	transition: width 0.3s ease;
@@ -1524,7 +1522,7 @@ body {
 	width: 24px;
 	height: 24px;
 	border: 3px solid #f3f3f3;
-	border-top: 3px solid #337810;
+	border-top: 3px solid #881c1c;
 	border-radius: 50%;
 	animation: spin 1s linear infinite;
 }
@@ -1635,12 +1633,12 @@ body {
 
 .mobile-nav-btn.active {
 	background: white;
-	color: #0d5a47;
+	color: #212721;
 	border-color: white;
 }
 
 /* Mobile landscape and small tablets */
-@media (max-width: 1100px) {
+@media (max-width: 900px) {
 	.mobile-nav {
 		display: flex;
 	}
@@ -1654,12 +1652,10 @@ body {
 		width: 100%;
 		max-width: 100%;
 		flex: 1;
-		display: flex;
 	}
-	
+
 	.whiteboard-section {
 		width: 100%;
-		height: calc(100vh - 180px);
 		flex: none;
 		display: none !important;
 	}
@@ -1864,7 +1860,7 @@ body {
 /* Resize handle for chat section */
 .resize-handle {
 	position: absolute;
-	right: -15px;
+	right: -5px;
 	top: 50%;
 	transform: translateY(-50%);
 	width: 30px;
@@ -1911,7 +1907,7 @@ body {
 	50% { transform: translateX(-50%) scale(1.2); opacity: 0.7; }
 }
 .resize-handle:active {
-	background: #337810;
+	background: #881c1c;
 	color: white;
 }
 
@@ -1928,10 +1924,16 @@ body {
 }
 
 .chat-section {
-	flex: 0 0 650px;
-	position: relative;
+	flex: 0 0 50%;
+	width: 50%;
+	max-width: 50%;
 	min-width: 280px;
-	max-width: 650px;
+	background: #ffffff;
+	border-right: 1px solid #e5e7eb;
+	display: flex;
+	flex-direction: column;
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	position: relative;
 }
 
 /* Whiteboard Tabs Styling */
@@ -1963,7 +1965,7 @@ body {
 }
 
 .tab-button.active {
-	background: #014148;
+	background: #212721;
 	color: white;
 	font-weight: bold;
 }
@@ -2041,7 +2043,7 @@ body {
 }
 
 #studentNotes:focus {
-	border-color: #337810;
+	border-color: #881c1c;
 	background: white;
 	box-shadow: 0 0 0 3px rgba(51, 120, 16, 0.1);
 }
@@ -2149,7 +2151,7 @@ body {
 }
 
 .mode-btn.active {
-	background: #014148;
+	background: #212721;
 	color: white;
 	box-shadow: 0 2px 4px rgba(1, 65, 72, 0.3);
 }
@@ -2286,7 +2288,7 @@ body {
 
 .voice-status-active {
 	background: #e8f5e8 !important;
-	color: #337810 !important;
+	color: #881c1c !important;
 }
 
 .voice-status-error {
@@ -2430,15 +2432,13 @@ body {
 }
 
 .whiteboard-section {
-	flex: 1;
+	flex: 0 0 50%;
+	width: 50%;
 	display: flex;
 	flex-direction: column;
-	background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-	border-radius: 0;
-	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-	overflow: hidden;
-	border: 1px solid #e9ecef;
+	background: white;
 }
+
 /* Chapter images */
 #chapter_image {
 	width: 65%;
@@ -2533,7 +2533,7 @@ figure figcaption {
 
 /* Special styling for probability tables */
 .message-content table th:first-child {
-	background: linear-gradient(135deg, #337810 0%, #2a6209 100%);
+	background: linear-gradient(135deg, #881c1c 0%, #6b1515 100%);
 	color: white;
 }
 
@@ -2584,7 +2584,7 @@ figure figcaption {
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    background: #014148;
+    background: #212721;
     color: white;
     font-size: 13px;
     font-weight: 600;
@@ -2650,7 +2650,61 @@ figure figcaption {
 	cursor: pointer;
 }
 .citation-pill:hover {
-	background: #337810;
+	background: #881c1c;
 	color: #fff;
-	border-color: #337810;
+	border-color: #881c1c;
+}
+
+/* ── Mobile improvements ───────────────────── */
+@media (max-width: 900px) {
+    /* Tap target size fix */
+    #sendButton, .upload-btn, .tab-button, .mobile-nav-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Input stays above keyboard */
+    .chat-input-container {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        z-index: 10;
+        padding: 10px;
+    }
+
+    /* Prevent iOS zoom on input focus */
+    #chatInput, input[type="text"], input[type="email"] {
+        font-size: 16px !important;
+    }
+
+    /* Full-height chat section */
+    .chat-section {
+        height: calc(100dvh - 130px);
+        overflow: hidden;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Session controls hidden on mobile (as already done) */
+    .session-controls { display: none !important; }
+
+    /* Registration modal full-screen friendly */
+    #sessionRegistrationModal > div {
+        width: 95vw !important;
+        padding: 24px !important;
+    }
+
+    /* Whiteboard math buttons wrap nicely */
+    .math-buttons {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding: 8px;
+    }
+    .math-buttons button {
+        flex-shrink: 0;
+    }
 }
