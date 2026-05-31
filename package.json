@@ -1,16 +1,13 @@
 {
   "type": "module",
-  "scripts": {
-    "start": "node javascript/session-server.js"
-  },
   "dependencies": {
-    "@pinecone-database/pinecone": "^7.2.0",
     "axios": "^1.11.0",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "latex-to-unicode": "^0.1.0",
+    "mongodb": "^7.2.0",
     "node-fetch": "^2.7.0",
     "pdf-parse": "^1.1.1",
     "uuid": "^11.1.0",

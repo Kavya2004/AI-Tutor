@@ -13,6 +13,7 @@ import pineconeHandler from './api/pinecone.js';
 import searchHandler from './api/search.js';
 import pdfContentHandler from './api/pdf-content.js';
 import pdfPageHandler from './api/pdf-page.js';
+import { MongoClient } from 'mongodb';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +22,20 @@ const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
 const PORT = 3000;
+
+const mongoClient = new MongoClient(process.env.MONGODB_URI);
+
+let db;
+
+mongoClient
+    .connect()
+    .then(() => {
+        db = mongoClient.db('physics_tutor');
+        console.log('MongoDB connected');
+    })
+    .catch(err => {
+        console.error('MongoDB connection failed:', err);
+    });
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -109,6 +124,29 @@ app.get('/api/sessions/:sessionId/download', (req, res) => {
     const session = sessions.get(req.params.sessionId);
     if (!session) return res.status(404).json({ error: 'Session not found' });
     res.json({ ...serializeSession(session), exportedAt: new Date().toISOString() });
+});
+
+app.post('/api/register-user', async (req, res) => {
+    try {
+        const { name, email } = req.body;
+        if (!email.endsWith('@umass.edu')) {
+            return res.status(400).json({ error: 'Must use @umass.edu email' });
+        }
+        const users = db.collection('users');
+        const existing = await users.findOne({ email });
+        if (existing) {
+            return res.json({ userId: existing._id, existing: true });
+        }
+        const result = await users.insertOne({
+            name,
+            email,
+            createdAt: new Date(),
+            sessions: []
+        });
+        res.json({ userId: result.insertedId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 function serializeSession(session) {
