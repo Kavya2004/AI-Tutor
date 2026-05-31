@@ -38,7 +38,7 @@
 .drag-handle {
     width: 100%;
     height: 24px;
-    background: linear-gradient(135deg, #014148, #337810);
+    background: linear-gradient(135deg, #014148, #881c1c);
     border-radius: 10px 10px 0 0;
     cursor: grab;
     display: flex;
@@ -51,7 +51,7 @@
 }
 
 .drag-handle:hover {
-    background: linear-gradient(135deg, #337810, #6b7d4f);
+    background: linear-gradient(135deg, #881c1c, #6b7d4f);
     box-shadow: 0 3px 6px rgba(51, 120, 16, 0.3);
 }
 
@@ -98,7 +98,7 @@
 .session-actions .session-btn {
     font-size: 10px !important;
     padding: 6px 8px !important;
-    border: 1px solid #337810 !important;
+    border: 1px solid #881c1c !important;
     display: block !important;
     visibility: visible !important;
 }
@@ -111,7 +111,7 @@
 .session-dropdown-btn {
     width: 100%;
     padding: 10px 14px;
-    background: linear-gradient(135deg, #014148, #337810);
+    background: linear-gradient(135deg, #014148, #881c1c);
     color: #f2fcf7;
     border: 1px solid #4a5c2f;
     border-radius: 10px;
@@ -127,7 +127,7 @@
 }
 
 .session-dropdown-btn:hover {
-    background: linear-gradient(135deg, #337810, #6b7d4f);
+    background: linear-gradient(135deg, #881c1c, #6b7d4f);
     border-color: #3a4c1f;
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(51, 120, 16, 0.3);
@@ -212,7 +212,7 @@
 }
 
 .session-btn {
-    background: linear-gradient(135deg, #337810, #6b7d4f) !important;
+    background: linear-gradient(135deg, #881c1c, #6b7d4f) !important;
     color: #ffffff !important;
     border: 1px solid #4a5c2f !important;
     text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
@@ -228,7 +228,7 @@
 .session-btn.leave-session,
 .session-btn.auto-speech,
 .session-btn.auto-speech.active {
-    background: linear-gradient(135deg, #337810, #6b7d4f);
+    background: linear-gradient(135deg, #881c1c, #6b7d4f);
     color: #ffffff;
     border: 1px solid #4a5c2f;
     text-shadow: 0 1px 2px rgba(0,0,0,0.2);
@@ -1328,4 +1328,58 @@
 .session-dropdown-content.show {
     transform: scaleY(1);
     opacity: 1;
+}
+
+/* ── Mobile improvements ───────────────────── */
+@media (max-width: 900px) {
+    /* Tap target size fix */
+    #sendButton, .upload-btn, .tab-button, .mobile-nav-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Input stays above keyboard */
+    .chat-input-container {
+        position: sticky;
+        bottom: 0;
+        background: white;
+        z-index: 10;
+        padding: 10px;
+    }
+
+    /* Prevent iOS zoom on input focus */
+    #chatInput, input[type="text"], input[type="email"] {
+        font-size: 16px !important;
+    }
+
+    /* Full-height chat section */
+    .chat-section {
+        height: calc(100dvh - 130px);
+        overflow: hidden;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Session controls hidden on mobile (as already done) */
+    .session-controls { display: none !important; }
+
+    /* Registration modal full-screen friendly */
+    #sessionRegistrationModal > div {
+        width: 95vw !important;
+        padding: 24px !important;
+    }
+
+    /* Whiteboard math buttons wrap nicely */
+    .math-buttons {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding: 8px;
+    }
+    .math-buttons button {
+        flex-shrink: 0;
+    }
 }
