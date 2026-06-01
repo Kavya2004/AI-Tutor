@@ -13,7 +13,8 @@ import searchHandler from './api/search.js';
 import pdfContentHandler from './api/pdf-content.js';
 import pdfPageHandler from './api/pdf-page.js';
 import pdfImageHandler from './api/pdf-image.js';
-import { connectMongo, saveStudentSession } from './config/mongodb.js';
+import { connectMongo } from './config/mongodb.js';
+import sessionDbRouter from './api/sessions-db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +37,7 @@ app.post('/api/search', searchHandler);
 app.post('/api/pdf-content', pdfContentHandler);
 app.post('/api/pdf-page', pdfPageHandler);
 app.get('/api/pdf-image', pdfImageHandler);
+app.use('/api/db', sessionDbRouter);
 
 // ── Session store ──────────────────────────────────────────────
 const sessions = new Map();
@@ -74,16 +76,6 @@ app.post('/api/sessions/create', (req, res) => {
     };
     sessions.set(sessionId, session);
     sessionConnections.set(sessionId, []);
-
-    if (userEmail && sessionTitle) {
-        const tableNumber = parseInt(String(sessionTitle).replace(/[^0-9]/g, ''), 10);
-        saveStudentSession({
-            name: hostName.trim(),
-            email: userEmail,
-            tableNumber,
-            sessionId,
-        });
-    }
 
     console.log(`Session created: ${sessionId} by ${hostName}`);
     res.json({ sessionId, message: 'Session created successfully', session: serializeSession(session) });
