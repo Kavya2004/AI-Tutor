@@ -49,7 +49,6 @@ CITATION RULE: Do NOT write any citation lines or source references in your resp
 	}
 ];
 
-let voiceEnabled = true;
 const searchCache = new Map();
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -93,12 +92,10 @@ function initializeChat() {
     initializeFileUpload();
     initializeDragDrop();
     createChatControls();
+    initializeVoiceInput();
 
     addMessage("Hi there! I'm your physics tutor! Ask me anything about physics!", 'bot');
 
-    voiceEnabled = localStorage.getItem('autoSpeech') === 'true';
-
-    setTimeout(createVoiceToggle, 1500);
     document.addEventListener('paste', handlePasteEvent);
 }
 let uploadedFiles = [];
@@ -401,29 +398,6 @@ async function getOcrFromImage(base64Image) {
 	}
 }
 
-function createVoiceToggle() {
-	const chatHeader = document.querySelector('.chat-header') || document.querySelector('h2');
-	if (!chatHeader || document.getElementById('voiceToggle')) return;
-
-	const toggleBtn = document.createElement('button');
-	toggleBtn.id = 'voiceToggle';
-	toggleBtn.innerHTML = voiceEnabled ? '🔊 Voice On' : '🔇 Voice Off';
-	toggleBtn.style.cssText = `
-		padding: 5px 10px;
-		margin-left: 10px;
-		border: 1px solid #ccc;
-		border-radius: 15px;
-		background: ${voiceEnabled ? '#337810' : '#666'};
-		color: white;
-		cursor: pointer;
-		font-size: 12px;
-		transition: all 0.3s ease;
-	`;
-	toggleBtn.addEventListener('click', toggleVoiceResponse);
-
-	chatHeader.appendChild(toggleBtn);
-}
-
 function createChatControls() {
 	const chatContainer = document.querySelector('.chat-container');
 	if (!chatContainer || document.getElementById('chatControls')) return;
@@ -472,6 +446,45 @@ function createChatControls() {
 	chatContainer.insertBefore(controlsDiv, chatContainer.firstChild);
 }
 
+function initializeVoiceInput() {
+	const micBtn = document.getElementById('voiceInputBtn');
+	if (!micBtn || !('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+		if (micBtn) micBtn.style.display = 'none';
+		return;
+	}
+
+	const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+	const recognition = new SpeechRecognition();
+	recognition.continuous = false;
+	recognition.interimResults = false;
+	recognition.lang = 'en-US';
+
+	let listening = false;
+
+	recognition.onresult = (e) => {
+		const transcript = e.results[0][0].transcript;
+		const chatInput = document.getElementById('chatInput');
+		if (chatInput) chatInput.value = transcript;
+	};
+
+	recognition.onend = () => {
+		listening = false;
+		micBtn.style.background = '';
+		micBtn.title = 'Click to speak';
+	};
+
+	micBtn.addEventListener('click', () => {
+		if (listening) {
+			recognition.stop();
+		} else {
+			recognition.start();
+			listening = true;
+			micBtn.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+			micBtn.title = 'Listening... click to stop';
+		}
+	});
+}
+
 function handleKeyPress(event) {
 	if (event.key === 'Enter' && !event.shiftKey) {
 		event.preventDefault();
@@ -512,18 +525,33 @@ function addMessage(text, sender, files = [], citation = null) {
 		citationHTML = citation.map(c => {
 			const pageLabel = c.page ? ` · p.${c.page}` : '';
 			const icon = getSourceIcon(c.name);
-			const isTextbook = /college physics/i.test(c.name || '');
+			const safeName = (c.name || '').replace(/'/g, "\\'");
 
-			if (c.url) {
-				return `<a class="citation-pill" href="${c.url}" target="_blank" rel="noopener noreferrer" title="Watch video">${icon} ${c.name}</a>`;
-			}
+			// Skip video/lecture link sources
+			if (/video links|lecture video/i.test(c.name || '')) return '';
+
+			// Textbook — show local page image
+			const isTextbook = /college physics|textbook|physics.?2e/i.test(c.name || '');
 			if (isTextbook && c.page) {
-				return `<span class="citation-pill" onclick="showBookRef(${c.page})" style="cursor:pointer" title="Open textbook page">${icon} ${c.name}${pageLabel}</span>`;
+				return `<span class="citation-pill" onclick="showBookRef(${c.page})" style="cursor:pointer" title="View page ${c.page}">${icon} ${c.name}${pageLabel}</span>`;
 			}
+
+			// Everything else (slides, notes, YouTube) — open from Google Drive
+			if (c.drive_file_id) {
+				const driveUrl = `https://drive.google.com/file/d/${c.drive_file_id}/preview${c.page ? `#page=${c.page}` : ''}`;
+				return `<span class="citation-pill" onclick="showDriveRef('${driveUrl}','${safeName}',${c.page||'null'})" style="cursor:pointer" title="View source">${icon} ${c.name}${pageLabel}</span>`;
+			}
+
+			// Video with URL but no drive ID — skip
+			if (c.url) return '';
+
+			// Fallback — show text content
 			if (c.text) {
-				const safeText = (c.text || '').replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/'/g, "\\'");
-				return `<span class="citation-pill" onclick="showTextRef(\`${safeText}\`, '${(c.name||'').replace(/'/g, "\\'")}'${c.page ? `, ${c.page}` : ''})" style="cursor:pointer" title="View excerpt">${icon} ${c.name}${pageLabel}</span>`;
+				const safeText = c.text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+				return `<span class="citation-pill" onclick="showTextRef('${safeText}','${safeName}',${c.page||1})" style="cursor:pointer" title="View source">${icon} ${c.name}${pageLabel}</span>`;
 			}
+
+			if (!c.name) return '';
 			return `<span class="citation-pill" title="Source reference">${icon} ${c.name}${pageLabel}</span>`;
 		}).join('');
 	}
@@ -570,9 +598,6 @@ function addMessage(text, sender, files = [], citation = null) {
 		window.sessionManager.broadcastMessage(text, sender, files);
 	}
 
-	if (sender === 'bot' && window.voiceTutor) {
-		window.voiceTutor.handleBotResponse(text);
-	}
 }
 
 function viewUploadedFile(file) {
@@ -848,23 +873,6 @@ function completeLoading() {
 
 // Make function globally available
 window.showLoadingForQuiz = showLoadingForQuiz;
-function toggleVoiceResponse() {
-	voiceEnabled = !voiceEnabled;
-	localStorage.setItem('autoSpeech', voiceEnabled.toString());
-
-	const toggleBtn = document.getElementById('voiceToggle');
-	if (toggleBtn) {
-		toggleBtn.innerHTML = voiceEnabled ? '🎤' : '🔇';
-		toggleBtn.title = voiceEnabled ? 'Voice On - Click to disable' : 'Voice Off - Click to enable';
-		toggleBtn.style.background = voiceEnabled ? '#337810' : '#666';
-		toggleBtn.style.borderColor = voiceEnabled ? '#337810' : '#666';
-	}
-
-	if (!voiceEnabled && window.voiceTutor) {
-		window.voiceTutor.stopSpeaking();
-	}
-}
-
 function hasWhiteboardContent(board) {
 	const canvas = board === 'teacher' ? 
 		document.getElementById('teacherWhiteboard') : 
@@ -955,6 +963,10 @@ async function searchPhysicsTextbook(query) {
 				snippet: chunk.text.substring(0, 200),
 				content: chunk.text,
 				url: chunk.url,
+				embed_url: chunk.embed_url,
+				drive_file_id: chunk.drive_file_id,
+				file_name: chunk.file_name,
+				type: chunk.type,
 				fromPinecone: true
 			}));
 			results = [...pineconeResults, ...results];
@@ -973,51 +985,12 @@ async function searchPhysicsTextbook(query) {
 	}
 }
 
-const BLOCKED_PATTERNS = [
-	/\b(porn|sex|nude|naked|xxx|nsfw|explicit|erotic|fetish|masturbat|orgasm|genitals?)\b/i,
-	/\b(kill|murder|suicide|self.harm|shoot|bomb|terrorist|weapon|drug|cocaine|heroin|meth)\b/i,
-	/\b(hack|exploit|malware|phishing|sql.inject|bypass.security)\b/i,
-	/\b(racist|nigger|faggot|slur|hate.speech)\b/i
-];
-
-const OFF_TOPIC_PATTERNS = [
-	/\b(recipe|cook|bake|food|restaurant|movie|film|song|music|sport|football|basketball|soccer|celebrity|gossip|fashion|makeup|dating|relationship|boyfriend|girlfriend|politics|election|president|religion|god|bible|quran|stock.?market|crypto|bitcoin|invest|finance|loan|mortgage)\b/i,
-	/\b(write.?(me|a|an).?(essay|story|poem|code|program|script)|translate|summarize.this.article|tell.me.a.joke|what.is.the.meaning.of.life)\b/i
-];
-
-function checkGuardrails(message) {
-	const text = message.trim();
-	if (!text) return null;
-
-	for (const pattern of BLOCKED_PATTERNS) {
-		if (pattern.test(text)) {
-			return "That kind of message isn't something I can engage with. I'm here to help you with physics — ask me anything about the course!";
-		}
-	}
-
-	for (const pattern of OFF_TOPIC_PATTERNS) {
-		if (pattern.test(text)) {
-			return "I'm only here to help with physics and your coursework. Please ask me a physics question!";
-		}
-	}
-
-	return null;
-}
-
 async function processUserMessage(message) {
 	if (isProcessing || (!message.trim() && uploadedFiles.length === 0)) return;
 
 	// Check if this is a quiz request before processing
 	if (window.quizIntegration && window.quizIntegration.handleQuizCommands(message)) {
 		return; // Quiz command handled, don't process further
-	}
-
-	// Guardrail pre-check
-	const guardrailResponse = checkGuardrails(message);
-	if (guardrailResponse) {
-		addMessage(message, 'user');
-		addMessage(guardrailResponse, 'bot');
-		return;
 	}
 
 	isProcessing = true;
@@ -1121,6 +1094,10 @@ async function processUserMessage(message) {
 		// Search for matching physics textbook sections
 		const searchResults = await searchPhysicsTextbook(message);
 
+		// Build a url lookup map: source name -> url (for YouTube links)
+		const sourceUrlMap = {};
+		searchResults.forEach(r => { if (r.url) sourceUrlMap[r.title] = r.url; });
+
 		if (searchResults.length > 0) {
 			const pineconeChunks = searchResults.filter(r => r.fromPinecone);
 			const textbookChunks = searchResults.filter(r => !r.fromPinecone);
@@ -1143,6 +1120,7 @@ async function processUserMessage(message) {
 				role: 'system',
 				content: refsText
 			});
+
 		}
 
 		// Get AI response with files (only if files processed successfully)
@@ -1184,15 +1162,21 @@ async function processUserMessage(message) {
 		// Clean up any remaining whiteboard tags
 		botResponse = botResponse.replace(/\[(?:TEACHER_BOARD|STUDENT_BOARD|GENERATE_DIAGRAM):[^\]]+\]/g, '').trim();
 
-		// Extract citations from ALL search results — Pinecone first, then textbook
-		const seenTitles = new Set();
+		// Extract citation BEFORE stripping (before convertLatexToUnicode can turn it into a table)
+		// Always use actual Pinecone source names — ignore whatever Gemini wrote
 		const extractedCitation = searchResults
-			.filter(r => {
-				if (!r.title || seenTitles.has(r.title)) return false;
-				seenTitles.add(r.title);
-				return true;
-			})
-			.map(r => ({ name: r.title, page: r.pageNumber || null, url: r.url || null, text: r.content || r.snippet || null }));
+			.filter(r => r.fromPinecone)
+			.filter((r, i, arr) => arr.findIndex(x => x.title === r.title) === i) // dedupe
+			.map(r => ({
+				name: r.title,
+				page: r.pageNumber || null,
+				url: r.url || null,
+				embed_url: r.embed_url || null,
+				drive_file_id: r.drive_file_id || null,
+				file_name: r.file_name || null,
+				type: r.type || null,
+				text: r.content || r.snippet || null
+			}));
 		// Strip ALL citation formats before any rendering
 		botResponse = botResponse
 			.replace(/📖\s*Source:[^\n]*/gi, '')
@@ -1442,7 +1426,7 @@ window.addOcrMessageToChat = function (ocrText, boardType) {
 function getSourceIcon(sourceName) {
 	if (!sourceName) return '📖';
 	const s = sourceName.toLowerCase();
-	if (s.includes('youtube') || s.includes('video') || s.includes('lecture video')) return '🎦';
+	if (s.includes('youtube') || s.includes('video') || s.includes('lecture video')) return '🎬';
 	if (s.includes('slide') || s.includes('ppt')) return '🖥️';
 	if (s.includes('textbook') || s.includes('book') || s.includes('college physics')) return '📚';
 	if (s.includes('note') || s.includes('summary') || s.includes('review')) return '📝';
@@ -1455,6 +1439,42 @@ function getSourceIcon(sourceName) {
 
 let _pdfCurrentPage = 1;
 let _pdfTotalPages = 0;
+
+function showMediaRef(embedUrl, sourceName, mediaType, page) {
+	const existing = document.getElementById('textRefOverlay');
+	if (existing) existing.remove();
+
+	const overlay = document.createElement('div');
+	overlay.id = 'textRefOverlay';
+	overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9000;display:flex;align-items:center;justify-content:center';
+
+	const panel = document.createElement('div');
+	panel.style.cssText = 'width:860px;max-width:95vw;height:560px;display:flex;flex-direction:column;border-radius:10px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.45);background:#111';
+
+	const header = document.createElement('div');
+	header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#014148;color:white;font-size:13px;font-weight:600;flex-shrink:0';
+	const pageLabel = page ? ` · p.${page}` : '';
+	header.innerHTML = `<span>${getSourceIcon(sourceName)} ${sourceName}${pageLabel}</span>`;
+
+	const closeBtn = document.createElement('button');
+	closeBtn.innerHTML = '×';
+	closeBtn.style.cssText = 'background:none;border:none;color:white;font-size:20px;cursor:pointer;line-height:1;padding:0 4px';
+	closeBtn.onclick = () => overlay.remove();
+	header.appendChild(closeBtn);
+
+	const iframe = document.createElement('iframe');
+	iframe.src = embedUrl;
+	iframe.style.cssText = 'flex:1;border:none;width:100%';
+	iframe.allow = 'autoplay; encrypted-media';
+	iframe.allowFullscreen = true;
+
+	panel.appendChild(header);
+	panel.appendChild(iframe);
+	overlay.appendChild(panel);
+	document.body.appendChild(overlay);
+	overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+window.showMediaRef = showMediaRef;
 
 function showTextRef(text, sourceName, page) {
 	const existing = document.getElementById('textRefOverlay');
@@ -1500,27 +1520,41 @@ async function showBookRef(pageNumber) {
 	overlay.style.display = 'flex';
 	if (nav) nav.style.display = 'flex';
 	if (iframe) { iframe.src = ''; iframe.style.display = 'none'; }
-	if (title) title.textContent = '📖 College Physics 2e';
+	if (title) title.textContent = '\uD83D\uDCD6 College Physics 2e';
 	_pdfCurrentPage = pageNumber;
 
 	const textDiv = getOrCreateTextDiv();
-	textDiv.innerHTML = '<p style="color:#aaa;text-align:center;padding:40px">Loading...</p>';
+	textDiv.innerHTML = '<p style="color:#aaa;text-align:center;padding:40px">Loading page...</p>';
 
-	try {
-		const res = await fetch('/api/pdf-page', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ page: pageNumber })
-		});
-		if (!res.ok) throw new Error(`HTTP ${res.status}`);
-		const data = await res.json();
-		_pdfCurrentPage = data.page;
-		_pdfTotalPages = data.total;
-		if (label) label.textContent = `Page ${_pdfCurrentPage} / ${_pdfTotalPages}`;
-		textDiv.innerHTML = `<p>${data.text.replace(/\n/g, '<br>')}</p>`;
-	} catch (e) {
-		textDiv.innerHTML = `<p style="color:#c00">Failed to load: ${e.message}</p>`;
-	}
+	// Format page number with leading zeros to match pdftoppm output (e.g. page-0203.png)
+	const padded = String(pageNumber).padStart(4, '0');
+	const imgUrl = `https://physics-ai-tutor.onrender.com/api/pdf-image?page=${pageNumber}`;
+
+	const img = new Image();
+	img.crossOrigin = 'anonymous';
+	img.onload = () => {
+		textDiv.innerHTML = '';
+		img.style.cssText = 'width:100%;height:auto;display:block;';
+		textDiv.appendChild(img);
+		if (label) label.textContent = `Page ${pageNumber} / 1697`;
+	};
+	img.onerror = async (e) => {
+		console.error('pdf-image failed to load:', imgUrl, e);
+		try {
+			const res = await fetch('/api/pdf-page', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ page: pageNumber })
+			});
+			const data = await res.json();
+			_pdfTotalPages = data.total;
+			if (label) label.textContent = `Page ${pageNumber} / ${_pdfTotalPages}`;
+			textDiv.innerHTML = `<p style="padding:20px">${data.text.replace(/\n/g, '<br>')}</p>`;
+		} catch(e) {
+			textDiv.innerHTML = `<p style="color:#c00;padding:20px">Page image not available yet.</p>`;
+		}
+	};
+	img.src = imgUrl;
 }
 
 function getOrCreateTextDiv() {
@@ -1528,14 +1562,35 @@ function getOrCreateTextDiv() {
 	if (!textDiv) {
 		textDiv = document.createElement('div');
 		textDiv.id = 'bookRefTextDiv';
-		textDiv.style.cssText = 'flex:1;overflow-y:auto;padding:24px;background:#fff;font-size:15px;line-height:1.9;color:#222;font-family:Georgia,serif;white-space:pre-wrap;';
+		textDiv.style.cssText = 'flex:1;overflow-y:auto;background:#fff;text-align:center;';
 		document.getElementById('bookRefPanel').appendChild(textDiv);
 	}
 	textDiv.style.display = 'block';
 	return textDiv;
 }
 
+function showDriveRef(driveUrl, name, page) {
+	const overlay = document.getElementById('bookRefOverlay');
+	const iframe = document.getElementById('bookRefIframe');
+	const title = document.getElementById('bookRefTitle');
+	const nav = document.getElementById('bookRefNav');
+	const textDiv = document.getElementById('bookRefTextDiv');
+	if (!overlay || !iframe) return;
+
+	if (textDiv) textDiv.style.display = 'none';
+	overlay.style.display = 'flex';
+	if (nav) nav.style.display = 'none';
+	if (title) title.textContent = name || 'Source';
+	iframe.style.display = 'block';
+	iframe.src = driveUrl;
+}
+
+window.showDriveRef = showDriveRef;
+
+window.showTextRef = showTextRef;
+
 function showUrlRef(url, name) {
+	// YouTube and external sites can't be iframed — open in new tab
 	window.open(url, '_blank', 'noopener,noreferrer');
 }
 
@@ -1547,7 +1602,7 @@ function closeBookRef() {
 	const overlay = document.getElementById('bookRefOverlay');
 	const iframe = document.getElementById('bookRefIframe');
 	if (overlay) overlay.style.display = 'none';
-	if (iframe) iframe.src = '';
+	if (iframe) iframe.src = ''; // stop video/pdf
 }
 
 window.closeBookRef = closeBookRef;

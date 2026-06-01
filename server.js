@@ -8,11 +8,12 @@ import { WebSocketServer } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 import geminiHandler from './api/gemini.js';
 import imageGenHandler from './api/image-gen.js';
-import diagramHandler from './api/diagram.js';
 import pineconeHandler from './api/pinecone.js';
 import searchHandler from './api/search.js';
 import pdfContentHandler from './api/pdf-content.js';
 import pdfPageHandler from './api/pdf-page.js';
+import pdfImageHandler from './api/pdf-image.js';
+import { connectMongo, saveStudentSession } from './config/mongodb.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,15 +26,16 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('.'));
+app.use('/pages', express.static('pages'));
 
 // API routes
 app.post('/api/gemini', geminiHandler);
 app.post('/api/image-gen', imageGenHandler);
-app.post('/api/diagram', diagramHandler);
 app.post('/api/pinecone', pineconeHandler);
 app.post('/api/search', searchHandler);
 app.post('/api/pdf-content', pdfContentHandler);
 app.post('/api/pdf-page', pdfPageHandler);
+app.get('/api/pdf-image', pdfImageHandler);
 
 // ── Session store ──────────────────────────────────────────────
 const sessions = new Map();
@@ -54,7 +56,7 @@ function broadcastToSession(sessionId, message, excludeWs = null) {
 
 // Create session
 app.post('/api/sessions/create', (req, res) => {
-    const { hostName, avatar, color, isPublic = true, sessionTitle } = req.body;
+    const { hostName, avatar, color, isPublic = true, sessionTitle, userEmail } = req.body;
     if (!hostName || !hostName.trim()) {
         return res.status(400).json({ error: 'Host name is required' });
     }
@@ -72,6 +74,17 @@ app.post('/api/sessions/create', (req, res) => {
     };
     sessions.set(sessionId, session);
     sessionConnections.set(sessionId, []);
+
+    if (userEmail && sessionTitle) {
+        const tableNumber = parseInt(String(sessionTitle).replace(/[^0-9]/g, ''), 10);
+        saveStudentSession({
+            name: hostName.trim(),
+            email: userEmail,
+            tableNumber,
+            sessionId,
+        });
+    }
+
     console.log(`Session created: ${sessionId} by ${hostName}`);
     res.json({ sessionId, message: 'Session created successfully', session: serializeSession(session) });
 });
@@ -196,6 +209,8 @@ wss.on('connection', (ws, req) => {
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'tutor.html'));
 });
+
+connectMongo();
 
 server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);

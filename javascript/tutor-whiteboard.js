@@ -1549,6 +1549,126 @@ async function captureGraphToBoard(boardType = 'teacher') {
 	}
 }
 
+// ── Nova Canvas AI Image Generation ──────────────────────────
+// Placed images per board: { img, x, y, w, h }
+const placedImages = { teacher: [], student: [] };
+let draggingImage = null, resizingImage = null;
+let imgDragOffset = { x: 0, y: 0 };
+
+async function generateAndPlaceImage(boardType = 'teacher') {
+	const prompt = window.prompt('Describe the image to generate (e.g. "diagram of a pendulum"):');
+	if (!prompt) return;
+
+	const btn = document.getElementById(`aiImage${boardType === 'teacher' ? 'Teacher' : 'Student'}Button`);
+	if (btn) { btn.textContent = '⏳ Generating...'; btn.disabled = true; }
+
+	try {
+		const res = await fetch('/api/image-gen', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ prompt })
+		});
+		const data = await res.json();
+		if (!res.ok || !data.image) throw new Error(data.error || 'No image returned');
+
+		const img = new Image();
+		img.onload = () => {
+			const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+			const entry = { img, x: 20, y: 20, w: Math.min(300, canvas.width / 2), h: Math.min(300, canvas.height / 2) };
+			placedImages[boardType].push(entry);
+			redrawWithImages(boardType);
+			setupImageInteraction(boardType);
+		};
+		img.src = data.image;
+	} catch (err) {
+		alert('Image generation failed: ' + err.message);
+	} finally {
+		if (btn) { btn.textContent = '🖼️ AI Image'; btn.disabled = false; }
+	}
+}
+
+function redrawWithImages(boardType) {
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	if (!ctx || !canvas) return;
+	const imgs = placedImages[boardType];
+	imgs.forEach(entry => {
+		ctx.drawImage(entry.img, entry.x, entry.y, entry.w, entry.h);
+		// Draw resize handle (bottom-right corner)
+		ctx.fillStyle = '#337810';
+		ctx.fillRect(entry.x + entry.w - 10, entry.y + entry.h - 10, 10, 10);
+		// Draw border
+		ctx.strokeStyle = '#337810';
+		ctx.lineWidth = 1.5;
+		ctx.strokeRect(entry.x, entry.y, entry.w, entry.h);
+	});
+}
+
+function setupImageInteraction(boardType) {
+	const canvas = boardType === 'teacher' ? teacherCanvas : studentCanvas;
+	if (!canvas || canvas._imgInteractionSetup) return;
+	canvas._imgInteractionSetup = true;
+
+	const getPos = (e) => {
+		const rect = canvas.getBoundingClientRect();
+		return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+	};
+
+	const hitImage = (pos) => {
+		const imgs = placedImages[boardType];
+		for (let i = imgs.length - 1; i >= 0; i--) {
+			const e = imgs[i];
+			if (pos.x >= e.x + e.w - 12 && pos.x <= e.x + e.w + 2 &&
+				pos.y >= e.y + e.h - 12 && pos.y <= e.y + e.h + 2) return { entry: e, mode: 'resize' };
+			if (pos.x >= e.x && pos.x <= e.x + e.w && pos.y >= e.y && pos.y <= e.y + e.h) return { entry: e, mode: 'drag' };
+		}
+		return null;
+	};
+
+	canvas.addEventListener('mousedown', (e) => {
+		const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
+		const currentEraseMode = boardType === 'teacher' ? teacherEraserMode : studentEraserMode;
+		if (currentDrawMode || currentEraseMode) return;
+		const pos = getPos(e);
+		const hit = hitImage(pos);
+		if (!hit) return;
+		e.stopPropagation();
+		if (hit.mode === 'drag') {
+			draggingImage = hit.entry;
+			imgDragOffset = { x: pos.x - hit.entry.x, y: pos.y - hit.entry.y };
+		} else {
+			resizingImage = hit.entry;
+		}
+	}, true);
+
+	canvas.addEventListener('mousemove', (e) => {
+		if (!draggingImage && !resizingImage) return;
+		const pos = getPos(e);
+		if (draggingImage) {
+			draggingImage.x = pos.x - imgDragOffset.x;
+			draggingImage.y = pos.y - imgDragOffset.y;
+		} else if (resizingImage) {
+			resizingImage.w = Math.max(40, pos.x - resizingImage.x);
+			resizingImage.h = Math.max(40, pos.y - resizingImage.y);
+		}
+		redrawCanvas(boardType);
+		redrawWithImages(boardType);
+	}, true);
+
+	canvas.addEventListener('mouseup', () => { draggingImage = null; resizingImage = null; }, true);
+
+	// Update cursor
+	canvas.addEventListener('mousemove', (e) => {
+		const currentDrawMode = boardType === 'teacher' ? teacherDrawingMode : studentDrawingMode;
+		if (currentDrawMode) return;
+		const pos = getPos(e);
+		const hit = hitImage(pos);
+		canvas.style.cursor = hit ? (hit.mode === 'resize' ? 'nwse-resize' : 'move') : 'default';
+	});
+}
+
+window.generateAndPlaceImage = generateAndPlaceImage;
+
 // Export functions for external use
 window.tutorWhiteboard = {
 	clearWhiteboard,

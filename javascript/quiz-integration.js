@@ -388,6 +388,7 @@ class QuizIntegration {
     async generateAIQuiz(topic, difficulty = 'easy') {
         const loadingIndicator = document.getElementById('loadingIndicator');
         try {
+            // Check if we have a sample quiz for this topic first
             const chapterKey = window.getChapterKey ? window.getChapterKey(topic) : topic.toLowerCase();
             if (window.sampleQuizzes && window.sampleQuizzes[chapterKey]) {
                 quizSystem.startQuiz(window.sampleQuizzes[chapterKey]);
@@ -400,6 +401,7 @@ class QuizIntegration {
                 loadingIndicator.style.display = 'flex';
             }
 
+            // Fetch question bank examples from Pinecone in parallel with nothing else yet
             const bankChunks = await this.fetchQuestionBankChunks(topic);
             const bankContext = bankChunks.length > 0
                 ? `\n\nHere are real exam/practice questions from the course question bank for reference. Model your questions after this style, difficulty, and format:\n${bankChunks.map(c => c.text).join('\n---\n')}`

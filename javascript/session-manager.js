@@ -1,10 +1,11 @@
-const BACKEND_URL = "https://ai-tutor-53f1.onrender.com";
+const BACKEND_URL = "https://physics-ai-tutor.onrender.com";
 
 class SessionManager {
   constructor() {
     this.currentSession = null;
     this.isHost = false;
-    this.userName = localStorage.getItem("tutorUserName") || null;
+    this.userName = null;
+    this.userEmail = null;
     this.participants = new Map();
     this.sessionMessages = [];
     this.ws = null;
@@ -71,6 +72,9 @@ class SessionManager {
                     <button id="publicSessionsBtn" class="session-btn browse-public">
                         🌐 Browse
                     </button>
+                    <button id="customizeProfileBtn" class="session-btn customize-profile">
+                        🎨 Profile
+                    </button>
                     <button id="leaveSessionBtn" class="session-btn leave-session" style="display: none !important;">
                         🚪 Leave
                     </button>
@@ -79,17 +83,6 @@ class SessionManager {
                     </button>
                     <button id="downloadSessionBtn" class="session-btn download-session" style="display: none !important;">
                         💾 Save
-                    </button>
-                </div>
-                <div class="voice-controls-row">
-                    <button id="customizeProfileBtn" class="session-btn customize-profile">
-                        🎨 Profile
-                    </button>
-                    <button id="voiceInputBtn" class="session-btn voice-input" title="Click to speak">
-                        🎤 Speak
-                    </button>
-                    <button id="autoSpeechBtn" class="session-btn auto-speech" title="Toggle auto-speech">
-                        🔇 Speaker
                     </button>
                 </div>
             </div>
@@ -134,34 +127,10 @@ class SessionManager {
 
   setupVoiceControls() {
     const voiceInputBtn = document.getElementById("voiceInputBtn");
-    const autoSpeechBtn = document.getElementById("autoSpeechBtn");
-    const voiceSettingsBtn = document.getElementById("voiceSettingsBtn");
-
-
-    const autoSpeechEnabled = localStorage.getItem('autoSpeech') !== 'false';
-    if (autoSpeechBtn) {
-      autoSpeechBtn.innerHTML = autoSpeechEnabled ? '🔊 Speaker' : '🔇 Speaker';
-      autoSpeechBtn.classList.toggle('active', autoSpeechEnabled);
-    }
 
     voiceInputBtn?.addEventListener("click", () => {
       if (window.voiceTutor) {
         window.voiceTutor.toggleVoiceInput();
-      }
-    });
-
-    autoSpeechBtn?.addEventListener("click", () => {
-      if (window.voiceTutor) {
-        window.voiceTutor.toggleAutoSpeech();
-        const enabled = localStorage.getItem('autoSpeech') === 'true';
-        autoSpeechBtn.innerHTML = enabled ? '🔊 Speaker' : '🔇 Speaker';
-        autoSpeechBtn.classList.toggle('active', enabled);
-      }
-    });
-
-    voiceSettingsBtn?.addEventListener("click", () => {
-      if (window.voiceTutor) {
-        window.voiceTutor.toggleSettingsMenu();
       }
     });
   }
@@ -315,23 +284,10 @@ class SessionManager {
         </div>
         <div class="modal-body">
             <input type="text" id="userNameInput" placeholder="Your name..." maxlength="20">
+            <input type="email" id="userEmailInput" placeholder="UMass email (e.g., name@umass.edu)">
             <input type="text" id="sessionIdInput" placeholder="Session ID (optional)" style="display: none;">
-            <input type="text" id="sessionTitleInput" placeholder="Session title (e.g., 'Physics Basics')" maxlength="50" style="display: none;" required>
-            <div class="session-privacy" id="sessionPrivacy" style="display: none;">
-                <h4>Session Privacy</h4>
-                <div class="privacy-options">
-                    <label class="privacy-option">
-                        <input type="radio" name="sessionPrivacy" value="public" checked> 
-                        <span class="privacy-label">🌐 Public Session</span>
-                        <small>Anyone can find and join this session</small>
-                    </label>
-                    <label class="privacy-option">
-                        <input type="radio" name="sessionPrivacy" value="private"> 
-                        <span class="privacy-label">🔒 Private Session</span>
-                        <small>Only people with the session ID can join</small>
-                    </label>
-                </div>
-            </div>
+            <input type="number" id="sessionTitleInput" placeholder="Table number" min="1" max="99" style="display: none;" required>
+
             
             <div class="customization-section">
                 <h4>Choose Your Avatar</h4>
@@ -380,23 +336,28 @@ class SessionManager {
 
     const originalSessionHandler = () => {
       const userName = document.getElementById("userNameInput").value.trim();
+      const userEmail = document.getElementById("userEmailInput").value.trim();
       const sessionId = document.getElementById("sessionIdInput").value.trim();
       const sessionTitle = document.getElementById("sessionTitleInput").value.trim();     
-      const privacyRadio = document.querySelector('input[name="sessionPrivacy"]:checked');
-      const isPublic = privacyRadio ? privacyRadio.value === 'public' : true;
+      const isPublic = true;
       
       if (!userName) {
         this.showNotification("Please enter your name", "error");
         return;
       }
 
+      if (!userEmail || !userEmail.endsWith("@umass.edu")) {
+        this.showNotification("Please enter a valid @umass.edu email", "error");
+        return;
+      }
+
       this.userName = userName;
-      localStorage.setItem("tutorUserName", userName);
+      this.userEmail = userEmail;
 
       if (sessionId) {
         this.joinSession(sessionId);
       } else {
-        this.createNewSessionWithParams(sessionTitle, isPublic);
+        this.createNewSessionWithParams(`Table ${sessionTitle}`, isPublic);
       }
 
       modal.style.display = "none";
@@ -460,7 +421,8 @@ class SessionManager {
             avatar: this.selectedAvatar,
             color: this.selectedColor,
             isPublic: isPublic,              
-            sessionTitle: sessionTitle,      
+            sessionTitle: sessionTitle,
+            userEmail: this.userEmail,
             timestamp: new Date().toISOString(),
           }),
         },
@@ -498,7 +460,8 @@ class SessionManager {
             avatar: this.selectedAvatar,
             color: this.selectedColor,
             isPublic: isPublic,              
-            sessionTitle: sessionTitle,      
+            sessionTitle: sessionTitle,
+            userEmail: this.userEmail,
             timestamp: new Date().toISOString(),
           }),
         },
@@ -623,22 +586,19 @@ class SessionManager {
     const title = document.getElementById("modalTitle");
     const confirmBtn = document.getElementById("confirmSessionBtn");
     const sessionInput = document.getElementById("sessionIdInput");
-    const titleInput = document.getElementById("sessionTitleInput");     
-    const privacyDiv = document.getElementById("sessionPrivacy");
+    const titleInput = document.getElementById("sessionTitleInput");
 
     if (action === "join") {
       title.textContent = "Join Session";
       confirmBtn.textContent = "Join Session";
       sessionInput.style.display = "block";
-      titleInput.style.display = "none";           
-      privacyDiv.style.display = "none"; 
+      titleInput.style.display = "none";
       sessionInput.setAttribute("placeholder", "Enter Session ID");
     } else {
       title.textContent = "Create Session";
       confirmBtn.textContent = "Create Session";
       sessionInput.style.display = "none";
-      titleInput.style.display = "block";         
-      privacyDiv.style.display = "block";          
+      titleInput.style.display = "block";
     }
 
     modal.style.display = "flex";
@@ -652,17 +612,20 @@ class SessionManager {
     const confirmBtn = document.getElementById("confirmSessionBtn");
     const sessionInput = document.getElementById("sessionIdInput");
     const titleInput = document.getElementById("sessionTitleInput");
-    const privacyDiv = document.getElementById("sessionPrivacy");
     const nameInput = document.getElementById("userNameInput");
 
     title.textContent = "Create New Session";
     confirmBtn.textContent = "Create Session";
     sessionInput.style.display = "none";
     titleInput.style.display = "block";
-    privacyDiv.style.display = "block";
     
-    nameInput.value = this.userName;
+    nameInput.value = "";
     nameInput.style.display = "none";
+
+    const emailInput = document.getElementById("userEmailInput");
+    emailInput.value = "";
+    emailInput.style.display = "block";
+
     titleInput.focus();
     
     modal.style.display = "flex";
@@ -670,15 +633,22 @@ class SessionManager {
 
     confirmBtn.onclick = () => {
       const sessionTitle = titleInput.value.trim();
-      const privacyRadio = document.querySelector('input[name="sessionPrivacy"]:checked');
-      const isPublic = privacyRadio ? privacyRadio.value === 'public' : true;
+      const userEmail = document.getElementById("userEmailInput").value.trim();
+      const isPublic = true;
       
       if (!sessionTitle) {
-        this.showNotification("Please enter a session title", "error");
+        this.showNotification("Please enter a table number", "error");
         return;
       }
+
+      if (!userEmail || !userEmail.endsWith("@umass.edu")) {
+        this.showNotification("Please enter a valid @umass.edu email", "error");
+        return;
+      }
+
+      this.userEmail = userEmail;
       
-      this.createNewSessionWithParams(sessionTitle, isPublic);
+      this.createNewSessionWithParams(`Table ${sessionTitle}`, isPublic);
       modal.style.display = "none";
     };
   }
@@ -747,7 +717,7 @@ class SessionManager {
     }
 
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    this.ws = new WebSocket(`wss://ai-tutor-53f1.onrender.com/sessions/${this.sessionId}`);
+    this.ws = new WebSocket(`wss://physics-ai-tutor.onrender.com/sessions/${this.sessionId}`);
     this.lastPingTime = Date.now();
 
     this.ws.onopen = () => {
@@ -1561,7 +1531,6 @@ class SessionManager {
 
       if (enteredName && enteredName !== this.userName) {
         this.userName = enteredName;
-        localStorage.setItem("tutorUserName", enteredName);
       }
 
       const selectedAvatarEl = document.querySelector(
