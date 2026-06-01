@@ -152,11 +152,11 @@ a.nostyle {
 	background-attachment: fixed;
 }
 
-/*#navigation_wrapper     { height: 36px; background: #014148; clear: both;  font-size: 16px;  margin-bottom: 0; top: 0; position:relative;}*/
+/*#navigation_wrapper     { height: 36px; background: #881c1c; clear: both;  font-size: 16px;  margin-bottom: 0; top: 0; position:relative;}*/
 
 #navigation {
 	height: 36px;
-	background: #014148;
+	background: #881c1c;
 	clear: both;
 	font-size: 16px;
 	font-family: sans-serif;
@@ -228,7 +228,7 @@ a.nostyle {
 	width: 170px;
 	height: 150px;
 	display: none;
-	background-color: #014148;
+	background-color: #881c1c;
 	position: absolute;
 	color: #f2fcf7;
 	margin-top: 5px;
@@ -257,7 +257,7 @@ a.nostyle {
 	width: 160px;
 	height: 100px;
 	display: none;
-	background-color: #014148;
+	background-color: #881c1c;
 	position: absolute;
 	color: #f2fcf7;
 	margin-top: 1px;
@@ -327,7 +327,7 @@ a.nostyle {
 	padding: 7px 7px 7px 25px;
 }
 #menu a:hover {
-	background: #014148;
+	background: #881c1c;
 	color: #eee;
 }
 #menu .active {
@@ -370,7 +370,7 @@ a.nostyle {
 	padding: 7px 7px 7px 25px;
 }
 #menu_risk a:hover {
-	background: #014148;
+	background: #881c1c;
 	color: #eee;
 }
 #menu_risk .active {
@@ -378,7 +378,7 @@ a.nostyle {
 }
 
 #footer {
-	background: url(//www.probabilitycourse.com/images/Template/HeaderBg.png) repeat-x; /*background: #014148; border-bottom: 2px solid #999; */
+	background: url(//www.probabilitycourse.com/images/Template/HeaderBg.png) repeat-x; /*background: #881c1c; border-bottom: 2px solid #999; */
 	clear: both;
 	font-size: 13px;
 }
@@ -1961,7 +1961,7 @@ body {
 }
 
 .tab-button.active {
-	background: #014148;
+	background: #881c1c;
 	color: white;
 	font-weight: bold;
 }
@@ -2147,9 +2147,9 @@ body {
 }
 
 .mode-btn.active {
-	background: #014148;
+	background: #881c1c;
 	color: white;
-	box-shadow: 0 2px 4px rgba(1, 65, 72, 0.3);
+	box-shadow: 0 2px 4px rgba(136, 28, 28, 0.3);
 }
 
 #studentNotes {
@@ -2556,7 +2556,7 @@ figure figcaption {
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    background: #014148;
+    background: #881c1c;
     color: white;
     font-size: 13px;
     font-weight: 600;
