@@ -8,7 +8,7 @@ import { execFile } from 'child_process';
 import { existsSync } from 'fs';
 import { readFile, unlink } from 'fs/promises';
 import { tmpdir } from 'os';
-import { connectMongo, saveStudentSession } from '../config/mongodb.js';
+import { connectMongo, createSessionRecord, addStudentToSession } from '../config/mongodb.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -221,15 +221,12 @@ app.post("/api/sessions/create", (req, res) => {
   sessions.set(sessionId, session);
   sessionConnections.set(sessionId, []);
 
-  if (userEmail && sessionTitle) {
-    const tableNumber = parseInt(sessionTitle.replace(/[^0-9]/g, ''), 10);
-    saveStudentSession({
-      name: hostName.trim(),
-      email: userEmail,
-      tableNumber,
-      sessionId,
-    });
-  }
+  createSessionRecord({
+    sessionId,
+    sessionTitle: sessionTitle || '',
+    hostName: hostName.trim(),
+    hostEmail: userEmail || '',
+  }).catch(err => console.error('[MongoDB] session record error:', err));
 
   console.log(`Session created: ${sessionId} by ${hostName}`);
 
@@ -258,6 +255,16 @@ app.post("/api/sessions/:sessionId/join", (req, res) => {
   }
 
   session.addParticipant(userName.trim(), avatar, color);
+
+  const { email, tableNumber } = req.body;
+  if (email && tableNumber) {
+      addStudentToSession({
+        sessionId,
+        name: userName.trim(),
+        email,
+        tableNumber: parseInt(tableNumber),
+      }).catch(err => console.error('[MongoDB] addStudent error:', err));
+    }
 
   console.log(`${userName} joined session: ${sessionId}`);
 
