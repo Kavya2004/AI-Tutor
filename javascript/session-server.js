@@ -420,7 +420,7 @@ wss.on("connection", (ws, req) => {
               userName: userName,
               timestamp: messageObj.timestamp,
               files: message.files || [],
-            });
+            }, ws); // exclude sender so they don't receive their own broadcast back
 
             console.log(
               `Message in session ${sessionId} from ${userName}: ${message.message.substring(0, 50)}...`,

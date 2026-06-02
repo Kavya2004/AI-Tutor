@@ -859,11 +859,12 @@ class SessionManager {
   handleSessionMessage(data) {
     switch (data.type) {
       case "message":
+        // Skip messages that originated from this client (both user messages and
+        // bot replies — tutor-chat.js already renders those locally before broadcasting)
         if (
           data.userName &&
           this.userName &&
-          data.userName === this.userName &&
-          data.sender !== "bot"
+          data.userName === this.userName
         ) {
           break;
         }
