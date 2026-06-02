@@ -1528,7 +1528,7 @@ async function showBookRef(pageNumber) {
 
 	// Format page number with leading zeros to match pdftoppm output (e.g. page-0203.png)
 	const padded = String(pageNumber).padStart(4, '0');
-	const imgUrl = `https://physics-ai-tutor.onrender.com/api/pdf-image?page=${pageNumber}`;
+	const imgUrl = `https://ai-tutor-53f1.onrender.com/api/pdf-image?page=${pageNumber}`;
 
 	const img = new Image();
 	img.crossOrigin = 'anonymous';

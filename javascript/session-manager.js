@@ -1,4 +1,4 @@
-const BACKEND_URL = "https://physics-ai-tutor.onrender.com";
+const BACKEND_URL = "https://ai-tutor-53f1.onrender.com";
 
 class SessionManager {
   constructor() {
@@ -29,7 +29,7 @@ class SessionManager {
     this.createSessionButton();
     this.createSessionModal();
     this.createParticipantsList();
-    this.createPublicSessionsList(); 
+    this.createPublicSessionsList();
 
     const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get("session");
@@ -90,34 +90,51 @@ class SessionManager {
 
     chatHeader.insertBefore(sessionControls, chatHeader.firstChild);
 
-
     this.setupSessionDropdown();
     this.setupVoiceControls();
     this.setupDragHandle();
 
-    document.getElementById("createSessionBtn").addEventListener("click", () => this.createSession());
-    document.getElementById("customizeProfileBtn").addEventListener("click", () => this.showCustomizationModal());
-    document.getElementById("joinSessionBtn").addEventListener("click", () => this.showJoinModal());
-    document.getElementById("publicSessionsBtn").addEventListener("click", () => this.showPublicSessions());
-    document.getElementById("leaveSessionBtn").addEventListener("click", () => this.leaveSession());
-    document.getElementById("shareSessionBtn").addEventListener("click", () => this.shareSession());
-    document.getElementById("downloadSessionBtn").addEventListener("click", () => this.downloadSession());
+    document
+      .getElementById("createSessionBtn")
+      .addEventListener("click", () => this.createSession());
+    document
+      .getElementById("customizeProfileBtn")
+      .addEventListener("click", () => this.showCustomizationModal());
+    document
+      .getElementById("joinSessionBtn")
+      .addEventListener("click", () => this.showJoinModal());
+    document
+      .getElementById("publicSessionsBtn")
+      .addEventListener("click", () => this.showPublicSessions());
+    document
+      .getElementById("leaveSessionBtn")
+      .addEventListener("click", () => this.leaveSession());
+    document
+      .getElementById("shareSessionBtn")
+      .addEventListener("click", () => this.shareSession());
+    document
+      .getElementById("downloadSessionBtn")
+      .addEventListener("click", () => this.downloadSession());
   }
 
   setupSessionDropdown() {
     const dropdownBtn = document.getElementById("sessionDropdownBtn");
     const dropdownContent = document.getElementById("sessionDropdownContent");
-    
+
     dropdownBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       dropdownContent.classList.toggle("show");
       const arrow = dropdownBtn.querySelector("span:last-child");
-      arrow.textContent = dropdownContent.classList.contains("show") ? "▲" : "▼";
+      arrow.textContent = dropdownContent.classList.contains("show")
+        ? "▲"
+        : "▼";
     });
 
-
     document.addEventListener("click", (e) => {
-      if (!dropdownBtn.contains(e.target) && !dropdownContent.contains(e.target)) {
+      if (
+        !dropdownBtn.contains(e.target) &&
+        !dropdownContent.contains(e.target)
+      ) {
         dropdownContent.classList.remove("show");
         const arrow = dropdownBtn.querySelector("span:last-child");
         arrow.textContent = "▼";
@@ -138,11 +155,11 @@ class SessionManager {
   setupSessionToggle() {
     const toggleBtn = document.getElementById("sessionToggleBtn");
     const content = document.getElementById("sessionContent");
-    
+
     toggleBtn?.addEventListener("click", () => {
-      const isVisible = content.style.display !== 'none';
-      content.style.display = isVisible ? 'none' : 'block';
-      toggleBtn.innerHTML = isVisible ? '⚙️ Functions ▼' : '⚙️ Functions ▲';
+      const isVisible = content.style.display !== "none";
+      content.style.display = isVisible ? "none" : "block";
+      toggleBtn.innerHTML = isVisible ? "⚙️ Functions ▼" : "⚙️ Functions ▲";
     });
   }
 
@@ -193,10 +210,8 @@ class SessionManager {
     });
   }
 
-  createPublicSessionsList() {
+  createPublicSessionsList() {}
 
-  }
-  
   async showPublicSessions() {
     try {
       const response = await fetch(`${BACKEND_URL}/api/sessions/public`);
@@ -204,17 +219,22 @@ class SessionManager {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const publicSessions = await response.json();
-      
+
       if (publicSessions.length === 0) {
-        this.showNotification("No public sessions available right now.", "info");
+        this.showNotification(
+          "No public sessions available right now.",
+          "info"
+        );
         return;
       }
-      
+
       this.showPublicSessionsModal(publicSessions);
-      
     } catch (error) {
       console.error("Error fetching public sessions:", error);
-      this.showNotification("Failed to load public sessions. Please try again later.", "error");
+      this.showNotification(
+        "Failed to load public sessions. Please try again later.",
+        "error"
+      );
     }
   }
 
@@ -228,38 +248,52 @@ class SessionManager {
           </div>
           <div class="modal-body">
             <div class="public-sessions-list">
-              ${publicSessions.map(session => `
-                <div class="public-session-item" data-session-id="${session.sessionId}">
+              ${publicSessions
+                .map(
+                  (session) => `
+                <div class="public-session-item" data-session-id="${
+                  session.sessionId
+                }">
                   <div class="session-details">
-                    <div class="session-title">${session.sessionTitle || 'Untitled Session'}</div>
+                    <div class="session-title">${
+                      session.sessionTitle || "Untitled Session"
+                    }</div>
                     <div class="session-meta">
                       <span class="host-name">Host: ${session.hostName}</span>
-                      <span class="participant-count">${session.participantCount} participants</span>
+                      <span class="participant-count">${
+                        session.participantCount
+                      } participants</span>
                     </div>
                   </div>
                   <div class="join-arrow">→</div>
                 </div>
-              `).join('')}
+              `
+                )
+                .join("")}
             </div>
-            ${!this.userName ? '<p class="join-note">Click any session to join!</p>' : ''}
+            ${
+              !this.userName
+                ? '<p class="join-note">Click any session to join!</p>'
+                : ""
+            }
           </div>
         </div>
       </div>
     `;
-    
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    
-    const sessionItems = document.querySelectorAll('.public-session-item');
-    sessionItems.forEach(item => {
-      item.addEventListener('click', () => {
+
+    document.body.insertAdjacentHTML("beforeend", modalHTML);
+
+    const sessionItems = document.querySelectorAll(".public-session-item");
+    sessionItems.forEach((item) => {
+      item.addEventListener("click", () => {
         const sessionId = item.dataset.sessionId;
-        document.getElementById('publicSessionsModal').remove();
-        
+        document.getElementById("publicSessionsModal").remove();
+
         // Update URL
         const url = new URL(window.location);
-        url.searchParams.set('session', sessionId);
-        window.history.pushState({}, '', url);
-        
+        url.searchParams.set("session", sessionId);
+        window.history.pushState({}, "", url);
+
         if (!this.userName) {
           this.showNameModal("join");
           setTimeout(() => {
@@ -338,9 +372,11 @@ class SessionManager {
       const userName = document.getElementById("userNameInput").value.trim();
       const userEmail = document.getElementById("userEmailInput").value.trim();
       const sessionId = document.getElementById("sessionIdInput").value.trim();
-      const sessionTitle = document.getElementById("sessionTitleInput").value.trim();     
+      const sessionTitle = document
+        .getElementById("sessionTitleInput")
+        .value.trim();
       const isPublic = true;
-      
+
       if (!userName) {
         this.showNotification("Please enter your name", "error");
         return;
@@ -408,25 +444,24 @@ class SessionManager {
 
   async createNewSession() {
     try {
-      const sessionTitle = document.getElementById("sessionTitleInput").value.trim();     
-      const isPublic = document.getElementById("publicSessionCheckbox").checked;         
-      
-      const response = await fetch(
-        `${BACKEND_URL}/api/sessions/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            hostName: this.userName,
-            avatar: this.selectedAvatar,
-            color: this.selectedColor,
-            isPublic: isPublic,              
-            sessionTitle: sessionTitle,
-            userEmail: this.userEmail,
-            timestamp: new Date().toISOString(),
-          }),
-        },
-      );
+      const sessionTitle = document
+        .getElementById("sessionTitleInput")
+        .value.trim();
+      const isPublic = document.getElementById("publicSessionCheckbox").checked;
+
+      const response = await fetch(`${BACKEND_URL}/api/sessions/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hostName: this.userName,
+          avatar: this.selectedAvatar,
+          color: this.selectedColor,
+          isPublic: isPublic,
+          sessionTitle: sessionTitle,
+          userEmail: this.userEmail,
+          timestamp: new Date().toISOString(),
+        }),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -440,49 +475,52 @@ class SessionManager {
       this.updateSessionUI();
 
       this.addSystemMessage(
-        `Session created! Share this link with others: ${window.location.origin}${window.location.pathname}?session=${this.sessionId}`,
+        `Session created! Share this link with others: ${window.location.origin}${window.location.pathname}?session=${this.sessionId}`
       );
     } catch (error) {
       console.error("Error creating session:", error);
-      this.showNotification("Failed to create session. Please try again.", "error");
+      this.showNotification(
+        "Failed to create session. Please try again.",
+        "error"
+      );
     }
   }
 
   async createNewSessionWithParams(sessionTitle, isPublic) {
     try {
-      const response = await fetch(
-        `${BACKEND_URL}/api/sessions/create`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            hostName: this.userName,
-            avatar: this.selectedAvatar,
-            color: this.selectedColor,
-            isPublic: isPublic,              
-            sessionTitle: sessionTitle,
-            userEmail: this.userEmail,
-            timestamp: new Date().toISOString(),
-          }),
-        },
-      );
+      const response = await fetch(`${BACKEND_URL}/api/sessions/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hostName: this.userName,
+          avatar: this.selectedAvatar,
+          color: this.selectedColor,
+          isPublic: isPublic,
+          sessionTitle: sessionTitle,
+          userEmail: this.userEmail,
+          timestamp: new Date().toISOString(),
+        }),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-  
+
       const data = await response.json();
       this.sessionId = data.sessionId;
       this.isHost = true;
       this.connectToSession();
       this.updateSessionUI();
-  
+
       this.addSystemMessage(
-        `Session created! Share this link with others: ${window.location.origin}${window.location.pathname}?session=${this.sessionId}`,
+        `Session created! Share this link with others: ${window.location.origin}${window.location.pathname}?session=${this.sessionId}`
       );
     } catch (error) {
       console.error("Error creating session:", error);
-      this.showNotification("Failed to create session. Please try again.", "error");
+      this.showNotification(
+        "Failed to create session. Please try again.",
+        "error"
+      );
     }
   }
 
@@ -509,7 +547,7 @@ class SessionManager {
       justify-content: center;
       z-index: 10000;
     `;
-    
+
     modal.innerHTML = `
       <div style="
         background: white;
@@ -553,12 +591,12 @@ class SessionManager {
         </div>
       </div>
     `;
-    
+
     document.body.appendChild(modal);
-    
-    const input = modal.querySelector('#sessionIdPrompt');
-    const joinBtn = modal.querySelector('#joinSessionConfirm');
-    
+
+    const input = modal.querySelector("#sessionIdPrompt");
+    const joinBtn = modal.querySelector("#joinSessionConfirm");
+
     const handleJoin = () => {
       const sessionId = input.value.trim();
       if (sessionId) {
@@ -568,16 +606,16 @@ class SessionManager {
         this.showNotification("Please enter a Session ID", "error");
       }
     };
-    
+
     joinBtn.onclick = handleJoin;
-    input.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') handleJoin();
+    input.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") handleJoin();
     });
-    
+
     modal.onclick = (e) => {
       if (e.target === modal) modal.remove();
     };
-    
+
     setTimeout(() => input.focus(), 100);
   }
 
@@ -618,7 +656,7 @@ class SessionManager {
     confirmBtn.textContent = "Create Session";
     sessionInput.style.display = "none";
     titleInput.style.display = "block";
-    
+
     nameInput.value = "";
     nameInput.style.display = "none";
 
@@ -627,7 +665,7 @@ class SessionManager {
     emailInput.style.display = "block";
 
     titleInput.focus();
-    
+
     modal.style.display = "flex";
     this.setupCustomization();
 
@@ -635,7 +673,7 @@ class SessionManager {
       const sessionTitle = titleInput.value.trim();
       const userEmail = document.getElementById("userEmailInput").value.trim();
       const isPublic = true;
-      
+
       if (!sessionTitle) {
         this.showNotification("Please enter a table number", "error");
         return;
@@ -647,7 +685,7 @@ class SessionManager {
       }
 
       this.userEmail = userEmail;
-      
+
       this.createNewSessionWithParams(`Table ${sessionTitle}`, isPublic);
       modal.style.display = "none";
     };
@@ -659,7 +697,7 @@ class SessionManager {
       this.showNameModal("join");
       return;
     }
-    
+
     try {
       const response = await fetch(
         `${BACKEND_URL}/api/sessions/${sessionId}/join`,
@@ -672,7 +710,7 @@ class SessionManager {
             color: this.selectedColor || "#6c757d",
             timestamp: new Date().toISOString(),
           }),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -691,22 +729,25 @@ class SessionManager {
       this.addSystemMessage(`${this.userName} joined the session`);
     } catch (error) {
       console.error("Error joining session:", error);
-      this.showNotification("Failed to join session. Please check the session ID.", "error");
+      this.showNotification(
+        "Failed to join session. Please check the session ID.",
+        "error"
+      );
     }
   }
 
   joinSessionFromURL(sessionId) {
-    console.log('Attempting to join session from URL:', sessionId);
-    console.log('Current userName:', this.userName);
+    console.log("Attempting to join session from URL:", sessionId);
+    console.log("Current userName:", this.userName);
     if (!this.userName) {
-      console.log('No username, showing name modal');
+      console.log("No username, showing name modal");
       setTimeout(() => {
         this.showNameModal("join");
         document.getElementById("sessionIdInput").value = sessionId;
         document.getElementById("sessionIdInput").style.display = "none";
       }, 500);
     } else {
-      console.log('Username exists, joining session directly');
+      console.log("Username exists, joining session directly");
       this.joinSession(sessionId);
     }
   }
@@ -716,8 +757,10 @@ class SessionManager {
       this.ws.close();
     }
 
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    this.ws = new WebSocket(`wss://physics-ai-tutor.onrender.com/sessions/${this.sessionId}`);
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    this.ws = new WebSocket(
+      `wss://physics-ai-tutor.onrender.com/sessions/${this.sessionId}`
+    );
     this.lastPingTime = Date.now();
 
     this.ws.onopen = () => {
@@ -728,9 +771,9 @@ class SessionManager {
           avatar: this.selectedAvatar,
           color: this.selectedColor,
           isHost: this.isHost,
-        }),
+        })
       );
-      
+
       // Start heartbeat
       this.startHeartbeat();
     };
@@ -741,38 +784,39 @@ class SessionManager {
         this.lastPingTime = Date.now();
         this.handleSessionMessage(data);
       } catch (error) {
-        console.error('WebSocket message error:', error);
+        console.error("WebSocket message error:", error);
       }
     };
 
     this.ws.onclose = () => {
       this.stopHeartbeat();
       if (this.sessionId) {
-        setTimeout(() => this.connectToSession(), 3000); 
+        setTimeout(() => this.connectToSession(), 3000);
       }
     };
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error("WebSocket error:", error);
       this.showNotification("Connection failed. Reconnecting...", "error");
     };
   }
-  
+
   startHeartbeat() {
     this.heartbeatInterval = setInterval(() => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN) {
         // Check if connection is stale
-        if (Date.now() - this.lastPingTime > 60000) { // 1 minute
+        if (Date.now() - this.lastPingTime > 60000) {
+          // 1 minute
           this.ws.close();
           return;
         }
-        
+
         // Send ping
-        this.ws.send(JSON.stringify({ type: 'ping' }));
+        this.ws.send(JSON.stringify({ type: "ping" }));
       }
     }, 30000); // Every 30 seconds
   }
-  
+
   stopHeartbeat() {
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
@@ -788,7 +832,7 @@ class SessionManager {
           data.sender,
           data.timestamp,
           data.userName,
-          data.files,
+          data.files
         );
         break;
       case "participant_joined":
@@ -811,21 +855,25 @@ class SessionManager {
         this.handleSharedDiagram(data);
         break;
       case "whiteboard_draw":
-        const canvas = data.boardType === "teacher" ? window.teacherCanvas : window.studentCanvas;
-        const ctx = data.boardType === "teacher" ? window.teacherCtx : window.studentCtx;
-      
+        const canvas =
+          data.boardType === "teacher"
+            ? window.teacherCanvas
+            : window.studentCanvas;
+        const ctx =
+          data.boardType === "teacher" ? window.teacherCtx : window.studentCtx;
+
         if (canvas && ctx) {
           const rect = canvas.getBoundingClientRect();
           const scaleX = canvas.width / rect.width;
           const scaleY = canvas.height / rect.height;
-      
+
           const x = data.x * scaleX;
           const y = data.y * scaleY;
-      
+
           ctx.lineTo(x, y);
           ctx.stroke();
         }
-        break;        
+        break;
       case "whiteboard_clear":
         this.handleSharedWhiteboardClear(data);
         break;
@@ -857,7 +905,7 @@ class SessionManager {
           userName: this.userName,
           timestamp: new Date().toISOString(),
           files: files,
-        }),
+        })
       );
     }
   }
@@ -884,21 +932,22 @@ class SessionManager {
     content.className = "message-content";
 
     const time = new Date(timestamp).toLocaleTimeString();
-    
+
     // Convert LaTeX to Unicode for bot messages
     let displayText = message;
-    if (sender === 'bot' && window.convertLatexToUnicode) {
+    if (sender === "bot" && window.convertLatexToUnicode) {
       displayText = window.convertLatexToUnicode(message);
     }
 
-    let filesHtml = '';
+    let filesHtml = "";
     if (files && files.length > 0) {
-      filesHtml = '<div class="message-files" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;">';
-      files.forEach(file => {
+      filesHtml =
+        '<div class="message-files" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;">';
+      files.forEach((file) => {
         const icon = this.getFileIcon(file.type);
         filesHtml += `<span class="message-file" style="background: #e3f2fd; padding: 4px 8px; border-radius: 12px; font-size: 12px; cursor: pointer; color: #1976d2;" onclick="window.sessionManager.viewSharedFile('${file.name}', '${file.type}', '${file.data}')">${icon} ${file.name}</span>`;
       });
-      filesHtml += '</div>';
+      filesHtml += "</div>";
     }
 
     content.innerHTML = `
@@ -906,10 +955,12 @@ class SessionManager {
                 <span class="message-author">${userName}</span>
                 <span class="message-time">${time}</span>
             </div>
-            <div class="message-text">${displayText.replace(/\n/g, "<br>").replace(/<https?:\/\/[^>]+>/g, (match) => {
-              const url = match.slice(1, -1);
-              return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-            })}</div>
+            <div class="message-text">${displayText
+              .replace(/\n/g, "<br>")
+              .replace(/<https?:\/\/[^>]+>/g, (match) => {
+                const url = match.slice(1, -1);
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+              })}</div>
             ${filesHtml}
         `;
 
@@ -920,14 +971,14 @@ class SessionManager {
   }
 
   getFileIcon(fileType) {
-    if (fileType === 'application/pdf') return '📄';
-    if (fileType && fileType.startsWith('image/')) return '🖼️';
-    return '📎';
+    if (fileType === "application/pdf") return "📄";
+    if (fileType && fileType.startsWith("image/")) return "🖼️";
+    return "📎";
   }
 
   viewSharedFile(name, type, data) {
-    const modal = document.createElement('div');
-    modal.className = 'file-viewer-modal';
+    const modal = document.createElement("div");
+    modal.className = "file-viewer-modal";
     modal.style.cssText = `
       position: fixed;
       top: 0;
@@ -941,7 +992,7 @@ class SessionManager {
       justify-content: center;
     `;
 
-    const content = document.createElement('div');
+    const content = document.createElement("div");
     content.style.cssText = `
       background: white;
       border-radius: 8px;
@@ -951,8 +1002,8 @@ class SessionManager {
       position: relative;
     `;
 
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '×';
+    const closeBtn = document.createElement("button");
+    closeBtn.innerHTML = "×";
     closeBtn.style.cssText = `
       position: absolute;
       top: 10px;
@@ -965,15 +1016,15 @@ class SessionManager {
     `;
     closeBtn.onclick = () => modal.remove();
 
-    if (type && type.startsWith('image/')) {
-      const img = document.createElement('img');
+    if (type && type.startsWith("image/")) {
+      const img = document.createElement("img");
       img.src = data;
-      img.style.cssText = 'max-width: 100%; max-height: 100%; display: block;';
+      img.style.cssText = "max-width: 100%; max-height: 100%; display: block;";
       content.appendChild(img);
-    } else if (type === 'application/pdf') {
-      const iframe = document.createElement('iframe');
+    } else if (type === "application/pdf") {
+      const iframe = document.createElement("iframe");
       iframe.src = data;
-      iframe.style.cssText = 'width: 80vw; height: 80vh; border: none;';
+      iframe.style.cssText = "width: 80vw; height: 80vh; border: none;";
       content.appendChild(iframe);
     }
 
@@ -1034,17 +1085,20 @@ class SessionManager {
       return;
     }
 
-    const sessionTitle = this.currentSessionTitle || `Session ${this.sessionId.substring(0, 8)}`;
+    const sessionTitle =
+      this.currentSessionTitle || `Session ${this.sessionId.substring(0, 8)}`;
     const participantCount = this.participants.size;
     dropdownText.innerHTML = `
       <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
         <span style="font-weight: 600; font-size: 12px;">${sessionTitle}</span>
-        <span style="font-size: 10px; opacity: 0.8;">${participantCount} participant${participantCount !== 1 ? 's' : ''}</span>
+        <span style="font-size: 10px; opacity: 0.8;">${participantCount} participant${
+      participantCount !== 1 ? "s" : ""
+    }</span>
       </div>
     `;
 
     container.innerHTML = "";
-    
+
     // Add session info header
     const sessionInfo = document.createElement("div");
     sessionInfo.style.cssText = `
@@ -1088,22 +1142,24 @@ class SessionManager {
         </div>
         <div style="flex: 1; min-width: 0;">
           <div style="font-weight: 500; font-size: 12px; color: #333; margin-bottom: 2px;">
-            ${userName}${userName === this.userName ? ' (You)' : ''}
+            ${userName}${userName === this.userName ? " (You)" : ""}
           </div>
           <div style="font-size: 10px; color: #666; opacity: 0.8;">
-            ${userName === this.userName && this.isHost ? 'Host' : 'Participant'}
+            ${
+              userName === this.userName && this.isHost ? "Host" : "Participant"
+            }
           </div>
         </div>
       `;
-      
+
       participantDiv.addEventListener("mouseenter", () => {
         participantDiv.style.background = "#f8f9fa";
       });
-      
+
       participantDiv.addEventListener("mouseleave", () => {
         participantDiv.style.background = "transparent";
       });
-      
+
       container.appendChild(participantDiv);
     });
   }
@@ -1123,7 +1179,7 @@ class SessionManager {
       const windowHeight = window.innerHeight;
       const maxHeight = Math.max(120, windowHeight * 0.2);
       const container = participantsList.querySelector(
-        ".participants-container",
+        ".participants-container"
       );
       if (container) {
         container.style.maxHeight = `${maxHeight}px`;
@@ -1137,7 +1193,7 @@ class SessionManager {
     const leaveBtn = document.getElementById("leaveSessionBtn");
     const shareBtn = document.getElementById("shareSessionBtn");
     const downloadBtn = document.getElementById("downloadSessionBtn");
-    
+
     if (this.sessionId) {
       createBtn.style.display = "none";
       joinBtn.style.display = "none";
@@ -1153,7 +1209,7 @@ class SessionManager {
       shareBtn.style.display = "none";
       downloadBtn.style.display = "none";
     }
-    
+
     this.renderParticipants();
     setTimeout(() => this.setupVoiceControls(), 100);
   }
@@ -1163,7 +1219,10 @@ class SessionManager {
     navigator.clipboard
       .writeText(link)
       .then(() => {
-        this.showNotification("✅ Session link copied to clipboard!", "success");
+        this.showNotification(
+          "✅ Session link copied to clipboard!",
+          "success"
+        );
       })
       .catch(() => {
         this.showCopyModal(link);
@@ -1176,7 +1235,13 @@ class SessionManager {
       position: fixed;
       top: 20px;
       right: 20px;
-      background: ${type === "success" ? "#28a745" : type === "error" ? "#dc3545" : "#007bff"};
+      background: ${
+        type === "success"
+          ? "#28a745"
+          : type === "error"
+          ? "#dc3545"
+          : "#007bff"
+      };
       color: white;
       padding: 12px 20px;
       border-radius: 8px;
@@ -1188,7 +1253,7 @@ class SessionManager {
       animation: slideIn 0.3s ease;
     `;
     notification.textContent = message;
-    
+
     const style = document.createElement("style");
     style.textContent = `
       @keyframes slideIn {
@@ -1197,9 +1262,9 @@ class SessionManager {
       }
     `;
     document.head.appendChild(style);
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
       notification.style.animation = "slideIn 0.3s ease reverse";
       setTimeout(() => notification.remove(), 300);
@@ -1220,7 +1285,7 @@ class SessionManager {
       justify-content: center;
       z-index: 10000;
     `;
-    
+
     modal.innerHTML = `
       <div style="
         background: white;
@@ -1255,7 +1320,7 @@ class SessionManager {
         </div>
       </div>
     `;
-    
+
     document.body.appendChild(modal);
     modal.onclick = (e) => {
       if (e.target === modal) modal.remove();
@@ -1265,7 +1330,7 @@ class SessionManager {
   async downloadSession() {
     try {
       const response = await fetch(
-        `${BACKEND_URL}/api/sessions/${this.sessionId}/download`,
+        `${BACKEND_URL}/api/sessions/${this.sessionId}/download`
       );
 
       if (!response.ok) {
@@ -1276,7 +1341,10 @@ class SessionManager {
       await this.generateSessionPDF(data);
     } catch (error) {
       console.error("Error downloading session:", error);
-      this.showNotification("Failed to download session. Please try again.", "error");
+      this.showNotification(
+        "Failed to download session. Please try again.",
+        "error"
+      );
     }
   }
 
@@ -1284,198 +1352,241 @@ class SessionManager {
     // Create PDF content
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    
+
     let yPosition = 20;
     const pageHeight = doc.internal.pageSize.height;
     const margin = 20;
-    
+
     // Title
     doc.setFontSize(16);
-    doc.setFont(undefined, 'bold');
-    doc.text(`Session Notes: ${sessionData.sessionTitle || sessionData.sessionId}`, margin, yPosition);
+    doc.setFont(undefined, "bold");
+    doc.text(
+      `Session Notes: ${sessionData.sessionTitle || sessionData.sessionId}`,
+      margin,
+      yPosition
+    );
     yPosition += 10;
-    
+
     // Session info
     doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
+    doc.setFont(undefined, "normal");
     doc.text(`Host: ${sessionData.hostName}`, margin, yPosition);
     yPosition += 6;
-    doc.text(`Date: ${new Date(sessionData.createdAt).toLocaleDateString()}`, margin, yPosition);
+    doc.text(
+      `Date: ${new Date(sessionData.createdAt).toLocaleDateString()}`,
+      margin,
+      yPosition
+    );
     yPosition += 6;
-    doc.text(`Participants: ${sessionData.participants.map(p => p.userName).join(', ')}`, margin, yPosition);
+    doc.text(
+      `Participants: ${sessionData.participants
+        .map((p) => p.userName)
+        .join(", ")}`,
+      margin,
+      yPosition
+    );
     yPosition += 15;
-    
+
     // Generate and add session summary
     const summary = await this.generateSessionSummary(sessionData);
     if (summary) {
       doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text('Session Summary:', margin, yPosition);
+      doc.setFont(undefined, "bold");
+      doc.text("Session Summary:", margin, yPosition);
       yPosition += 10;
-      
+
       doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      
+      doc.setFont(undefined, "normal");
+
       // Convert LaTeX and strip HTML tags from summary
       let cleanSummary = summary;
       if (window.convertLatexToUnicode) {
         cleanSummary = window.convertLatexToUnicode(summary);
       }
-      
+
       // Strip HTML tags
       cleanSummary = cleanSummary
-        .replace(/<[^>]*>/g, '')
-        .replace(/&gt;/g, '>')
-        .replace(/&lt;/g, '<')
-        .replace(/&amp;/g, '&')
+        .replace(/<[^>]*>/g, "")
+        .replace(/&gt;/g, ">")
+        .replace(/&lt;/g, "<")
+        .replace(/&amp;/g, "&")
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'");
-      
+
       const summaryLines = doc.splitTextToSize(cleanSummary, 170);
       doc.text(summaryLines, margin, yPosition);
       yPosition += summaryLines.length * 4 + 15;
     }
-    
+
     // Messages
     doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.text('Session Messages:', margin, yPosition);
+    doc.setFont(undefined, "bold");
+    doc.text("Session Messages:", margin, yPosition);
     yPosition += 10;
-    
+
     doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    
+    doc.setFont(undefined, "normal");
+
     for (const message of sessionData.messages) {
       if (yPosition > pageHeight - 30) {
         doc.addPage();
         yPosition = 20;
       }
-      
+
       const timestamp = new Date(message.timestamp).toLocaleTimeString();
-      const sender = message.sender === 'bot' ? 'AI Tutor' : message.userName;
-      
-      doc.setFont(undefined, 'bold');
+      const sender = message.sender === "bot" ? "AI Tutor" : message.userName;
+
+      doc.setFont(undefined, "bold");
       doc.text(`[${timestamp}] ${sender}:`, margin, yPosition);
       yPosition += 6;
-      
-      doc.setFont(undefined, 'normal');
+
+      doc.setFont(undefined, "normal");
       // Convert LaTeX and clean message text
       let cleanMessage = message.message;
-      if (message.sender === 'bot' && window.convertLatexToUnicode) {
+      if (message.sender === "bot" && window.convertLatexToUnicode) {
         cleanMessage = window.convertLatexToUnicode(cleanMessage);
       }
-      
+
       cleanMessage = cleanMessage
-        .replace(/&gt;/g, '>')
-        .replace(/&lt;/g, '<')
-        .replace(/&amp;/g, '&')
+        .replace(/&gt;/g, ">")
+        .replace(/&lt;/g, "<")
+        .replace(/&amp;/g, "&")
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
-        .replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '');
-      
+        .replace(
+          /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu,
+          ""
+        );
+
       const lines = doc.splitTextToSize(cleanMessage, 170);
       doc.text(lines, margin + 5, yPosition);
       yPosition += lines.length * 4 + 5;
     }
-    
+
     // Whiteboard content
-    if (sessionData.whiteboardActions && sessionData.whiteboardActions.length > 0) {
+    if (
+      sessionData.whiteboardActions &&
+      sessionData.whiteboardActions.length > 0
+    ) {
       if (yPosition > pageHeight - 50) {
         doc.addPage();
         yPosition = 20;
       }
-      
+
       yPosition += 10;
       doc.setFontSize(14);
-      doc.setFont(undefined, 'bold');
-      doc.text('Whiteboard Actions:', margin, yPosition);
+      doc.setFont(undefined, "bold");
+      doc.text("Whiteboard Actions:", margin, yPosition);
       yPosition += 10;
-      
+
       doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      
+      doc.setFont(undefined, "normal");
+
       for (const action of sessionData.whiteboardActions) {
         if (yPosition > pageHeight - 20) {
           doc.addPage();
           yPosition = 20;
         }
-        
+
         const timestamp = new Date(action.timestamp).toLocaleTimeString();
-        doc.text(`[${timestamp}] ${action.userName}: ${action.action} on ${action.targetBoard}`, margin, yPosition);
+        doc.text(
+          `[${timestamp}] ${action.userName}: ${action.action} on ${action.targetBoard}`,
+          margin,
+          yPosition
+        );
         yPosition += 6;
       }
     }
-    
+
     // Capture canvas content if available
     await this.addCanvasesToPDF(doc);
-    
+
     // Save PDF
-    const filename = `session-notes-${this.sessionId}-${new Date().toISOString().split('T')[0]}.pdf`;
+    const filename = `session-notes-${this.sessionId}-${
+      new Date().toISOString().split("T")[0]
+    }.pdf`;
     doc.save(filename);
-    
+
     this.showNotification("Session notes downloaded as PDF!", "success");
   }
-  
+
   async generateSessionSummary(sessionData) {
     try {
       if (!sessionData.messages || sessionData.messages.length === 0) {
         return "No messages in this session.";
       }
-      
-      let chatContent = '';
-      sessionData.messages.forEach(msg => {
-        const sender = msg.sender === 'bot' ? 'AI Tutor' : msg.userName;
+
+      let chatContent = "";
+      sessionData.messages.forEach((msg) => {
+        const sender = msg.sender === "bot" ? "AI Tutor" : msg.userName;
         chatContent += `${sender}: ${msg.message}\n`;
       });
-      
+
       const summaryPrompt = `Please provide a concise summary of this tutoring session, highlighting the main topics discussed, key concepts learned, participants' contributions, and any problems solved:\n\n${chatContent}`;
-      
-      const response = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+
+      const response = await fetch("/api/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           messages: [
-            { role: 'system', content: 'You are summarizing a collaborative tutoring session. Be concise and focus on learning outcomes and participant contributions.' },
-            { role: 'user', content: summaryPrompt }
-          ]
-        })
+            {
+              role: "system",
+              content:
+                "You are summarizing a collaborative tutoring session. Be concise and focus on learning outcomes and participant contributions.",
+            },
+            { role: "user", content: summaryPrompt },
+          ],
+        }),
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         return data.response || "Unable to generate summary.";
       }
-      
+
       return "Summary generation unavailable.";
     } catch (error) {
       return "Error generating session summary.";
     }
   }
-  
+
   async addCanvasesToPDF(doc) {
-    const canvases = ['teacherCanvas', 'studentCanvas'];
-    
+    const canvases = ["teacherCanvas", "studentCanvas"];
+
     for (const canvasId of canvases) {
       const canvas = document.getElementById(canvasId);
       if (canvas && canvas.width > 0 && canvas.height > 0) {
         // Check if canvas has content
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const hasContent = imageData.data.some((channel, index) => 
-          index % 4 !== 3 && channel !== 0
+        const hasContent = imageData.data.some(
+          (channel, index) => index % 4 !== 3 && channel !== 0
         );
-        
+
         if (hasContent) {
           doc.addPage();
           doc.setFontSize(14);
-          doc.setFont(undefined, 'bold');
-          doc.text(`${canvasId === 'teacherCanvas' ? 'Teacher' : 'Student'} Whiteboard:`, 20, 20);
-          
-          const imgData = canvas.toDataURL('image/png');
+          doc.setFont(undefined, "bold");
+          doc.text(
+            `${
+              canvasId === "teacherCanvas" ? "Teacher" : "Student"
+            } Whiteboard:`,
+            20,
+            20
+          );
+
+          const imgData = canvas.toDataURL("image/png");
           const imgWidth = 170;
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
-          
-          doc.addImage(imgData, 'PNG', 20, 30, imgWidth, Math.min(imgHeight, 250));
+
+          doc.addImage(
+            imgData,
+            "PNG",
+            20,
+            30,
+            imgWidth,
+            Math.min(imgHeight, 250)
+          );
         }
       }
     }
@@ -1487,7 +1598,7 @@ class SessionManager {
         JSON.stringify({
           type: "leave",
           userName: this.userName,
-        }),
+        })
       );
       this.ws.close();
     }
@@ -1534,7 +1645,7 @@ class SessionManager {
       }
 
       const selectedAvatarEl = document.querySelector(
-        ".avatar-option.selected",
+        ".avatar-option.selected"
       );
       const selectedColorEl = document.querySelector(".color-option.selected");
 
@@ -1557,7 +1668,7 @@ class SessionManager {
             userName: this.userName,
             avatar: this.selectedAvatar,
             color: this.selectedColor,
-          }),
+          })
         );
       }
 
@@ -1567,7 +1678,7 @@ class SessionManager {
 
   loadSessionHistory() {
     const chatMessages = document.getElementById("chatMessages");
-    chatMessages.innerHTML = ""; 
+    chatMessages.innerHTML = "";
 
     this.sessionMessages.forEach((msg) => {
       this.addSharedMessage(msg.message, msg.sender, msg.timestamp);
@@ -1581,35 +1692,34 @@ class SessionManager {
   }
 
   handleSharedWhiteboardAction(data) {
-
     if (window.tutorWhiteboard && data.action && data.targetBoard) {
       setTimeout(() => {
         if (window.switchWhiteboard) {
           window.switchWhiteboard(data.targetBoard);
         }
-        
+
         switch (data.action) {
-          case 'probability_scale':
+          case "probability_scale":
             if (window.tutorWhiteboard.drawProbabilityScale) {
               window.tutorWhiteboard.drawProbabilityScale(data.targetBoard);
             }
             break;
-          case 'distribution':
+          case "distribution":
             if (window.tutorWhiteboard.drawSampleDistribution) {
               window.tutorWhiteboard.drawSampleDistribution(data.targetBoard);
             }
             break;
-          case 'normal_curve':
+          case "normal_curve":
             if (window.tutorWhiteboard.drawNormalCurve) {
               window.tutorWhiteboard.drawNormalCurve(data.targetBoard);
             }
             break;
-          case 'tree_diagram':
+          case "tree_diagram":
             if (window.tutorWhiteboard.drawTreeDiagram) {
               window.tutorWhiteboard.drawTreeDiagram(data.targetBoard);
             }
             break;
-          case 'clear_board':
+          case "clear_board":
             if (window.tutorWhiteboard.clearWhiteboard) {
               window.tutorWhiteboard.clearWhiteboard(data.targetBoard);
             }
@@ -1620,21 +1730,18 @@ class SessionManager {
   }
 
   handleSharedDiagram(data) {
-
-
     if (window.diagramRenderer && data.description && data.targetBoard) {
       setTimeout(async () => {
-
         if (window.switchWhiteboard) {
           window.switchWhiteboard(data.targetBoard);
         }
-        
+
         try {
-          await window.diagramRenderer.generateDiagram(data.description, data.targetBoard);
-
-        } catch (error) {
-
-        }
+          await window.diagramRenderer.generateDiagram(
+            data.description,
+            data.targetBoard
+          );
+        } catch (error) {}
       }, 100);
     }
   }
