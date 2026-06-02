@@ -31,6 +31,9 @@ class SessionManager {
     this.createParticipantsList();
     this.createPublicSessionsList();
 
+    // Set correct initial button visibility immediately (no session yet)
+    this.updateSessionUI();
+
     const urlParams = new URLSearchParams(window.location.search);
     const sessionId = urlParams.get("session");
     if (sessionId) {
@@ -295,9 +298,12 @@ class SessionManager {
         window.history.pushState({}, "", url);
 
         if (!this.userName) {
+          this._pendingSessionId = sessionId;
           this.showNameModal("join");
+          // Hide table input — we already have the session ID from Browse
           setTimeout(() => {
-            document.getElementById("sessionIdInput").value = sessionId;
+            const tableInput = document.getElementById("tableNumberInput");
+            if (tableInput) tableInput.style.display = "none";
           }, 100);
         } else {
           this.joinSession(sessionId);
@@ -319,7 +325,7 @@ class SessionManager {
         <div class="modal-body">
             <input type="text" id="userNameInput" placeholder="Your name..." maxlength="20">
             <input type="email" id="userEmailInput" placeholder="UMass email (e.g., name@umass.edu)">
-            <input type="text" id="sessionIdInput" placeholder="Session ID (optional)" style="display: none;">
+            <input type="number" id="tableNumberInput" placeholder="Table number (e.g. 5)" min="1" max="99" style="display: none;">
             <input type="number" id="sessionTitleInput" placeholder="Table number" min="1" max="99" style="display: none;" required>
 
             
@@ -368,10 +374,10 @@ class SessionManager {
 
     document.body.appendChild(modal);
 
-    const originalSessionHandler = () => {
+    const originalSessionHandler = async () => {
       const userName = document.getElementById("userNameInput").value.trim();
       const userEmail = document.getElementById("userEmailInput").value.trim();
-      const sessionId = document.getElementById("sessionIdInput").value.trim();
+      const tableNumber = document.getElementById("tableNumberInput").value.trim();
       const sessionTitle = document
         .getElementById("sessionTitleInput")
         .value.trim();
@@ -390,13 +396,39 @@ class SessionManager {
       this.userName = userName;
       this.userEmail = userEmail;
 
-      if (sessionId) {
+      // Case 1: joining from URL (session ID already known)
+      if (this._pendingSessionId) {
+        const sessionId = this._pendingSessionId;
+        this._pendingSessionId = null;
+        modal.style.display = "none";
         this.joinSession(sessionId);
+      } else if (tableNumber) {
+        // Case 2: join by table number
+        const confirmBtn = document.getElementById("confirmSessionBtn");
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Finding...";
+        try {
+          const res = await fetch(`${BACKEND_URL}/api/sessions/by-table/${parseInt(tableNumber)}`);
+          if (!res.ok) {
+            const err = await res.json();
+            this.showNotification(err.error || `No active session for Table ${tableNumber}`, "error");
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = "Join Session";
+            return;
+          }
+          const { sessionId } = await res.json();
+          modal.style.display = "none";
+          this.joinSession(sessionId);
+        } catch (e) {
+          this.showNotification("Could not reach server. Please try again.", "error");
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = "Join Session";
+        }
       } else {
+        // Case 3: create mode
         this.createNewSessionWithParams(`Table ${sessionTitle}`, isPublic);
+        modal.style.display = "none";
       }
-
-      modal.style.display = "none";
     };
 
     document.getElementById("confirmSessionBtn").onclick =
@@ -662,19 +694,18 @@ class SessionManager {
     const modal = document.getElementById("sessionModal");
     const title = document.getElementById("modalTitle");
     const confirmBtn = document.getElementById("confirmSessionBtn");
-    const sessionInput = document.getElementById("sessionIdInput");
+    const tableInput = document.getElementById("tableNumberInput");
     const titleInput = document.getElementById("sessionTitleInput");
 
     if (action === "join") {
       title.textContent = "Join Session";
       confirmBtn.textContent = "Join Session";
-      sessionInput.style.display = "block";
+      tableInput.style.display = "block";
       titleInput.style.display = "none";
-      sessionInput.setAttribute("placeholder", "Enter Session ID");
     } else {
       title.textContent = "Create Session";
       confirmBtn.textContent = "Create Session";
-      sessionInput.style.display = "none";
+      tableInput.style.display = "none";
       titleInput.style.display = "block";
     }
 
@@ -687,13 +718,13 @@ class SessionManager {
     const modal = document.getElementById("sessionModal");
     const title = document.getElementById("modalTitle");
     const confirmBtn = document.getElementById("confirmSessionBtn");
-    const sessionInput = document.getElementById("sessionIdInput");
+    const tableInput = document.getElementById("tableNumberInput");
     const titleInput = document.getElementById("sessionTitleInput");
     const nameInput = document.getElementById("userNameInput");
 
     title.textContent = "Create New Session";
     confirmBtn.textContent = "Create Session";
-    sessionInput.style.display = "none";
+    tableInput.style.display = "none";
     titleInput.style.display = "block";
 
     nameInput.value = "";
@@ -792,9 +823,14 @@ class SessionManager {
     if (!this.userName) {
       console.log("No username, showing name modal");
       setTimeout(() => {
+        // Show the modal in join mode but hide the table input —
+        // we already have the sessionId from the URL, no table lookup needed.
+        // Store the sessionId so originalSessionHandler can use it directly.
+        this._pendingSessionId = sessionId;
         this.showNameModal("join");
-        document.getElementById("sessionIdInput").value = sessionId;
-        document.getElementById("sessionIdInput").style.display = "none";
+        // Hide the table number field since we'll join by direct session ID
+        const tableInput = document.getElementById("tableNumberInput");
+        if (tableInput) tableInput.style.display = "none";
       }, 500);
     } else {
       console.log("Username exists, joining session directly");
@@ -1698,12 +1734,12 @@ class SessionManager {
     const modal = document.getElementById("sessionModal");
     const title = document.getElementById("modalTitle");
     const confirmBtn = document.getElementById("confirmSessionBtn");
-    const sessionInput = document.getElementById("sessionIdInput");
+    const tableInput = document.getElementById("tableNumberInput");
     const nameInput = document.getElementById("userNameInput");
 
     title.textContent = "Customize Your Profile";
     confirmBtn.textContent = "Save Changes";
-    sessionInput.style.display = "none";
+    if (tableInput) tableInput.style.display = "none";
 
     if (this.userName) {
       nameInput.value = this.userName;
