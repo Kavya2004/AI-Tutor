@@ -239,7 +239,7 @@ app.post("/api/sessions/create", (req, res) => {
 
 app.post("/api/sessions/:sessionId/join", (req, res) => {
   const { sessionId } = req.params;
-  const { userName, avatar, color } = req.body;
+  const { userName, avatar, color, email, tableNumber } = req.body;
 
   if (!userName || userName.trim().length === 0) {
     return res.status(400).json({ error: "User name is required" });
@@ -256,15 +256,14 @@ app.post("/api/sessions/:sessionId/join", (req, res) => {
 
   session.addParticipant(userName.trim(), avatar, color);
 
-  const { email, tableNumber } = req.body;
   if (email && tableNumber) {
-      addStudentToSession({
-        sessionId,
-        name: userName.trim(),
-        email,
-        tableNumber: parseInt(tableNumber),
-      }).catch(err => console.error('[MongoDB] addStudent error:', err));
-    }
+    addStudentToSession({
+      sessionId,
+      name: userName.trim(),
+      email,
+      tableNumber: parseInt(tableNumber, 10),
+    }).catch((err) => console.error("[MongoDB] addStudent error:", err));
+  }
 
   console.log(`${userName} joined session: ${sessionId}`);
 
@@ -366,7 +365,16 @@ wss.on("connection", (ws, req) => {
             participant.lastSeen = new Date();
           }
           sessionConnections.get(sessionId).push({ ws, userName });
-        
+
+          if (message.userEmail && message.tableNumber) {
+            addStudentToSession({
+              sessionId,
+              name: userName,
+              email: message.userEmail,
+              tableNumber: parseInt(message.tableNumber, 10),
+            }).catch((err) => console.error("[MongoDB] addStudent error:", err));
+          }
+
           broadcastToSession(
             sessionId,
             {
@@ -376,7 +384,7 @@ wss.on("connection", (ws, req) => {
             },
             ws,
           );
-        
+
           ws.send(
             JSON.stringify({
               type: "session_info",
@@ -385,14 +393,14 @@ wss.on("connection", (ws, req) => {
               participants: session.getParticipantsList(),
             }),
           );
-        
+
           ws.send(
             JSON.stringify({
               type: "participants_update",
               participants: session.getParticipantsList(),
             }),
           );
-        
+
           console.log(`${userName} connected to session ${sessionId}`);
           break;
 

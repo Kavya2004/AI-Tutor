@@ -558,8 +558,18 @@ class SessionManager {
         box-shadow: 0 8px 32px rgba(0,0,0,0.2);
       ">
         <h3 style="margin: 0 0 16px 0; color: #333; font-size: 18px;">Join Session</h3>
-        <p style="margin: 0 0 16px 0; color: #666;">Enter the Session ID to join:</p>
+        <p style="margin: 0 0 16px 0; color: #666;">Enter the Session ID and email to join:</p>
         <input type="text" id="sessionIdPrompt" placeholder="Session ID" style="
+          width: 100%;
+          padding: 12px;
+          border: 2px solid #e9ecef;
+          border-radius: 8px;
+          font-size: 14px;
+          margin-bottom: 12px;
+          box-sizing: border-box;
+          outline: none;
+        " autofocus>
+        <input type="email" id="joinEmailInput" placeholder="UMass email (e.g., name@umass.edu)" style="
           width: 100%;
           padding: 12px;
           border: 2px solid #e9ecef;
@@ -568,7 +578,7 @@ class SessionManager {
           margin-bottom: 20px;
           box-sizing: border-box;
           outline: none;
-        " autofocus>
+        " value="${this.userEmail || ""}">
         <div style="display: flex; gap: 12px; justify-content: flex-end;">
           <button onclick="this.closest('div').parentElement.remove()" style="
             background: #6c757d;
@@ -595,16 +605,26 @@ class SessionManager {
     document.body.appendChild(modal);
 
     const input = modal.querySelector("#sessionIdPrompt");
+    const emailInput = modal.querySelector("#joinEmailInput");
     const joinBtn = modal.querySelector("#joinSessionConfirm");
 
     const handleJoin = () => {
       const sessionId = input.value.trim();
-      if (sessionId) {
-        this.joinSession(sessionId);
-        modal.remove();
-      } else {
+      const userEmail = emailInput.value.trim();
+
+      if (!sessionId) {
         this.showNotification("Please enter a Session ID", "error");
+        return;
       }
+
+      if (!userEmail || !userEmail.endsWith("@umass.edu")) {
+        this.showNotification("Please enter a valid @umass.edu email", "error");
+        return;
+      }
+
+      this.userEmail = userEmail;
+      this.joinSession(sessionId);
+      modal.remove();
     };
 
     joinBtn.onclick = handleJoin;
@@ -699,6 +719,13 @@ class SessionManager {
     }
 
     try {
+      const sessionResponse = await fetch(`${BACKEND_URL}/api/sessions/${sessionId}`);
+      const sessionDetails = sessionResponse.ok ? await sessionResponse.json() : null;
+      const tableMatch = sessionDetails?.sessionTitle?.match(/Table\s*(\d+)/i);
+      const tableNumber = tableMatch ? tableMatch[1] : null;
+      const userEmail =
+        document.getElementById("userEmailInput")?.value.trim() || this.userEmail || "";
+
       const response = await fetch(
         `${BACKEND_URL}/api/sessions/${sessionId}/join`,
         {
@@ -708,6 +735,8 @@ class SessionManager {
             userName: this.userName.trim(),
             avatar: this.selectedAvatar || "👤",
             color: this.selectedColor || "#6c757d",
+            email: userEmail,
+            tableNumber,
             timestamp: new Date().toISOString(),
           }),
         }
@@ -721,7 +750,9 @@ class SessionManager {
       this.sessionId = sessionId;
       this.isHost = false;
       this.sessionMessages = data.messages || [];
-      this.currentSessionTitle = data.session?.sessionTitle || null;
+      this.currentSessionTitle = data.session?.sessionTitle || sessionDetails?.sessionTitle || null;
+      this.joinedTableNumber = tableNumber;
+      if (userEmail) this.userEmail = userEmail;
       this.connectToSession();
       this.updateSessionUI();
       this.loadSessionHistory();
@@ -757,9 +788,8 @@ class SessionManager {
       this.ws.close();
     }
 
-    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     this.ws = new WebSocket(
-      `wss://physics-ai-tutor.onrender.com/sessions/${this.sessionId}`
+      `${BACKEND_URL.replace(/^https?/, "wss")}/sessions/${this.sessionId}`
     );
     this.lastPingTime = Date.now();
 
@@ -771,6 +801,8 @@ class SessionManager {
           avatar: this.selectedAvatar,
           color: this.selectedColor,
           isHost: this.isHost,
+          userEmail: this.userEmail,
+          tableNumber: this.joinedTableNumber || null,
         })
       );
 
@@ -827,6 +859,15 @@ class SessionManager {
   handleSessionMessage(data) {
     switch (data.type) {
       case "message":
+        if (
+          data.userName &&
+          this.userName &&
+          data.userName === this.userName &&
+          data.sender !== "bot"
+        ) {
+          break;
+        }
+
         this.addSharedMessage(
           data.message,
           data.sender,
