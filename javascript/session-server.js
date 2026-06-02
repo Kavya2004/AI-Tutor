@@ -273,6 +273,25 @@ app.post("/api/sessions/:sessionId/join", (req, res) => {
   });
 });
 
+app.get("/api/sessions/by-table/:tableNumber", (req, res) => {
+  const tableNumber = parseInt(req.params.tableNumber, 10);
+  if (isNaN(tableNumber)) {
+    return res.status(400).json({ error: "Invalid table number" });
+  }
+
+  // Find an active session whose title matches "Table <N>"
+  const match = Array.from(sessions.values()).find((s) => {
+    const m = s.sessionTitle?.match(/Table\s*(\d+)/i);
+    return m && parseInt(m[1], 10) === tableNumber;
+  });
+
+  if (!match) {
+    return res.status(404).json({ error: `No active session found for Table ${tableNumber}` });
+  }
+
+  res.json({ sessionId: match.sessionId, sessionTitle: match.sessionTitle });
+});
+
 app.get("/api/sessions/public", (req, res) => {
   const publicSessions = Array.from(sessions.values())
     .filter(session => session.isPublic)

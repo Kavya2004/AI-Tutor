@@ -75,13 +75,13 @@ class SessionManager {
                     <button id="customizeProfileBtn" class="session-btn customize-profile">
                         🎨 Profile
                     </button>
-                    <button id="leaveSessionBtn" class="session-btn leave-session" style="display: none !important;">
+                    <button id="leaveSessionBtn" class="session-btn leave-session" style="display: none;">
                         🚪 Leave
                     </button>
-                    <button id="shareSessionBtn" class="session-btn share-session" style="display: none !important;">
+                    <button id="shareSessionBtn" class="session-btn share-session" style="display: none;">
                         📤 Share
                     </button>
-                    <button id="downloadSessionBtn" class="session-btn download-session" style="display: none !important;">
+                    <button id="downloadSessionBtn" class="session-btn download-session" style="display: none;">
                         💾 Save
                     </button>
                 </div>
@@ -557,9 +557,9 @@ class SessionManager {
         width: 90%;
         box-shadow: 0 8px 32px rgba(0,0,0,0.2);
       ">
-        <h3 style="margin: 0 0 16px 0; color: #333; font-size: 18px;">Join Session</h3>
-        <p style="margin: 0 0 16px 0; color: #666;">Enter the Session ID and email to join:</p>
-        <input type="text" id="sessionIdPrompt" placeholder="Session ID" style="
+        <h3 style="margin: 0 0 8px 0; color: #333; font-size: 18px;">Join Session</h3>
+        <p style="margin: 0 0 16px 0; color: #666; font-size: 14px;">Enter your table number to find the session:</p>
+        <input type="number" id="tableNumberPrompt" placeholder="Table number (e.g. 5)" min="1" max="99" style="
           width: 100%;
           padding: 12px;
           border: 2px solid #e9ecef;
@@ -590,7 +590,7 @@ class SessionManager {
             font-size: 14px;
           ">Cancel</button>
           <button id="joinSessionConfirm" style="
-            background: #007bff;
+            background: #881c1c;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -604,16 +604,16 @@ class SessionManager {
 
     document.body.appendChild(modal);
 
-    const input = modal.querySelector("#sessionIdPrompt");
+    const tableInput = modal.querySelector("#tableNumberPrompt");
     const emailInput = modal.querySelector("#joinEmailInput");
     const joinBtn = modal.querySelector("#joinSessionConfirm");
 
-    const handleJoin = () => {
-      const sessionId = input.value.trim();
+    const handleJoin = async () => {
+      const tableNumber = tableInput.value.trim();
       const userEmail = emailInput.value.trim();
 
-      if (!sessionId) {
-        this.showNotification("Please enter a Session ID", "error");
+      if (!tableNumber || isNaN(tableNumber) || parseInt(tableNumber) < 1) {
+        this.showNotification("Please enter a valid table number", "error");
         return;
       }
 
@@ -622,13 +622,32 @@ class SessionManager {
         return;
       }
 
-      this.userEmail = userEmail;
-      this.joinSession(sessionId);
-      modal.remove();
+      // Disable button while looking up
+      joinBtn.disabled = true;
+      joinBtn.textContent = "Finding...";
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/sessions/by-table/${parseInt(tableNumber)}`);
+        if (!res.ok) {
+          const err = await res.json();
+          this.showNotification(err.error || `No active session found for Table ${tableNumber}`, "error");
+          joinBtn.disabled = false;
+          joinBtn.textContent = "Join";
+          return;
+        }
+        const { sessionId } = await res.json();
+        this.userEmail = userEmail;
+        modal.remove();
+        this.joinSession(sessionId);
+      } catch (e) {
+        this.showNotification("Could not reach server. Please try again.", "error");
+        joinBtn.disabled = false;
+        joinBtn.textContent = "Join";
+      }
     };
 
     joinBtn.onclick = handleJoin;
-    input.addEventListener("keypress", (e) => {
+    tableInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") handleJoin();
     });
 
@@ -636,7 +655,7 @@ class SessionManager {
       if (e.target === modal) modal.remove();
     };
 
-    setTimeout(() => input.focus(), 100);
+    setTimeout(() => tableInput.focus(), 100);
   }
 
   showNameModal(action) {
@@ -1229,27 +1248,41 @@ class SessionManager {
     }
   }
   updateSessionUI() {
-    const createBtn = document.getElementById("createSessionBtn");
-    const joinBtn = document.getElementById("joinSessionBtn");
-    const browseBtn = document.getElementById("publicSessionsBtn");
-    const leaveBtn = document.getElementById("leaveSessionBtn");
-    const shareBtn = document.getElementById("shareSessionBtn");
+    const createBtn  = document.getElementById("createSessionBtn");
+    const joinBtn    = document.getElementById("joinSessionBtn");
+    const browseBtn  = document.getElementById("publicSessionsBtn");
+    const leaveBtn   = document.getElementById("leaveSessionBtn");
+    const shareBtn   = document.getElementById("shareSessionBtn");
     const downloadBtn = document.getElementById("downloadSessionBtn");
 
+    // Helper: show/hide while stripping any !important flags left from initial HTML
+    const show = (el) => {
+      if (!el) return;
+      el.style.removeProperty("display");
+      el.style.setProperty("display", "inline-flex");
+    };
+    const hide = (el) => {
+      if (!el) return;
+      el.style.removeProperty("display");
+      el.style.setProperty("display", "none");
+    };
+
     if (this.sessionId) {
-      createBtn.style.display = "none";
-      joinBtn.style.display = "none";
-      browseBtn.style.display = "none";
-      leaveBtn.style.display = "block";
-      shareBtn.style.display = "block";
-      downloadBtn.style.display = "block";
+      // Inside a session: hide pre-session buttons, show in-session buttons
+      hide(createBtn);
+      hide(joinBtn);
+      hide(browseBtn);
+      show(leaveBtn);
+      show(shareBtn);
+      show(downloadBtn);
     } else {
-      createBtn.style.display = "block";
-      joinBtn.style.display = "block";
-      browseBtn.style.display = "block";
-      leaveBtn.style.display = "none";
-      shareBtn.style.display = "none";
-      downloadBtn.style.display = "none";
+      // No active session: show pre-session buttons, hide in-session buttons
+      show(createBtn);
+      show(joinBtn);
+      show(browseBtn);
+      hide(leaveBtn);
+      hide(shareBtn);
+      hide(downloadBtn);
     }
 
     this.renderParticipants();
