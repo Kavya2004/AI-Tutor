@@ -95,7 +95,7 @@ class SessionManager {
 
     this.setupSessionDropdown();
     this.setupVoiceControls();
-    this.setupDragHandle();
+    // this.setupDragHandle();
 
     document
       .getElementById("createSessionBtn")
