@@ -42,6 +42,7 @@ class SessionManager {
   }
 
   createSessionButton() {
+    /* DISABLED - session/profile/join/create draggable area hidden
     const chatHeader = document.querySelector(".chat-container");
     if (!chatHeader) return;
 
@@ -95,7 +96,7 @@ class SessionManager {
 
     this.setupSessionDropdown();
     this.setupVoiceControls();
-    // this.setupDragHandle();
+    this.setupDragHandle();
 
     document
       .getElementById("createSessionBtn")
@@ -118,6 +119,7 @@ class SessionManager {
     document
       .getElementById("downloadSessionBtn")
       .addEventListener("click", () => this.downloadSession());
+    */ // END DISABLED
   }
 
   setupSessionDropdown() {
