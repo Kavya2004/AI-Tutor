@@ -92,6 +92,13 @@
 	</script>
 	<div class="tutor-container">
 		<div class="tutor-header">
+			<div class="tutor-header-topbar" id="signOutBar">
+				<span class="sob-email" id="sobEmail"></span>
+				<div class="sob-actions">
+					<button id="chatHistoryToggleBtn">📋 History</button>
+					<button id="signOutBtn">Sign Out</button>
+				</div>
+			</div>
 			<h1>Physics Tutor</h1>
 			<p>Your friendly guide to physics!</p>
 			<div class="mobile-nav" id="mobileNav">
@@ -112,6 +119,7 @@
 						<input type="text" id="chatInput" placeholder="Ask me anything about physics!" />
 						<button id="uploadButton" class="upload-btn" title="Upload Files">📎</button>
 						<button id="voiceInputBtn" class="upload-btn" title="Click to speak">🎤</button>
+						<button id="quizLaunchBtn" class="quiz-launch-btn">Quiz</button>
 						<button id="sendButton">Send</button>
 					</div>
 					<div id="filePreview" class="file-preview"></div>
@@ -119,78 +127,15 @@
 			</div>
 			<div class="whiteboard-section" id="whiteboardSection">
 				<div class="whiteboard-tabs">
-					<!-- Teacher Board tab disabled
-						<button class="tab-button active" id="teacherTab" onclick="switchWhiteboard('teacher')">
-							🎓 Teacher Board
-						</button>
-						-->
-					<!-- Student Board tab disabled
-						<button class="tab-button" id="studentTab" onclick="switchWhiteboard('student')">✏️ Student Board</button>
-						-->
-					<button class="tab-button active" id="notesTab" onclick="switchWhiteboard('notes')">📝
-						Notes</button>
+					<button class="tab-button active" id="notesTab">📝 Notes</button>
 				</div>
 				<div class="whiteboard-container">
-					<!-- Teacher Whiteboard disabled
-						<div class="whiteboard-panel active" id="teacherPanel">
-							<div class="whiteboard-header">
-								<h3>Teacher Whiteboard</h3>
-								<div class="whiteboard-controls">
-									<button id="clearTeacherButton">Clear</button>
-									<button id="drawTeacherButton">Draw</button>
-									<button id="eraserTeacherButton" onclick="toggleEraser('teacher')">Eraser</button>
-									<button id="expandTeacherButton">Expand</button>
-								</div>
-
-								<div class="math-buttons">
-									<button onclick="insertPlus('teacher')">+</button>
-									<button onclick="insertMinus('teacher')">−</button>
-									<button onclick="insertMultiply('teacher')">×</button>
-									<button onclick="insertDivide('teacher')">÷</button>
-									<button onclick="insertEquals('teacher')">=</button>
-									<button onclick="insertFraction('teacher')">½</button>
-									<button onclick="insertSquareRoot('teacher')">√</button>
-									<button onclick="insertPi('teacher')">π</button>
-								</div>
-							</div>
-							<canvas id="teacherWhiteboard" class="whiteboard-canvas"></canvas>
-						</div>
-						-->
-
-					<!-- Student Whiteboard disabled
-						<div class="whiteboard-panel" id="studentPanel">
-							<div class="whiteboard-header">
-								<h3>Student Whiteboard</h3>
-								<div class="whiteboard-controls">
-									<button id="clearStudentButton">Clear</button>
-									<button id="drawStudentButton">Draw</button>
-									<button id="eraserStudentButton" onclick="toggleEraser('student')">Eraser</button>
-									<button id="expandStudentButton">Expand</button>
-								</div>
-
-								<div class="math-buttons">
-									<button onclick="insertPlus('student')">+</button>
-									<button onclick="insertMinus('student')">−</button>
-									<button onclick="insertMultiply('student')">×</button>
-									<button onclick="insertDivide('student')">÷</button>
-									<button onclick="insertEquals('student')">=</button>
-									<button onclick="insertFraction('student')">½</button>
-									<button onclick="insertSquareRoot('student')">√</button>
-									<button onclick="insertPi('student')">π</button>
-								</div>
-							</div>
-							<canvas id="studentWhiteboard" class="whiteboard-canvas"></canvas>
-						</div>
-						-->
-
 					<div class="whiteboard-panel active" id="notesPanel">
 						<div class="whiteboard-header">
 							<h3>Student Notes</h3>
 							<div class="whiteboard-controls">
-								<div class="notebook-mode-toggle">
-									<button class="mode-btn active" id="writeModeBtn">Write</button>
-									<button class="mode-btn" id="drawModeBtn">Draw</button>
-								</div>
+								<button class="mode-btn active" id="writeModeBtn">Write</button>
+								<button class="mode-btn" id="drawModeBtn">Draw</button>
 								<button id="clearNotesButton">Clear</button>
 								<button id="saveNotesButton">Save</button>
 								<button id="expandNotesButton">Expand</button>
@@ -209,17 +154,14 @@
 								<input type="range" id="penSize" min="1" max="20" value="2">
 								<span class="pen-size-display" id="penSizeDisplay">2</span>
 							</div>
-
 							<div class="pen-color-group">
 								<label for="penColor">Color:</label>
 								<input type="color" id="penColor" value="#333333">
 							</div>
-
 							<button id="eraserNotesButton" class="eraser-btn">
 								🧽 <span>Eraser</span>
 							</button>
 						</div>
-
 					</div>
 				</div>
 			</div>

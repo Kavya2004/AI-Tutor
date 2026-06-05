@@ -236,31 +236,33 @@
     sidebar.querySelector('#chNewBtn').addEventListener('click', _newChat);
     sidebar.querySelector('#chCloseBtn').addEventListener('click', _closeSidebar);
 
-    // Sign-out bar (shown after login)
-    _buildSignOutBar();
+    // Wire up the sign-out bar that is already in the HTML header
+    _activateSignOutBar();
   }
 
-  function _buildSignOutBar() {
-    if (document.getElementById('signOutBar')) return;
+  function _activateSignOutBar() {
+    // The bar is already in tutor.html as .tutor-header-topbar / #signOutBar
+    const bar = document.getElementById('signOutBar');
+    if (!bar) return;
 
-    const bar = document.createElement('div');
-    bar.id = 'signOutBar';
-    bar.innerHTML = `
-      <span class="sob-email" id="sobEmail"></span>
-      <div class="sob-actions">
-        <button id="chatHistoryToggleBtn">📋 History</button>
-        <button id="signOutBtn">Sign Out</button>
-      </div>
-    `;
+    // Populate email
+    const emailEl = document.getElementById('sobEmail');
+    if (emailEl) emailEl.textContent = _email || '';
 
-    // Insert as first child of body (before the tutor-container)
-    document.body.insertBefore(bar, document.body.firstChild);
-
-    document.getElementById('sobEmail').textContent = _email || '';
+    // Show the bar
     bar.classList.add('visible');
 
-    document.getElementById('chatHistoryToggleBtn').addEventListener('click', _toggleSidebar);
-    document.getElementById('signOutBtn').addEventListener('click', _signOut);
+    // Wire buttons (guard against double-binding)
+    const histBtn = document.getElementById('chatHistoryToggleBtn');
+    const signBtn = document.getElementById('signOutBtn');
+    if (histBtn && !histBtn.dataset.wired) {
+      histBtn.dataset.wired = '1';
+      histBtn.addEventListener('click', _toggleSidebar);
+    }
+    if (signBtn && !signBtn.dataset.wired) {
+      signBtn.dataset.wired = '1';
+      signBtn.addEventListener('click', _signOut);
+    }
   }
 
   function _renderList() {

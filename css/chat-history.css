@@ -81,13 +81,16 @@
 .ch-list::-webkit-scrollbar {
   width: 5px;
 }
+
 .ch-list::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .ch-list::-webkit-scrollbar-thumb {
   background: #444;
   border-radius: 4px;
 }
+
 .ch-list::-webkit-scrollbar-thumb:hover {
   background: #666;
 }
@@ -165,23 +168,6 @@
   background: rgba(231, 76, 60, 0.12);
 }
 
-/* Toggle button injected into sign-out bar */
-#chatHistoryToggleBtn {
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s;
-  white-space: nowrap;
-}
-
-#chatHistoryToggleBtn:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
 /* Sidebar overlay (dim background when open) */
 #chatHistoryOverlay {
   display: none;
@@ -195,19 +181,36 @@
   display: block;
 }
 
-/* Sign-out bar */
+/* Toggle button in the header topbar */
+#chatHistoryToggleBtn {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+#chatHistoryToggleBtn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* Sign-out bar — lives inside .tutor-header as .tutor-header-topbar */
 #signOutBar {
   display: none;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
+  gap: 10px;
   padding: 8px 16px;
-  background: #881c1c;
+  background: rgba(0, 0, 0, 0.18);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   color: #fff;
   font-size: 13px;
   flex-shrink: 0;
-  gap: 10px;
-  z-index: 1000;
-  position: relative;
 }
 
 #signOutBar.visible {
@@ -220,7 +223,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   opacity: 0.85;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 #signOutBar .sob-actions {
@@ -231,16 +234,17 @@
 }
 
 #signOutBtn {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.15);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 6px;
   padding: 5px 12px;
   font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
 }
 
 #signOutBtn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.28);
 }
