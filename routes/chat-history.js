@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
 // POST /api/chat-history  — create a new empty conversation
 router.post('/', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, activityId, loginTime } = req.body;
     if (!email) return res.status(400).json({ error: 'email is required' });
 
     const connected = await connectMongo();
@@ -40,6 +40,12 @@ router.post('/', async (req, res) => {
       email,
       title: 'New Conversation',
       messages: [],
+      loginSession: {
+        activityId: activityId || null,
+        loginTime:  loginTime  ? new Date(loginTime) : new Date(),
+        logoutTime: null,
+        durationSeconds: null,
+      },
     });
 
     res.json({ _id: convo._id.toString(), title: convo.title });

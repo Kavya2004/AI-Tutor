@@ -1,5 +1,5 @@
 import express from 'express';
-import { connectMongo, getUserActivityModel, recordLogin, recordLogout } from '../config/mongodb.js';
+import { connectMongo, getUserActivityModel, recordLogin, recordLogout, updateConversationsOnLogout } from '../config/mongodb.js';
 
 const router = express.Router();
 
@@ -12,7 +12,10 @@ router.post('/login', async (req, res) => {
     const activity = await recordLogin(email);
     if (!activity) return res.status(500).json({ error: 'Could not record login' });
 
-    res.json({ activityId: activity._id.toString() });
+    res.json({
+      activityId: activity._id.toString(),
+      loginTime:  activity.loginTime,
+    });
   } catch (err) {
     console.error('[user-activity] login error:', err.message);
     res.status(500).json({ error: err.message });
@@ -27,6 +30,9 @@ router.post('/logout', async (req, res) => {
 
     const activity = await recordLogout(activityId);
     if (!activity) return res.status(404).json({ error: 'Activity record not found' });
+
+    // Back-fill logout info on every conversation that was opened this session
+    await updateConversationsOnLogout(activityId, activity.logoutTime, activity.durationSeconds);
 
     res.json({ ok: true, durationSeconds: activity.durationSeconds });
   } catch (err) {

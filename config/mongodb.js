@@ -10,13 +10,14 @@ const classSchema = new mongoose.Schema({
 
 // UserActivity — tracks login/logout per visit
 const userActivitySchema = new mongoose.Schema({
-  email:           { type: String, required: true },
+  email:           { type: String, required: true, index: true },
   loginTime:       { type: Date, default: Date.now },
   logoutTime:      { type: Date, default: null },
   durationSeconds: { type: Number, default: null },
 }, { timestamps: false });
 
-// ChatConversation — all messages for a user, grouped by conversation
+// ChatConversation — one doc per conversation channel per user.
+// Embeds the login session details so you can see login/logout alongside chat.
 const messageSchema = new mongoose.Schema({
   role:      { type: String, enum: ['user', 'bot'], required: true },
   content:   { type: String, required: true },
@@ -24,8 +25,22 @@ const messageSchema = new mongoose.Schema({
 }, { _id: false });
 
 const chatConversationSchema = new mongoose.Schema({
-  email:    { type: String, required: true, index: true },
-  title:    { type: String, default: 'New Conversation' },
+  // Who this conversation belongs to
+  email:     { type: String, required: true, index: true },
+
+  // The channel name (auto-generated title, e.g. "Newton's Laws Explained")
+  title:     { type: String, default: 'New Conversation' },
+
+  // Login session snapshot — filled in when the conversation is created
+  // and updated on logout so every channel shows the full session info
+  loginSession: {
+    activityId:      { type: mongoose.Schema.Types.ObjectId, ref: 'UserActivity', default: null },
+    loginTime:       { type: Date, default: null },
+    logoutTime:      { type: Date, default: null },
+    durationSeconds: { type: Number, default: null },
+  },
+
+  // All messages in this channel
   messages: { type: [messageSchema], default: [] },
 }, { timestamps: true });
 
@@ -66,8 +81,10 @@ export function getChatConversationModel() {
 let connectPromise = null;
 
 export function connectMongo() {
-  if (!process.env.MONGODB_URI) {
-    console.warn('MONGODB_URI not set – session data will not be persisted');
+  // Support both env var names — MONGODB_URI_TUTOR (local .env) and MONGODB_URI (Render)
+  const uri = process.env.MONGODB_URI_TUTOR || process.env.MONGODB_URI;
+  if (!uri) {
+    console.warn('[MongoDB] No URI set (MONGODB_URI_TUTOR or MONGODB_URI) – data will not be persisted');
     return Promise.resolve(false);
   }
   if (mongoose.connection.readyState === 1) return Promise.resolve(true);
@@ -76,9 +93,9 @@ export function connectMongo() {
   mongoose.set('bufferCommands', false);
 
   connectPromise = mongoose
-    .connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 15000 })
-    .then(() => { console.log('MongoDB connected'); return true; })
-    .catch((err) => { console.error('MongoDB error:', err.message); connectPromise = null; return false; });
+    .connect(uri, { serverSelectionTimeoutMS: 15000 })
+    .then(() => { console.log('[MongoDB] Connected to', mongoose.connection.db.databaseName); return true; })
+    .catch((err) => { console.error('[MongoDB] Connection error:', err.message); connectPromise = null; return false; });
 
   return connectPromise;
 }
@@ -180,5 +197,23 @@ export async function recordLogout(activityId) {
   } catch (err) {
     console.error('[MongoDB] recordLogout error:', err.message);
     return null;
+  }
+}
+
+// Update loginSession on every conversation that belongs to this activityId
+// so each chat channel stores the full login→logout timeline
+export async function updateConversationsOnLogout(activityId, logoutTime, durationSeconds) {
+  try {
+    const connected = await connectMongo();
+    if (!connected) return;
+
+    const ChatConversation = getChatConversationModel();
+    await ChatConversation.updateMany(
+      { 'loginSession.activityId': new mongoose.Types.ObjectId(activityId) },
+      { $set: { 'loginSession.logoutTime': logoutTime, 'loginSession.durationSeconds': durationSeconds } }
+    );
+    console.log('[MongoDB] Conversations updated with logout info for activityId:', activityId);
+  } catch (err) {
+    console.error('[MongoDB] updateConversationsOnLogout error:', err.message);
   }
 }
