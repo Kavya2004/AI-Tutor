@@ -15,6 +15,8 @@ import pdfPageHandler from './api/pdf-page.js';
 import pdfImageHandler from './api/pdf-image.js';
 import { connectMongo } from './config/mongodb.js';
 import sessionDbRouter from './api/sessions-db.js';
+import chatHistoryRouter from './routes/chat-history.js';
+import userActivityRouter from './routes/user-activity.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -38,6 +40,8 @@ app.post('/api/pdf-content', pdfContentHandler);
 app.post('/api/pdf-page', pdfPageHandler);
 app.get('/api/pdf-image', pdfImageHandler);
 app.use('/api/db', sessionDbRouter);
+app.use('/api/chat-history', chatHistoryRouter);
+app.use('/api/user-activity', userActivityRouter);
 
 // ── Session store ──────────────────────────────────────────────
 const sessions = new Map();
@@ -200,6 +204,11 @@ wss.on('connection', (ws, req) => {
 // Serve the main page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'tutor.html'));
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ status: 'ok', message: 'AI Tutor backend is running' });
 });
 
 connectMongo();
