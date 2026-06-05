@@ -523,6 +523,11 @@ function handleSendMessage() {
 }
 
 function addMessage(text, sender, files = [], citation = null, shouldBroadcast = true) {
+  _addMessageInternal(text, sender, files, citation, shouldBroadcast, false);
+}
+
+// silent = true skips persistence (used when replaying history)
+function _addMessageInternal(text, sender, files = [], citation = null, shouldBroadcast = true, silent = false) {
   const chatMessages = document.getElementById("chatMessages");
   const messageDiv = document.createElement("div");
   messageDiv.className = `message ${sender}-message slide-in`;
@@ -633,6 +638,11 @@ function addMessage(text, sender, files = [], citation = null, shouldBroadcast =
 
   if (shouldBroadcast && window.sessionManager && window.sessionManager.sessionId) {
     window.sessionManager.broadcastMessage(text, sender, files);
+  }
+
+  // Persist to MongoDB (skip when replaying history to avoid double-saving)
+  if (!silent && window.chatHistoryManager) {
+    window.chatHistoryManager.appendMessage({ role: sender, content: text });
   }
 }
 
@@ -1277,6 +1287,11 @@ async function processUserMessage(message) {
       addMessage(botResponse, "bot", [], extractedCitation);
     }
 
+    // Trigger auto-title generation after first exchange
+    if (window.chatHistoryManager) {
+      window.chatHistoryManager.autoTitle(message, botResponse);
+    }
+
     // Execute whiteboard action or generate diagram
     if (diagramRequest && targetBoard) {
       setTimeout(() => generateAIDiagram(diagramRequest, targetBoard), 500);
@@ -1765,3 +1780,24 @@ window.closeBookRef = closeBookRef;
 window.bookRefChangePage = bookRefChangePage;
 window.showBookRef = showBookRef;
 window.showUrlRef = showUrlRef;
+
+// Expose globals for chat-history-manager.js
+window.addMessage = addMessage;
+
+window._addMessageSilent = function(text, sender) {
+  _addMessageInternal(text, sender, [], null, false, true);
+};
+
+window._resetChatContext = function() {
+  context = [context[0]]; // keep system prompt, clear conversation
+};
+
+window._rebuildContext = function(messages) {
+  context = [context[0]]; // keep system prompt
+  messages.forEach(msg => {
+    context.push({
+      role: msg.role === 'bot' ? 'assistant' : 'user',
+      content: msg.content,
+    });
+  });
+};

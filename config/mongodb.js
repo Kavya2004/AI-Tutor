@@ -8,6 +8,27 @@ const classSchema = new mongoose.Schema({
   createdAt:     { type: Date, default: Date.now },
 });
 
+// UserActivity — tracks login/logout per visit
+const userActivitySchema = new mongoose.Schema({
+  email:           { type: String, required: true },
+  loginTime:       { type: Date, default: Date.now },
+  logoutTime:      { type: Date, default: null },
+  durationSeconds: { type: Number, default: null },
+}, { timestamps: false });
+
+// ChatConversation — all messages for a user, grouped by conversation
+const messageSchema = new mongoose.Schema({
+  role:      { type: String, enum: ['user', 'bot'], required: true },
+  content:   { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+}, { _id: false });
+
+const chatConversationSchema = new mongoose.Schema({
+  email:    { type: String, required: true, index: true },
+  title:    { type: String, default: 'New Conversation' },
+  messages: { type: [messageSchema], default: [] },
+}, { timestamps: true });
+
 const studentSchema = new mongoose.Schema({
   studentId:   { type: String, default: () => new mongoose.Types.ObjectId().toString() },
   name:        { type: String, required: true },
@@ -30,6 +51,15 @@ const sessionSchema = new mongoose.Schema({
 
 export const Class   = mongoose.models.Class   || mongoose.model('Class',   classSchema);
 export const Session = mongoose.models.Session || mongoose.model('Session', sessionSchema);
+
+// Lazy model getters (safe for serverless cold-starts)
+export function getUserActivityModel() {
+  return mongoose.models.UserActivity || mongoose.model('UserActivity', userActivitySchema);
+}
+
+export function getChatConversationModel() {
+  return mongoose.models.ChatConversation || mongoose.model('ChatConversation', chatConversationSchema);
+}
 
 // ── Connection ─────────────────────────────────────────────────
 
@@ -109,6 +139,46 @@ export async function addStudentToSession({ sessionId, name, email, tableNumber 
     return session;
   } catch (err) {
     console.error('[MongoDB] addStudentToSession error:', err.message);
+    return null;
+  }
+}
+
+// ── UserActivity helpers ───────────────────────────────────────
+
+export async function recordLogin(email) {
+  try {
+    const connected = await connectMongo();
+    if (!connected) return null;
+
+    const UserActivity = getUserActivityModel();
+    const activity = await UserActivity.create({ email, loginTime: new Date() });
+    console.log('[MongoDB] Login recorded for:', email);
+    return activity;
+  } catch (err) {
+    console.error('[MongoDB] recordLogin error:', err.message);
+    return null;
+  }
+}
+
+export async function recordLogout(activityId) {
+  try {
+    const connected = await connectMongo();
+    if (!connected) return null;
+
+    const UserActivity = getUserActivityModel();
+    const activity = await UserActivity.findById(activityId);
+    if (!activity) return null;
+
+    const logoutTime = new Date();
+    const durationSeconds = Math.round((logoutTime - activity.loginTime) / 1000);
+    activity.logoutTime = logoutTime;
+    activity.durationSeconds = durationSeconds;
+    await activity.save();
+
+    console.log('[MongoDB] Logout recorded for:', activity.email, `(${durationSeconds}s)`);
+    return activity;
+  } catch (err) {
+    console.error('[MongoDB] recordLogout error:', err.message);
     return null;
   }
 }

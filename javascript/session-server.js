@@ -9,6 +9,8 @@ import { existsSync } from 'fs';
 import { readFile, unlink } from 'fs/promises';
 import { tmpdir } from 'os';
 import { connectMongo, createSessionRecord, addStudentToSession } from '../config/mongodb.js';
+import userActivityRouter from '../routes/user-activity.js';
+import chatHistoryRouter from '../routes/chat-history.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -28,6 +30,10 @@ app.use(cors({
 // Handle preflight for all routes
 app.options('/{*path}', cors());
 app.use(express.json());
+
+// Mount feature routers
+app.use('/api/user-activity', userActivityRouter);
+app.use('/api/chat-history', chatHistoryRouter);
 
 const sessions = new Map();
 const sessionConnections = new Map(); 
