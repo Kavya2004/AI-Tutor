@@ -526,6 +526,78 @@ function addMessage(text, sender, files = [], citation = null, shouldBroadcast =
   _addMessageInternal(text, sender, files, citation, shouldBroadcast, false);
 }
 
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatChatText(text) {
+  const escaped = escapeHtml(text);
+  return escaped
+    .replace(/\n/g, '<br>')
+    .replace(/&lt;(https?:\/\/[^&]+)&gt;/g, (match, url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+    });
+}
+
+function renderMathInElement(element) {
+  if (!element) return;
+  ensureMathJaxLoaded().then(() => {
+    if (window.MathJax?.typesetPromise) {
+      window.MathJax.typesetPromise([element]).catch(() => {});
+    } else if (window.MathJax?.Hub) {
+      window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, element]);
+    }
+  });
+}
+
+function ensureMathJaxLoaded() {
+  if (window.MathJax) return Promise.resolve();
+
+  // Provide a lightweight MathJax config optimized for chat rendering
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true,
+      processEnvironments: true,
+      macros: {
+        vec: ['\\vec{#1}', 1],
+        unit: ['\\mathrm{#1}', 1],
+        d: '\\mathrm{d}',
+        pd: '\\partial'
+      }
+    },
+    options: {
+      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+    }
+  };
+
+  return new Promise((resolve) => {
+    const existing = document.querySelector('script[src*="mathjax"]');
+    if (existing) {
+      if (existing.getAttribute('data-loaded') === 'true') return resolve();
+      existing.addEventListener('load', () => resolve());
+      existing.addEventListener('error', () => resolve());
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+    script.async = true;
+    script.onload = () => {
+      script.setAttribute('data-loaded', 'true');
+      resolve();
+    };
+    script.onerror = () => resolve();
+    document.head.appendChild(script);
+  });
+}
+
 // silent = true skips persistence (used when replaying history)
 function _addMessageInternal(text, sender, files = [], citation = null, shouldBroadcast = true, silent = false) {
   const chatMessages = document.getElementById("chatMessages");
@@ -536,11 +608,7 @@ function _addMessageInternal(text, sender, files = [], citation = null, shouldBr
   avatar.className = "message-avatar";
   avatar.innerHTML = sender === "bot" ? "🤖" : "👤";
 
-  // Convert LaTeX to Unicode for bot messages
-  let displayText = text;
-  if (sender === "bot" && window.convertLatexToUnicode) {
-    displayText = window.convertLatexToUnicode(text);
-  }
+  const displayText = text;
 
   const content = document.createElement("div");
   content.className = "message-content";
@@ -598,12 +666,7 @@ function _addMessageInternal(text, sender, files = [], citation = null, shouldBr
       .join("");
   }
 
-  content.innerHTML = displayText
-    .replace(/\n/g, "<br>")
-    .replace(/<https?:\/\/[^>]+>/g, (match) => {
-      const url = match.slice(1, -1);
-      return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-    });
+  content.innerHTML = formatChatText(displayText);
 
   if (citationHTML) {
     const pill = document.createElement("div");
@@ -634,6 +697,7 @@ function _addMessageInternal(text, sender, files = [], citation = null, shouldBr
   messageDiv.appendChild(avatar);
   messageDiv.appendChild(content);
   chatMessages.appendChild(messageDiv);
+  renderMathInElement(content);
   chatMessages.scrollTop = chatMessages.scrollHeight;
 
   if (shouldBroadcast && window.sessionManager && window.sessionManager.sessionId) {
