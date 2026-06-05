@@ -8,7 +8,7 @@
  */
 
 (function () {
-  const RENDER_BASE = 'https://physics-ai-tutor.onrender.com';
+  const RENDER_BASE = 'https://ai-tutor-53f1.onrender.com';
 
   // ─── State ────────────────────────────────────────────────────────────────
   let _email = null;

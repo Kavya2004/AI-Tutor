@@ -119,7 +119,8 @@ class SessionManager {
     document
       .getElementById("downloadSessionBtn")
       .addEventListener("click", () => this.downloadSession());
-    */ // END DISABLED
+    */
+    // END DISABLED
   }
 
   setupSessionDropdown() {
@@ -228,7 +229,7 @@ class SessionManager {
       if (publicSessions.length === 0) {
         this.showNotification(
           "No public sessions available right now.",
-          "info"
+          "info",
         );
         return;
       }
@@ -238,7 +239,7 @@ class SessionManager {
       console.error("Error fetching public sessions:", error);
       this.showNotification(
         "Failed to load public sessions. Please try again later.",
-        "error"
+        "error",
       );
     }
   }
@@ -272,7 +273,7 @@ class SessionManager {
                   </div>
                   <div class="join-arrow">→</div>
                 </div>
-              `
+              `,
                 )
                 .join("")}
             </div>
@@ -379,7 +380,9 @@ class SessionManager {
     const originalSessionHandler = async () => {
       const userName = document.getElementById("userNameInput").value.trim();
       const userEmail = document.getElementById("userEmailInput").value.trim();
-      const tableNumber = document.getElementById("tableNumberInput").value.trim();
+      const tableNumber = document
+        .getElementById("tableNumberInput")
+        .value.trim();
       const sessionTitle = document
         .getElementById("sessionTitleInput")
         .value.trim();
@@ -410,10 +413,15 @@ class SessionManager {
         confirmBtn.disabled = true;
         confirmBtn.textContent = "Finding...";
         try {
-          const res = await fetch(`${BACKEND_URL}/api/sessions/by-table/${parseInt(tableNumber)}`);
+          const res = await fetch(
+            `${BACKEND_URL}/api/sessions/by-table/${parseInt(tableNumber)}`,
+          );
           if (!res.ok) {
             const err = await res.json();
-            this.showNotification(err.error || `No active session for Table ${tableNumber}`, "error");
+            this.showNotification(
+              err.error || `No active session for Table ${tableNumber}`,
+              "error",
+            );
             confirmBtn.disabled = false;
             confirmBtn.textContent = "Join Session";
             return;
@@ -422,7 +430,10 @@ class SessionManager {
           modal.style.display = "none";
           this.joinSession(sessionId);
         } catch (e) {
-          this.showNotification("Could not reach server. Please try again.", "error");
+          this.showNotification(
+            "Could not reach server. Please try again.",
+            "error",
+          );
           confirmBtn.disabled = false;
           confirmBtn.textContent = "Join Session";
         }
@@ -509,13 +520,13 @@ class SessionManager {
       this.updateSessionUI();
 
       this.addSystemMessage(
-        `Session created! Share this link with others: ${window.location.origin}${window.location.pathname}?session=${this.sessionId}`
+        `Session created! Share this link with others: ${window.location.origin}${window.location.pathname}?session=${this.sessionId}`,
       );
     } catch (error) {
       console.error("Error creating session:", error);
       this.showNotification(
         "Failed to create session. Please try again.",
-        "error"
+        "error",
       );
     }
   }
@@ -547,13 +558,13 @@ class SessionManager {
       this.updateSessionUI();
 
       this.addSystemMessage(
-        `Session created! Share this link with others: ${window.location.origin}${window.location.pathname}?session=${this.sessionId}`
+        `Session created! Share this link with others: ${window.location.origin}${window.location.pathname}?session=${this.sessionId}`,
       );
     } catch (error) {
       console.error("Error creating session:", error);
       this.showNotification(
         "Failed to create session. Please try again.",
-        "error"
+        "error",
       );
     }
   }
@@ -661,10 +672,15 @@ class SessionManager {
       joinBtn.textContent = "Finding...";
 
       try {
-        const res = await fetch(`${BACKEND_URL}/api/sessions/by-table/${parseInt(tableNumber)}`);
+        const res = await fetch(
+          `${BACKEND_URL}/api/sessions/by-table/${parseInt(tableNumber)}`,
+        );
         if (!res.ok) {
           const err = await res.json();
-          this.showNotification(err.error || `No active session found for Table ${tableNumber}`, "error");
+          this.showNotification(
+            err.error || `No active session found for Table ${tableNumber}`,
+            "error",
+          );
           joinBtn.disabled = false;
           joinBtn.textContent = "Join";
           return;
@@ -674,7 +690,10 @@ class SessionManager {
         modal.remove();
         this.joinSession(sessionId);
       } catch (e) {
-        this.showNotification("Could not reach server. Please try again.", "error");
+        this.showNotification(
+          "Could not reach server. Please try again.",
+          "error",
+        );
         joinBtn.disabled = false;
         joinBtn.textContent = "Join";
       }
@@ -771,12 +790,18 @@ class SessionManager {
     }
 
     try {
-      const sessionResponse = await fetch(`${BACKEND_URL}/api/sessions/${sessionId}`);
-      const sessionDetails = sessionResponse.ok ? await sessionResponse.json() : null;
+      const sessionResponse = await fetch(
+        `${BACKEND_URL}/api/sessions/${sessionId}`,
+      );
+      const sessionDetails = sessionResponse.ok
+        ? await sessionResponse.json()
+        : null;
       const tableMatch = sessionDetails?.sessionTitle?.match(/Table\s*(\d+)/i);
       const tableNumber = tableMatch ? tableMatch[1] : null;
       const userEmail =
-        document.getElementById("userEmailInput")?.value.trim() || this.userEmail || "";
+        document.getElementById("userEmailInput")?.value.trim() ||
+        this.userEmail ||
+        "";
 
       const response = await fetch(
         `${BACKEND_URL}/api/sessions/${sessionId}/join`,
@@ -791,7 +816,7 @@ class SessionManager {
             tableNumber,
             timestamp: new Date().toISOString(),
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -802,7 +827,8 @@ class SessionManager {
       this.sessionId = sessionId;
       this.isHost = false;
       this.sessionMessages = data.messages || [];
-      this.currentSessionTitle = data.session?.sessionTitle || sessionDetails?.sessionTitle || null;
+      this.currentSessionTitle =
+        data.session?.sessionTitle || sessionDetails?.sessionTitle || null;
       this.joinedTableNumber = tableNumber;
       if (userEmail) this.userEmail = userEmail;
       this.connectToSession();
@@ -814,7 +840,7 @@ class SessionManager {
       console.error("Error joining session:", error);
       this.showNotification(
         "Failed to join session. Please check the session ID.",
-        "error"
+        "error",
       );
     }
   }
@@ -846,7 +872,7 @@ class SessionManager {
     }
 
     this.ws = new WebSocket(
-      `${BACKEND_URL.replace(/^https?/, "wss")}/sessions/${this.sessionId}`
+      `${BACKEND_URL.replace(/^https?/, "wss")}/sessions/${this.sessionId}`,
     );
     this.lastPingTime = Date.now();
 
@@ -860,7 +886,7 @@ class SessionManager {
           isHost: this.isHost,
           userEmail: this.userEmail,
           tableNumber: this.joinedTableNumber || null,
-        })
+        }),
       );
 
       // Start heartbeat
@@ -918,11 +944,7 @@ class SessionManager {
       case "message":
         // Skip messages that originated from this client (both user messages and
         // bot replies — tutor-chat.js already renders those locally before broadcasting)
-        if (
-          data.userName &&
-          this.userName &&
-          data.userName === this.userName
-        ) {
+        if (data.userName && this.userName && data.userName === this.userName) {
           break;
         }
 
@@ -931,7 +953,7 @@ class SessionManager {
           data.sender,
           data.timestamp,
           data.userName,
-          data.files
+          data.files,
         );
         break;
       case "participant_joined":
@@ -1004,7 +1026,7 @@ class SessionManager {
           userName: this.userName,
           timestamp: new Date().toISOString(),
           files: files,
-        })
+        }),
       );
     }
   }
@@ -1191,8 +1213,8 @@ class SessionManager {
       <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
         <span style="font-weight: 600; font-size: 12px;">${sessionTitle}</span>
         <span style="font-size: 10px; opacity: 0.8;">${participantCount} participant${
-      participantCount !== 1 ? "s" : ""
-    }</span>
+          participantCount !== 1 ? "s" : ""
+        }</span>
       </div>
     `;
 
@@ -1278,7 +1300,7 @@ class SessionManager {
       const windowHeight = window.innerHeight;
       const maxHeight = Math.max(120, windowHeight * 0.2);
       const container = participantsList.querySelector(
-        ".participants-container"
+        ".participants-container",
       );
       if (container) {
         container.style.maxHeight = `${maxHeight}px`;
@@ -1286,11 +1308,11 @@ class SessionManager {
     }
   }
   updateSessionUI() {
-    const createBtn  = document.getElementById("createSessionBtn");
-    const joinBtn    = document.getElementById("joinSessionBtn");
-    const browseBtn  = document.getElementById("publicSessionsBtn");
-    const leaveBtn   = document.getElementById("leaveSessionBtn");
-    const shareBtn   = document.getElementById("shareSessionBtn");
+    const createBtn = document.getElementById("createSessionBtn");
+    const joinBtn = document.getElementById("joinSessionBtn");
+    const browseBtn = document.getElementById("publicSessionsBtn");
+    const leaveBtn = document.getElementById("leaveSessionBtn");
+    const shareBtn = document.getElementById("shareSessionBtn");
     const downloadBtn = document.getElementById("downloadSessionBtn");
 
     // Helper: show/hide while stripping any !important flags left from initial HTML
@@ -1334,7 +1356,7 @@ class SessionManager {
       .then(() => {
         this.showNotification(
           "✅ Session link copied to clipboard!",
-          "success"
+          "success",
         );
       })
       .catch(() => {
@@ -1352,8 +1374,8 @@ class SessionManager {
         type === "success"
           ? "#28a745"
           : type === "error"
-          ? "#dc3545"
-          : "#007bff"
+            ? "#dc3545"
+            : "#007bff"
       };
       color: white;
       padding: 12px 20px;
@@ -1443,7 +1465,7 @@ class SessionManager {
   async downloadSession() {
     try {
       const response = await fetch(
-        `${BACKEND_URL}/api/sessions/${this.sessionId}/download`
+        `${BACKEND_URL}/api/sessions/${this.sessionId}/download`,
       );
 
       if (!response.ok) {
@@ -1456,7 +1478,7 @@ class SessionManager {
       console.error("Error downloading session:", error);
       this.showNotification(
         "Failed to download session. Please try again.",
-        "error"
+        "error",
       );
     }
   }
@@ -1476,7 +1498,7 @@ class SessionManager {
     doc.text(
       `Session Notes: ${sessionData.sessionTitle || sessionData.sessionId}`,
       margin,
-      yPosition
+      yPosition,
     );
     yPosition += 10;
 
@@ -1488,7 +1510,7 @@ class SessionManager {
     doc.text(
       `Date: ${new Date(sessionData.createdAt).toLocaleDateString()}`,
       margin,
-      yPosition
+      yPosition,
     );
     yPosition += 6;
     doc.text(
@@ -1496,7 +1518,7 @@ class SessionManager {
         .map((p) => p.userName)
         .join(", ")}`,
       margin,
-      yPosition
+      yPosition,
     );
     yPosition += 15;
 
@@ -1568,7 +1590,7 @@ class SessionManager {
         .replace(/&#39;/g, "'")
         .replace(
           /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu,
-          ""
+          "",
         );
 
       const lines = doc.splitTextToSize(cleanMessage, 170);
@@ -1605,7 +1627,7 @@ class SessionManager {
         doc.text(
           `[${timestamp}] ${action.userName}: ${action.action} on ${action.targetBoard}`,
           margin,
-          yPosition
+          yPosition,
         );
         yPosition += 6;
       }
@@ -1673,7 +1695,7 @@ class SessionManager {
         const ctx = canvas.getContext("2d");
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const hasContent = imageData.data.some(
-          (channel, index) => index % 4 !== 3 && channel !== 0
+          (channel, index) => index % 4 !== 3 && channel !== 0,
         );
 
         if (hasContent) {
@@ -1685,7 +1707,7 @@ class SessionManager {
               canvasId === "teacherCanvas" ? "Teacher" : "Student"
             } Whiteboard:`,
             20,
-            20
+            20,
           );
 
           const imgData = canvas.toDataURL("image/png");
@@ -1698,7 +1720,7 @@ class SessionManager {
             20,
             30,
             imgWidth,
-            Math.min(imgHeight, 250)
+            Math.min(imgHeight, 250),
           );
         }
       }
@@ -1711,7 +1733,7 @@ class SessionManager {
         JSON.stringify({
           type: "leave",
           userName: this.userName,
-        })
+        }),
       );
       this.ws.close();
     }
@@ -1758,7 +1780,7 @@ class SessionManager {
       }
 
       const selectedAvatarEl = document.querySelector(
-        ".avatar-option.selected"
+        ".avatar-option.selected",
       );
       const selectedColorEl = document.querySelector(".color-option.selected");
 
@@ -1781,7 +1803,7 @@ class SessionManager {
             userName: this.userName,
             avatar: this.selectedAvatar,
             color: this.selectedColor,
-          })
+          }),
         );
       }
 
@@ -1852,7 +1874,7 @@ class SessionManager {
         try {
           await window.diagramRenderer.generateDiagram(
             data.description,
-            data.targetBoard
+            data.targetBoard,
           );
         } catch (error) {}
       }, 100);
