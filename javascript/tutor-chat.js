@@ -538,6 +538,10 @@ function escapeHtml(text) {
 function formatChatText(text) {
   const escaped = escapeHtml(text);
   return escaped
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/_(.+?)_/g, '<em>$1</em>')
+    .replace(/&lt;u&gt;(.+?)&lt;\/u&gt;/g, '<u>$1</u>')
     .replace(/\n/g, '<br>')
     .replace(/&lt;(https?:\/\/[^&]+)&gt;/g, (match, url) => {
       return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
