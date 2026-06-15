@@ -604,6 +604,8 @@ function ensureMathJaxLoaded() {
 
 // silent = true skips persistence (used when replaying history)
 function _addMessageInternal(text, sender, files = [], citation = null, shouldBroadcast = true, silent = false) {
+  // Reset the idle-logout timer on every real message (user or bot)
+  if (window.resetIdleChatTimer) window.resetIdleChatTimer();
   const chatMessages = document.getElementById("chatMessages");
   const messageDiv = document.createElement("div");
   messageDiv.className = `message ${sender}-message slide-in`;

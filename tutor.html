@@ -90,6 +90,116 @@
 			input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 		})();
 	</script>
+
+	<!-- ── Idle-timeout auto-logout ──────────────────────────────────────────
+	     Counts down from the last chat message (not mouse movement).
+	     14 min → warning banner with 60s countdown.
+	     15 min → logout + reload.
+	──────────────────────────────────────────────────────────────────────── -->
+	<script>
+		(function () {
+			const IDLE_TIMEOUT_MS = 15 * 60 * 1000;   // 15 minutes
+			const WARNING_BEFORE_MS = 1 * 60 * 1000;   // show warning 60 s before logout
+
+			let _warningTimer = null;
+			let _logoutTimer = null;
+			let _countdownInterval = null;
+			let _started = false;
+
+			// ── Auto-logout ────────────────────────────────────────────────
+			async function doAutoLogout() {
+				clearAll();
+				removeWarningBanner();
+
+				if (window._activityId) {
+					try {
+						await fetch('https://ai-tutor-53f1.onrender.com/api/user-activity/logout', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ activityId: window._activityId }),
+						});
+					} catch (_) { }
+				}
+				window.location.reload();
+			}
+
+			// ── Warning banner ─────────────────────────────────────────────
+			function showWarning() {
+				removeWarningBanner();
+				let secsLeft = Math.round(WARNING_BEFORE_MS / 1000);
+
+				const banner = document.createElement('div');
+				banner.id = 'idleWarningBanner';
+				banner.style.cssText = `
+					position: fixed; bottom: 0; left: 0; right: 0; z-index: 99998;
+					background: #881c1c; color: #fff;
+					display: flex; align-items: center; justify-content: center; gap: 16px;
+					padding: 14px 20px; font-size: 14px; font-weight: 600;
+					box-shadow: 0 -2px 12px rgba(0,0,0,0.3);
+				`;
+
+				const msg = document.createElement('span');
+				msg.id = 'idleCountdownMsg';
+				msg.textContent = `Signing you out in ${secsLeft}s due to inactivity…`;
+
+				const stayBtn = document.createElement('button');
+				stayBtn.textContent = 'Stay Signed In';
+				stayBtn.style.cssText = `
+					background: white; color: #881c1c; border: none;
+					border-radius: 6px; padding: 7px 16px; font-size: 13px;
+					font-weight: 700; cursor: pointer; flex-shrink: 0;
+				`;
+				stayBtn.addEventListener('click', () => {
+					resetIdleTimer();
+					removeWarningBanner();
+				});
+
+				banner.appendChild(msg);
+				banner.appendChild(stayBtn);
+				document.body.appendChild(banner);
+
+				_countdownInterval = setInterval(() => {
+					secsLeft--;
+					const el = document.getElementById('idleCountdownMsg');
+					if (el) el.textContent = `Signing you out in ${secsLeft}s due to inactivity…`;
+					if (secsLeft <= 0) clearInterval(_countdownInterval);
+				}, 1000);
+			}
+
+			function removeWarningBanner() {
+				if (_countdownInterval) { clearInterval(_countdownInterval); _countdownInterval = null; }
+				const b = document.getElementById('idleWarningBanner');
+				if (b) b.remove();
+			}
+
+			// ── Timer management ───────────────────────────────────────────
+			function clearAll() {
+				if (_warningTimer) { clearTimeout(_warningTimer); _warningTimer = null; }
+				if (_logoutTimer) { clearTimeout(_logoutTimer); _logoutTimer = null; }
+			}
+
+			function resetIdleTimer() {
+				if (!_started) return; // don't start until logged in
+				clearAll();
+				removeWarningBanner();
+				_warningTimer = setTimeout(showWarning, IDLE_TIMEOUT_MS - WARNING_BEFORE_MS);
+				_logoutTimer = setTimeout(doAutoLogout, IDLE_TIMEOUT_MS);
+			}
+
+			// Expose globally so tutor-chat.js can reset on every message
+			window.resetIdleChatTimer = resetIdleTimer;
+
+			// ── Start once login is confirmed ──────────────────────────────
+			// Poll until window._activityId or window.studentEmail is set
+			const _startPoller = setInterval(() => {
+				if (window._activityId || window.studentEmail) {
+					clearInterval(_startPoller);
+					_started = true;
+					resetIdleTimer();
+				}
+			}, 500);
+		})();
+	</script>
 	<div class="tutor-container">
 		<div class="tutor-header">
 			<div class="tutor-header-topbar" id="signOutBar">
