@@ -35,9 +35,17 @@
 			<input id="emailGateInput" type="email" placeholder="yourname@umass.edu" style="
 						width: 100%; padding: 14px 16px; font-size: 15px;
 						border: 2px solid #e0e0e0; border-radius: 10px;
-						outline: none; box-sizing: border-box; margin-bottom: 10px;
+						outline: none; box-sizing: border-box; margin-bottom: 16px;
 						transition: border-color 0.2s;
 					" />
+			<div style="display: flex; justify-content: center; gap: 32px; margin-bottom: 16px; font-size: 14px; color: #444;">
+				<label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+					<input type="radio" name="location" value="at_home" checked> At Home
+				</label>
+				<label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+					<input type="radio" name="location" value="in_class"> In Class
+				</label>
+			</div>
 			<div id="emailGateError" style="color: #dc3545; font-size: 13px; margin-bottom: 12px; min-height: 18px;">
 			</div>
 			<button id="emailGateBtn" style="
@@ -71,7 +79,7 @@
 					const res = await fetch('https://ai-tutor-53f1.onrender.com/api/user-activity/login', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ email: val }),
+						body: JSON.stringify({ email: val, location: document.querySelector('input[name="location"]:checked').value }),
 					});
 					if (res.ok) {
 						const data = await res.json();
