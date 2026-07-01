@@ -2813,3 +2813,14 @@ figure figcaption {
 	color: #fff;
 	border-color: #881c1c;
 }
+
+/* ── KaTeX math rendering ──────────────────────────────────── */
+.katex-display {
+	padding: 8px 0;
+	overflow-x: auto;
+	overflow-y: hidden;
+}
+
+.katex {
+	font-size: 1.05em;
+}

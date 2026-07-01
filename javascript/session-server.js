@@ -11,6 +11,12 @@ import { tmpdir } from 'os';
 import { connectMongo, createSessionRecord, addStudentToSession } from '../config/mongodb.js';
 import userActivityRouter from '../routes/user-activity.js';
 import chatHistoryRouter from '../routes/chat-history.js';
+import geminiHandler from '../api/gemini.js';
+import searchHandler from '../api/search.js';
+import pineconeHandler from '../api/pinecone.js';
+import pdfContentHandler from '../api/pdf-content.js';
+import pdfPageHandler from '../api/pdf-page.js';
+import imageGenHandler from '../api/image-gen.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -34,6 +40,14 @@ app.use(express.json());
 // Mount feature routers
 app.use('/api/user-activity', userActivityRouter);
 app.use('/api/chat-history', chatHistoryRouter);
+
+// Mount API handlers
+app.post('/api/gemini', (req, res) => geminiHandler(req, res));
+app.post('/api/search', (req, res) => searchHandler(req, res));
+app.post('/api/pinecone', (req, res) => pineconeHandler(req, res));
+app.post('/api/pdf-content', (req, res) => pdfContentHandler(req, res));
+app.post('/api/pdf-page', (req, res) => pdfPageHandler(req, res));
+app.post('/api/image-gen', (req, res) => imageGenHandler(req, res));
 
 const sessions = new Map();
 const sessionConnections = new Map(); 

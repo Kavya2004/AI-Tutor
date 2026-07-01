@@ -536,8 +536,20 @@ function escapeHtml(text) {
 }
 
 function formatChatText(text) {
-  const escaped = escapeHtml(text);
-  return escaped
+  // Extract and protect $...$ and $$...$$ blocks so they aren't mangled
+  const mathBlocks = [];
+  let protected_text = text
+    .replace(/\$\$[\s\S]+?\$\$/g, (match) => {
+      mathBlocks.push(match);
+      return `\x00MATH${mathBlocks.length - 1}\x00`;
+    })
+    .replace(/\$[^\$\n]+?\$/g, (match) => {
+      mathBlocks.push(match);
+      return `\x00MATH${mathBlocks.length - 1}\x00`;
+    });
+
+  const escaped = escapeHtml(protected_text);
+  let formatted = escaped
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/_(.+?)_/g, '<em>$1</em>')
@@ -546,60 +558,59 @@ function formatChatText(text) {
     .replace(/&lt;(https?:\/\/[^&]+)&gt;/g, (match, url) => {
       return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
     });
+
+  // Restore math blocks (unescaped, so KaTeX can parse them)
+  formatted = formatted.replace(/\x00MATH(\d+)\x00/g, (_, i) => mathBlocks[parseInt(i)]);
+
+  return formatted;
 }
 
 function renderMathInElement(element) {
   if (!element) return;
-  ensureMathJaxLoaded().then(() => {
-    if (window.MathJax?.typesetPromise) {
-      window.MathJax.typesetPromise([element]).catch(() => {});
-    } else if (window.MathJax?.Hub) {
-      window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, element]);
-    }
-  });
-}
 
-function ensureMathJaxLoaded() {
-  if (window.MathJax) return Promise.resolve();
+  if (window.renderMathInElement && window.renderMathInElement !== renderMathInElement) {
+    // KaTeX auto-render is loaded — use it directly
+    window.renderMathInElement(element, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$',  right: '$',  display: false },
+        { left: '\\(', right: '\\)', display: false },
+        { left: '\\[', right: '\\]', display: true },
+      ],
+      throwOnError: false,
+    });
+    return;
+  }
 
-  // Provide a lightweight MathJax config optimized for chat rendering
-  window.MathJax = {
-    tex: {
-      inlineMath: [['$', '$'], ['\\(', '\\)']],
-      displayMath: [['$$', '$$'], ['\\[', '\\]']],
-      processEscapes: true,
-      processEnvironments: true,
-      macros: {
-        vec: ['\\vec{#1}', 1],
-        unit: ['\\mathrm{#1}', 1],
-        d: '\\mathrm{d}',
-        pd: '\\partial'
-      }
-    },
-    options: {
-      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+  // KaTeX not yet loaded — wait for it
+  const onLoad = () => {
+    if (window.renderMathInElement && window.renderMathInElement !== renderMathInElement) {
+      window.renderMathInElement(element, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$',  right: '$',  display: false },
+          { left: '\\(', right: '\\)', display: false },
+          { left: '\\[', right: '\\]', display: true },
+        ],
+        throwOnError: false,
+      });
     }
   };
 
-  return new Promise((resolve) => {
-    const existing = document.querySelector('script[src*="mathjax"]');
-    if (existing) {
-      if (existing.getAttribute('data-loaded') === 'true') return resolve();
-      existing.addEventListener('load', () => resolve());
-      existing.addEventListener('error', () => resolve());
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
-    script.async = true;
-    script.onload = () => {
-      script.setAttribute('data-loaded', 'true');
-      resolve();
-    };
-    script.onerror = () => resolve();
-    document.head.appendChild(script);
-  });
+  const autoRenderScript = document.querySelector('script[src*="auto-render"]');
+  if (autoRenderScript) {
+    autoRenderScript.addEventListener('load', onLoad, { once: true });
+  } else {
+    // Fallback: poll briefly
+    let tries = 0;
+    const poll = setInterval(() => {
+      if (window.renderMathInElement && window.renderMathInElement !== renderMathInElement) {
+        clearInterval(poll);
+        onLoad();
+      }
+      if (++tries > 20) clearInterval(poll);
+    }, 200);
+  }
 }
 
 // silent = true skips persistence (used when replaying history)
@@ -1141,9 +1152,15 @@ async function processUserMessage(message) {
   // Prepare user message (include file info if files were uploaded)
   let userMessage = message.trim();
   if (processedFiles.length > 0) {
-    const fileNames = processedFiles.map((f) => f.name).join(", ");
-    userMessage = userMessage || `I've uploaded these files: ${fileNames}`;
-
+    const hasImages = processedFiles.some((f) => f.type.startsWith("image/"));
+    if (!userMessage) {
+      if (hasImages) {
+        userMessage = "I uploaded an image. Please look at it carefully and engage with it as my physics tutor.";
+      } else {
+        const fileNames = processedFiles.map((f) => f.name).join(", ");
+        userMessage = `I've uploaded these files: ${fileNames}`;
+      }
+    }
     // Files will be sent directly to Gemini API
   }
 
@@ -1221,14 +1238,14 @@ async function processUserMessage(message) {
       // Add current message
       context.push({
         role: "user",
-        content: `${window.sessionManager.userName}: ${message}`,
+        content: `${window.sessionManager.userName}: ${userMessage}`,
       });
     } else {
       // Not in session, just add current message
-      context.push({ role: "user", content: message });
+      context.push({ role: "user", content: userMessage });
     }
     // Search for matching physics textbook sections
-    const searchResults = await searchPhysicsTextbook(message);
+    const searchResults = await searchPhysicsTextbook(userMessage);
 
     // Build a url lookup map: source name -> url (for YouTube links)
     const sourceUrlMap = {};
