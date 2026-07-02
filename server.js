@@ -13,10 +13,11 @@ import searchHandler from './api/search.js';
 import pdfContentHandler from './api/pdf-content.js';
 import pdfPageHandler from './api/pdf-page.js';
 import pdfImageHandler from './api/pdf-image.js';
-import { connectMongo } from './config/mongodb.js';
+import { connectMongo, connectInClassMongo } from './config/mongodb.js';
 import sessionDbRouter from './api/sessions-db.js';
 import chatHistoryRouter from './routes/chat-history.js';
 import userActivityRouter from './routes/user-activity.js';
+import inClassRouter from './routes/in-class.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,6 +43,7 @@ app.get('/api/pdf-image', pdfImageHandler);
 app.use('/api/db', sessionDbRouter);
 app.use('/api/chat-history', chatHistoryRouter);
 app.use('/api/user-activity', userActivityRouter);
+app.use('/api/in-class', inClassRouter);
 
 // ── Session store ──────────────────────────────────────────────
 const sessions = new Map();
@@ -96,6 +98,21 @@ app.post('/api/sessions/:sessionId/join', (req, res) => {
     session.participants.set(userName.trim(), { userName: userName.trim(), avatar: avatar || '👤', color: color || '#6c757d', isHost: false, joinedAt: new Date() });
     session.lastActivity = new Date();
     res.json({ message: 'Joined successfully', session: serializeSession(session) });
+});
+
+// Find session by table + session number
+app.get('/api/sessions/by-table-session/:tableNumber/:sessionNumber', (req, res) => {
+    const tableNumber = parseInt(req.params.tableNumber, 10);
+    const sessionNumber = parseInt(req.params.sessionNumber, 10);
+    if (isNaN(tableNumber) || isNaN(sessionNumber)) {
+        return res.status(400).json({ error: 'Invalid table or session number' });
+    }
+    const expectedTitle = `Table ${tableNumber} Session ${sessionNumber}`;
+    const match = Array.from(sessions.values()).find(s =>
+        s.sessionTitle && s.sessionTitle.toLowerCase() === expectedTitle.toLowerCase()
+    );
+    if (!match) return res.status(404).json({ error: `No active session found for ${expectedTitle}` });
+    res.json({ sessionId: match.sessionId, sessionTitle: match.sessionTitle });
 });
 
 // Public sessions
@@ -212,6 +229,7 @@ app.get('/health', (req, res) => {
 });
 
 connectMongo();
+connectInClassMongo();
 
 server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);

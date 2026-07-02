@@ -21,6 +21,12 @@
   let _pendingMessages = [];
   let _flushTimer = null;
 
+  // ── In-class state ──────────────────────────────────────────────────────
+  let _inClassConvoId = null;
+  let _inClassTitleSaved = false;
+  let _inClassPendingMessages = [];
+  let _inClassFlushTimer = null;
+
   // ─── Public API ───────────────────────────────────────────────────────────
   const manager = {
     /** Call once the student email is known (after gate closes). */
@@ -33,12 +39,61 @@
       await _createConversation();
       // Flush any messages that arrived before init completed
       _scheduleFlush();
+
+      // If in-class mode, also init the shared in-class chat record
+      if (window._inClassMode) {
+        await manager.initInClass();
+      }
     },
 
-    /** Queue a single message {role, content} for persistence. */
+    /**
+     * Initialize the shared in-class chat record.
+     * Tries to reuse an existing record first; if none, creates one.
+     */
+    async initInClass() {
+      const sessionId = window._inClassSessionId;
+      if (!sessionId) return;
+
+      try {
+        const res = await fetch(`${RENDER_BASE}/api/in-class/chat/by-session/${encodeURIComponent(sessionId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          _inClassConvoId = data._id;
+          console.log('[chat-history] Reusing in-class chat record:', _inClassConvoId);
+        } else {
+          // First student — create the shared record
+          const createRes = await fetch(`${RENDER_BASE}/api/in-class/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId,
+              tableNumber:   window._inClassTableNumber   || null,
+              sessionNumber: window._inClassSessionNumber || null,
+            }),
+          });
+          if (createRes.ok) {
+            const created = await createRes.json();
+            _inClassConvoId = created._id;
+            console.log('[chat-history] Created in-class chat record:', _inClassConvoId);
+          }
+        }
+      } catch (err) {
+        console.warn('[chat-history] initInClass failed:', err.message);
+      }
+    },
+
+    /** Queue a single message {role, content, userName?} for persistence. */
     appendMessage(msg) {
-      _pendingMessages.push({ ...msg, timestamp: new Date().toISOString() });
-      _scheduleFlush();
+      const msgObj = { ...msg, timestamp: new Date().toISOString() };
+
+      if (window._inClassMode) {
+        // In-class: include userName so the shared record is attributed
+        _inClassPendingMessages.push(msgObj);
+        _scheduleInClassFlush();
+      } else {
+        _pendingMessages.push(msgObj);
+        _scheduleFlush();
+      }
     },
 
     /**
@@ -46,6 +101,33 @@
      * via /api/gemini (Vercel) and save it to MongoDB via Render.
      */
     async autoTitle(userMsg, botMsg) {
+      if (window._inClassMode) {
+        // In-class: update the shared record title
+        if (_inClassTitleSaved || !_inClassConvoId) return;
+        _inClassTitleSaved = true;
+        try {
+          const prompt = `Given this first exchange in a tutoring session, write a short 4-7 word title that summarises the topic. Reply with ONLY the title, nothing else.\n\nStudent: ${userMsg}\nTutor: ${botMsg}`;
+          const res = await fetch('/api/gemini', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] }),
+          });
+          if (!res.ok) throw new Error(`status ${res.status}`);
+          const data = await res.json();
+          const title = (data.response || '').trim().replace(/^["']|["']$/g, '').slice(0, 80);
+          if (!title) return;
+          await fetch(`${RENDER_BASE}/api/in-class/chat/${_inClassConvoId}/title`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title }),
+          });
+        } catch (err) {
+          console.warn('[chat-history] in-class autoTitle failed:', err.message);
+          _inClassTitleSaved = false;
+        }
+        return;
+      }
+
       if (_titleSaved || !_conversationId || !_email) return;
       _titleSaved = true; // set immediately to prevent duplicate calls
 
@@ -151,6 +233,36 @@
     } catch (err) {
       _pendingMessages = [...batch, ..._pendingMessages];
       console.warn("[chat-history] flush failed:", err.message);
+    }
+  }
+
+  // ── In-class flush ──────────────────────────────────────────────────────
+  function _scheduleInClassFlush() {
+    if (_inClassFlushTimer) clearTimeout(_inClassFlushTimer);
+    _inClassFlushTimer = setTimeout(_flushInClassQueue, 800);
+  }
+
+  async function _flushInClassQueue() {
+    _inClassFlushTimer = null;
+    if (!_inClassConvoId && window._inClassMode) {
+      // Might not be initialised yet — retry after a short delay
+      await manager.initInClass();
+    }
+    if (!_inClassConvoId || _inClassPendingMessages.length === 0) return;
+
+    const batch = _inClassPendingMessages.splice(0);
+    try {
+      const res = await fetch(`${RENDER_BASE}/api/in-class/chat/${_inClassConvoId}/messages`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: batch }),
+      });
+      if (!res.ok) {
+        _inClassPendingMessages = [...batch, ..._inClassPendingMessages];
+      }
+    } catch (err) {
+      _inClassPendingMessages = [...batch, ..._inClassPendingMessages];
+      console.warn('[chat-history] in-class flush failed:', err.message);
     }
   }
 

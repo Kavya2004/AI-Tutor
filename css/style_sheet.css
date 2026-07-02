@@ -1847,17 +1847,15 @@ body {
 }
 
 .slide-in {
-	animation: slideIn 0.5s ease-out;
+	animation: msgFadeIn 0.15s ease-out;
 }
 
-@keyframes slideIn {
+@keyframes msgFadeIn {
 	from {
-		transform: translateY(20px);
 		opacity: 0;
 	}
 
 	to {
-		transform: translateY(0);
 		opacity: 1;
 	}
 }

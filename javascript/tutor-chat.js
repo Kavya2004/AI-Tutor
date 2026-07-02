@@ -723,7 +723,10 @@ function _addMessageInternal(text, sender, files = [], citation = null, shouldBr
 
   // Persist to MongoDB (skip when replaying history to avoid double-saving)
   if (!silent && window.chatHistoryManager) {
-    window.chatHistoryManager.appendMessage({ role: sender, content: text });
+    const userName = (window._inClassMode && sender === 'user')
+      ? (window._inClassStudentName || window.sessionManager?.userName || '')
+      : '';
+    window.chatHistoryManager.appendMessage({ role: sender, content: text, userName });
   }
 }
 
@@ -1206,40 +1209,51 @@ async function processUserMessage(message) {
 
     // Add user message to context for AI
     if (window.sessionManager && window.sessionManager.sessionId) {
-      // Get all chat messages from the current session
-      const chatMessages = document.querySelectorAll(".message");
-      const recentMessages = Array.from(chatMessages).slice(-10); // Last 10 messages
+      if (window._inClassMode) {
+        // In-class mode: load history once, flush pending context from other students
+        await loadInClassHistory();
 
-      recentMessages.forEach((msgElement) => {
-        const isBot = msgElement.classList.contains("bot-message");
-        const isShared = msgElement.classList.contains("shared-message");
-        const content = msgElement.querySelector(".message-content");
-
-        if (content) {
-          const messageText = content.textContent || content.innerText;
-
-          if (isBot) {
-            context.push({ role: "assistant", content: messageText });
-          } else if (isShared) {
-            // Extract username from shared message
-            const authorElement = msgElement.querySelector(".message-author");
-            const textElement = msgElement.querySelector(".message-text");
-            const author = authorElement
-              ? authorElement.textContent
-              : "Student";
-            const text = textElement ? textElement.textContent : messageText;
-            context.push({ role: "user", content: `${author}: ${text}` });
-          } else {
-            context.push({ role: "user", content: messageText });
-          }
+        // Flush pending context updates from other students' messages
+        if (window._pendingContextUpdate && window._pendingContextUpdate.length > 0) {
+          context.push(...window._pendingContextUpdate);
+          window._pendingContextUpdate = [];
         }
-      });
 
-      // Add current message
-      context.push({
-        role: "user",
-        content: `${window.sessionManager.userName}: ${userMessage}`,
-      });
+        // Attribute this message by name
+        const studentName = window._inClassStudentName || window.sessionManager.userName || 'Student';
+        context.push({ role: 'user', content: `${studentName}: ${userMessage}` });
+      } else {
+        // Regular shared session — DOM-scan last 10 messages for context
+        const chatMessages = document.querySelectorAll(".message");
+        const recentMessages = Array.from(chatMessages).slice(-10);
+
+        recentMessages.forEach((msgElement) => {
+          const isBot = msgElement.classList.contains("bot-message");
+          const isShared = msgElement.classList.contains("shared-message");
+          const content = msgElement.querySelector(".message-content");
+
+          if (content) {
+            const messageText = content.textContent || content.innerText;
+
+            if (isBot) {
+              context.push({ role: "assistant", content: messageText });
+            } else if (isShared) {
+              const authorElement = msgElement.querySelector(".message-author");
+              const textElement = msgElement.querySelector(".message-text");
+              const author = authorElement ? authorElement.textContent : "Student";
+              const text = textElement ? textElement.textContent : messageText;
+              context.push({ role: "user", content: `${author}: ${text}` });
+            } else {
+              context.push({ role: "user", content: messageText });
+            }
+          }
+        });
+
+        context.push({
+          role: "user",
+          content: `${window.sessionManager.userName}: ${userMessage}`,
+        });
+      }
     } else {
       // Not in session, just add current message
       context.push({ role: "user", content: userMessage });
@@ -1378,8 +1392,6 @@ async function processUserMessage(message) {
     if (window.chatHistoryManager) {
       window.chatHistoryManager.autoTitle(message, botResponse);
     }
-
-    // Execute whiteboard action or generate diagram
     if (diagramRequest && targetBoard) {
       setTimeout(() => generateAIDiagram(diagramRequest, targetBoard), 500);
     } else if (whiteboardAction && targetBoard && window.tutorWhiteboard) {
@@ -1888,3 +1900,41 @@ window._rebuildContext = function(messages) {
     });
   });
 };
+
+// ── In-Class History Loader ────────────────────────────────────────────────
+// Runs once per session on the first message send (guarded by _inClassHistoryLoaded).
+// Fetches all stored messages for the session, sorts chronologically, and
+// injects a system block into context so the AI knows everything discussed.
+async function loadInClassHistory() {
+  if (window._inClassHistoryLoaded) return;
+  window._inClassHistoryLoaded = true;
+
+  const BACKEND = 'https://ai-tutor-53f1.onrender.com';
+  const sessionId = window._inClassSessionId;
+  if (!sessionId) return;
+
+  try {
+    // 1. Find the shared chat record for this session
+    const findRes = await fetch(`${BACKEND}/api/in-class/chat/by-session/${encodeURIComponent(sessionId)}`);
+    if (!findRes.ok) return; // no history yet
+
+    const record = await findRes.json();
+    if (!record.messages || record.messages.length === 0) return;
+
+    // 2. Sort messages chronologically (they should already be, but be safe)
+    const msgs = [...record.messages].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+    // 3. Build a summary block and inject it right after the system prompt (index 0)
+    let historyText = 'IN-CLASS SESSION HISTORY (shared with all students at this table):\n';
+    msgs.forEach(m => {
+      const who = m.userName ? m.userName : (m.role === 'bot' ? 'Tutor' : 'Student');
+      historyText += `${who}: ${m.content}\n`;
+    });
+    historyText += '\nUse the above as context. Continue the conversation naturally.';
+
+    // Insert right after system prompt
+    context.splice(1, 0, { role: 'system', content: historyText });
+  } catch (_) {
+    // non-critical — silently ignore
+  }
+}

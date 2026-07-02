@@ -1,5 +1,10 @@
 import mongoose from 'mongoose';
 
+// ── Second connection for in-class database ────────────────────────────────
+// Uses a separate Mongoose connection so it never touches the out-of-class DB.
+let _inClassConnection = null;
+let _inClassConnectPromise = null;
+
 // ── Schemas ────────────────────────────────────────────────────
 
 const classSchema = new mongoose.Schema({
@@ -215,5 +220,169 @@ export async function updateConversationsOnLogout(activityId, logoutTime, durati
     console.log('[MongoDB] Conversations updated with logout info for activityId:', activityId);
   } catch (err) {
     console.error('[MongoDB] updateConversationsOnLogout error:', err.message);
+  }
+}
+
+// ── In-Class Schemas ───────────────────────────────────────────────────────
+
+const inClassStudentSchema = new mongoose.Schema({
+  name:      { type: String, required: true },
+  email:     { type: String, required: true },
+  joinedAt:  { type: Date, default: Date.now },
+}, { _id: false });
+
+const inClassSessionSchema = new mongoose.Schema({
+  tableNumber:   { type: Number, required: true },
+  sessionNumber: { type: Number, required: true },
+  createdBy: {
+    name:  { type: String, default: '' },
+    email: { type: String, default: '' },
+  },
+  students: { type: [inClassStudentSchema], default: [] },
+}, { timestamps: true });
+
+const inClassMessageSchema = new mongoose.Schema({
+  role:      { type: String, enum: ['user', 'bot'], required: true },
+  content:   { type: String, required: true },
+  userName:  { type: String, default: '' },  // attributed sender name
+  timestamp: { type: Date, default: Date.now },
+}, { _id: false });
+
+const inClassChatConversationSchema = new mongoose.Schema({
+  sessionId:     { type: String, required: true, unique: true, index: true },
+  tableNumber:   { type: Number, default: null },
+  sessionNumber: { type: Number, default: null },
+  title:         { type: String, default: 'In-Class Session' },
+  messages:      { type: [inClassMessageSchema], default: [] },
+}, { timestamps: true });
+
+const inClassUserActivitySchema = new mongoose.Schema({
+  email:         { type: String, required: true, index: true },
+  name:          { type: String, default: '' },
+  tableNumber:   { type: Number, default: null },
+  sessionNumber: { type: Number, default: null },
+  loginTime:     { type: Date, default: Date.now },
+  logoutTime:    { type: Date, default: null },
+  durationSeconds: { type: Number, default: null },
+}, { timestamps: false });
+
+// ── In-Class Connection ────────────────────────────────────────────────────
+
+export function connectInClassMongo() {
+  const uri = process.env.MONGODB_URI_INCLASS;
+  if (!uri) {
+    console.warn('[MongoDB InClass] No MONGODB_URI_INCLASS set – in-class data will not be persisted');
+    return Promise.resolve(false);
+  }
+  if (_inClassConnection && _inClassConnection.readyState === 1) return Promise.resolve(true);
+  if (_inClassConnectPromise) return _inClassConnectPromise;
+
+  _inClassConnectPromise = mongoose.createConnection(uri, { serverSelectionTimeoutMS: 15000 })
+    .asPromise()
+    .then((conn) => {
+      _inClassConnection = conn;
+      console.log('[MongoDB InClass] Connected to', conn.db.databaseName);
+      return true;
+    })
+    .catch((err) => {
+      console.error('[MongoDB InClass] Connection error:', err.message);
+      _inClassConnectPromise = null;
+      return false;
+    });
+
+  return _inClassConnectPromise;
+}
+
+// ── In-Class Model Getters ─────────────────────────────────────────────────
+
+export function getInClassSessionModel() {
+  if (!_inClassConnection) throw new Error('[MongoDB InClass] Not connected');
+  return _inClassConnection.models.InClassSession ||
+    _inClassConnection.model('InClassSession', inClassSessionSchema);
+}
+
+export function getInClassChatModel() {
+  if (!_inClassConnection) throw new Error('[MongoDB InClass] Not connected');
+  return _inClassConnection.models.InClassChatConversation ||
+    _inClassConnection.model('InClassChatConversation', inClassChatConversationSchema);
+}
+
+export function getInClassUserActivityModel() {
+  if (!_inClassConnection) throw new Error('[MongoDB InClass] Not connected');
+  return _inClassConnection.models.InClassUserActivity ||
+    _inClassConnection.model('InClassUserActivity', inClassUserActivitySchema);
+}
+
+// ── In-Class Helpers ───────────────────────────────────────────────────────
+
+export async function createInClassSessionRecord({ tableNumber, sessionNumber, hostName = '', hostEmail = '' }) {
+  try {
+    const connected = await connectInClassMongo();
+    if (!connected) return null;
+    const InClassSession = getInClassSessionModel();
+    const record = await InClassSession.create({
+      tableNumber,
+      sessionNumber,
+      createdBy: { name: hostName, email: hostEmail },
+      students: [],
+    });
+    console.log('[MongoDB InClass] Session record created:', `Table ${tableNumber} Session ${sessionNumber}`);
+    return record;
+  } catch (err) {
+    console.error('[MongoDB InClass] createInClassSessionRecord error:', err.message);
+    return null;
+  }
+}
+
+export async function addStudentToInClassSession({ sessionRecordId, name, email }) {
+  try {
+    const connected = await connectInClassMongo();
+    if (!connected) return null;
+    const InClassSession = getInClassSessionModel();
+    const record = await InClassSession.findById(sessionRecordId);
+    if (!record) return null;
+    const already = record.students.some(s => s.email === email);
+    if (!already) {
+      record.students.push({ name, email, joinedAt: new Date() });
+      await record.save();
+    }
+    return record;
+  } catch (err) {
+    console.error('[MongoDB InClass] addStudentToInClassSession error:', err.message);
+    return null;
+  }
+}
+
+export async function recordInClassLogin({ email, name = '', tableNumber = null, sessionNumber = null }) {
+  try {
+    const connected = await connectInClassMongo();
+    if (!connected) return null;
+    const InClassUserActivity = getInClassUserActivityModel();
+    const activity = await InClassUserActivity.create({ email, name, tableNumber, sessionNumber, loginTime: new Date() });
+    console.log('[MongoDB InClass] Login recorded for:', email);
+    return activity;
+  } catch (err) {
+    console.error('[MongoDB InClass] recordInClassLogin error:', err.message);
+    return null;
+  }
+}
+
+export async function recordInClassLogout(activityId) {
+  try {
+    const connected = await connectInClassMongo();
+    if (!connected) return null;
+    const InClassUserActivity = getInClassUserActivityModel();
+    const activity = await InClassUserActivity.findById(activityId);
+    if (!activity) return null;
+    const logoutTime = new Date();
+    const durationSeconds = Math.round((logoutTime - activity.loginTime) / 1000);
+    activity.logoutTime = logoutTime;
+    activity.durationSeconds = durationSeconds;
+    await activity.save();
+    console.log('[MongoDB InClass] Logout recorded for:', activity.email, `(${durationSeconds}s)`);
+    return activity;
+  } catch (err) {
+    console.error('[MongoDB InClass] recordInClassLogout error:', err.message);
+    return null;
   }
 }

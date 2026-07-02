@@ -39,6 +39,7 @@ class SessionManager {
     if (sessionId) {
       this.joinSessionFromURL(sessionId);
     }
+    // NOTE: in-class joining is triggered externally by revealTutor → joinInClassSession()
   }
 
   createSessionButton() {
@@ -838,10 +839,12 @@ class SessionManager {
       this.addSystemMessage(`${this.userName} joined the session`);
     } catch (error) {
       console.error("Error joining session:", error);
-      this.showNotification(
-        "Failed to join session. Please check the session ID.",
-        "error",
-      );
+      if (!window._inClassMode) {
+        this.showNotification(
+          "Failed to join session. Please check the session ID.",
+          "error",
+        );
+      }
     }
   }
 
@@ -955,6 +958,22 @@ class SessionManager {
           data.userName,
           data.files,
         );
+
+        // Queue into context so the AI stays in sync on all clients
+        if (!window._pendingContextUpdate) window._pendingContextUpdate = [];
+        window._pendingContextUpdate.push({
+          role: data.sender === 'bot' ? 'assistant' : 'user',
+          content: data.userName ? `${data.userName}: ${data.message}` : data.message,
+        });
+
+        // Save to shared in-class DB record
+        if (window._inClassMode && window.chatHistoryManager && typeof window.chatHistoryManager.appendMessage === 'function') {
+          window.chatHistoryManager.appendMessage({
+            role: data.sender === 'bot' ? 'bot' : 'user',
+            content: data.message,
+            userName: data.userName || '',
+          });
+        }
         break;
       case "participant_joined":
         const participant = this.participants.get(data.userName);
@@ -1165,12 +1184,6 @@ class SessionManager {
     messageDiv.innerHTML = `<div class="system-content">📢 ${message}</div>`;
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-
-  updateParticipants(participants) {
-    this.participants.clear();
-    participants.forEach((p) => this.participants.set(p.userName, p));
-    this.renderParticipants();
   }
 
   addParticipant(userName, participantData = null) {
@@ -1889,6 +1902,77 @@ class SessionManager {
           window.tutorWhiteboard.clearWhiteboard(data.targetBoard);
         }
       }, 100);
+    }
+  }
+
+  // ── In-Class Mode ──────────────────────────────────────────────────────────
+
+  /**
+   * Called by tutor.html after revealTutor() when the student selected "In Class".
+   * Sets identity, joins the WebSocket session, and shows the banner.
+   */
+  joinInClassSession() {
+    const sessionId    = window._inClassSessionId;
+    const sessionTitle = window._inClassSessionTitle;
+    const name         = window._inClassStudentName || 'Student';
+    const email        = window.studentEmail || '';
+
+    if (!sessionId) return;
+
+    this.userName             = name;
+    this.userEmail            = email;
+    this.sessionId            = sessionId;
+    this.currentSessionTitle  = sessionTitle;
+    this.isHost               = false;
+    window._inClassHistoryLoaded = false;
+
+    this.joinSession(sessionId);
+    this.showInClassBanner();
+  }
+
+  /**
+   * Renders the red in-class banner at the top of the chat.
+   */
+  showInClassBanner() {
+    const table   = window._inClassTableNumber  || '?';
+    const session = window._inClassSessionNumber || '?';
+    const count   = this.participants.size || 1;
+
+    let banner = document.getElementById('inClassBanner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'inClassBanner';
+      banner.style.cssText = `
+        background: #881c1c; color: #fff; font-size: 13px; font-weight: 600;
+        padding: 8px 16px; display: flex; align-items: center; gap: 10px;
+        flex-shrink: 0; z-index: 10;
+      `;
+      const chatContainer = document.querySelector('.chat-container');
+      if (chatContainer) chatContainer.insertBefore(banner, chatContainer.firstChild);
+    }
+    banner.innerHTML = `🏫 In-Class Mode &nbsp;|&nbsp; Table ${table} Session ${session} &nbsp;|&nbsp; <span id="inClassParticipantCount">${count}</span> student${count !== 1 ? 's' : ''}`;
+  }
+
+  /**
+   * Update the live participant count in the in-class banner.
+   */
+  updateParticipants(participants) {
+    this.participants.clear();
+    participants.forEach((p) => this.participants.set(p.userName, p));
+    this.renderParticipants();
+
+    if (window._inClassMode) {
+      const countEl = document.getElementById('inClassParticipantCount');
+      if (countEl) {
+        const n = this.participants.size;
+        countEl.textContent = String(n);
+        const banner = document.getElementById('inClassBanner');
+        if (banner) {
+          const table   = window._inClassTableNumber  || '?';
+          const session = window._inClassSessionNumber || '?';
+          banner.innerHTML = `🏫 In-Class Mode &nbsp;|&nbsp; Table ${table} Session ${session} &nbsp;|&nbsp; <span id="inClassParticipantCount">${n}</span> student${n !== 1 ? 's' : ''}`;
+        }
+      }
     }
   }
 }

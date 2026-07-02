@@ -8,9 +8,10 @@ import { execFile } from 'child_process';
 import { existsSync } from 'fs';
 import { readFile, unlink } from 'fs/promises';
 import { tmpdir } from 'os';
-import { connectMongo, createSessionRecord, addStudentToSession } from '../config/mongodb.js';
+import { connectMongo, createSessionRecord, addStudentToSession, connectInClassMongo } from '../config/mongodb.js';
 import userActivityRouter from '../routes/user-activity.js';
 import chatHistoryRouter from '../routes/chat-history.js';
+import inClassRouter from '../routes/in-class.js';
 import geminiHandler from '../api/gemini.js';
 import searchHandler from '../api/search.js';
 import pineconeHandler from '../api/pinecone.js';
@@ -40,6 +41,7 @@ app.use(express.json());
 // Mount feature routers
 app.use('/api/user-activity', userActivityRouter);
 app.use('/api/chat-history', chatHistoryRouter);
+app.use('/api/in-class', inClassRouter);
 
 // Mount API handlers
 app.post('/api/gemini', (req, res) => geminiHandler(req, res));
@@ -291,6 +293,22 @@ app.post("/api/sessions/:sessionId/join", (req, res) => {
     message: "Joined session successfully",
     session: session.toJSON(),
   });
+});
+
+app.get("/api/sessions/by-table-session/:tableNumber/:sessionNumber", (req, res) => {
+  const tableNumber = parseInt(req.params.tableNumber, 10);
+  const sessionNumber = parseInt(req.params.sessionNumber, 10);
+  if (isNaN(tableNumber) || isNaN(sessionNumber)) {
+    return res.status(400).json({ error: "Invalid table or session number" });
+  }
+  const expectedTitle = `Table ${tableNumber} Session ${sessionNumber}`;
+  const match = Array.from(sessions.values()).find(s =>
+    s.sessionTitle && s.sessionTitle.toLowerCase() === expectedTitle.toLowerCase()
+  );
+  if (!match) {
+    return res.status(404).json({ error: `No active session found for ${expectedTitle}` });
+  }
+  res.json({ sessionId: match.sessionId, sessionTitle: match.sessionTitle });
 });
 
 app.get("/api/sessions/by-table/:tableNumber", (req, res) => {
@@ -578,6 +596,7 @@ setInterval(
 
 const PORT = process.env.PORT || 5001;
 connectMongo();
+connectInClassMongo();
 server.listen(PORT, () => {
   console.log(`Session server running on port ${PORT}`);
   console.log(
