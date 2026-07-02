@@ -470,6 +470,8 @@ wss.on("connection", (ws, req) => {
               message.files,
             );
 
+            // Broadcast to ALL clients including sender — client renders via
+            // addSharedMessage so the sender sees their own message just like others
             broadcastToSession(sessionId, {
               type: "message",
               message: message.message,
@@ -477,7 +479,7 @@ wss.on("connection", (ws, req) => {
               userName: userName,
               timestamp: messageObj.timestamp,
               files: message.files || [],
-            }, ws); // exclude sender so they don't receive their own broadcast back
+            });
 
             console.log(
               `Message in session ${sessionId} from ${userName}: ${message.message.substring(0, 50)}...`,

@@ -783,7 +783,7 @@ class SessionManager {
     };
   }
 
-  async joinSession(sessionId) {
+  async joinSession(sessionId, tableNumber = 0) {
     if (!this.userName || this.userName.trim().length === 0) {
       this.showNotification("Please enter your name first", "error");
       this.showNameModal("join");
@@ -791,19 +791,6 @@ class SessionManager {
     }
 
     try {
-      const sessionResponse = await fetch(
-        `${BACKEND_URL}/api/sessions/${sessionId}`,
-      );
-      const sessionDetails = sessionResponse.ok
-        ? await sessionResponse.json()
-        : null;
-      const tableMatch = sessionDetails?.sessionTitle?.match(/Table\s*(\d+)/i);
-      const tableNumber = tableMatch ? tableMatch[1] : null;
-      const userEmail =
-        document.getElementById("userEmailInput")?.value.trim() ||
-        this.userEmail ||
-        "";
-
       const response = await fetch(
         `${BACKEND_URL}/api/sessions/${sessionId}/join`,
         {
@@ -813,8 +800,8 @@ class SessionManager {
             userName: this.userName.trim(),
             avatar: this.selectedAvatar || "👤",
             color: this.selectedColor || "#6c757d",
-            email: userEmail,
-            tableNumber,
+            email: this.userEmail || "",
+            tableNumber: tableNumber,
             timestamp: new Date().toISOString(),
           }),
         },
@@ -827,11 +814,9 @@ class SessionManager {
       const data = await response.json();
       this.sessionId = sessionId;
       this.isHost = false;
-      this.sessionMessages = data.messages || [];
-      this.currentSessionTitle =
-        data.session?.sessionTitle || sessionDetails?.sessionTitle || null;
+      this.sessionMessages = data.session?.messages || data.messages || [];
+      this.currentSessionTitle = data.session?.sessionTitle || null;
       this.joinedTableNumber = tableNumber;
-      if (userEmail) this.userEmail = userEmail;
       this.connectToSession();
       this.updateSessionUI();
       this.loadSessionHistory();
@@ -945,12 +930,9 @@ class SessionManager {
   handleSessionMessage(data) {
     switch (data.type) {
       case "message":
-        // Skip messages that originated from this client (both user messages and
-        // bot replies — tutor-chat.js already renders those locally before broadcasting)
-        if (data.userName && this.userName && data.userName === this.userName) {
-          break;
-        }
-
+        // All messages — including from self — go through addSharedMessage.
+        // tutor-chat.js only broadcasts in session mode, never adds locally,
+        // so the WS echo is the only place messages get rendered.
         this.addSharedMessage(
           data.message,
           data.sender,
@@ -959,15 +941,19 @@ class SessionManager {
           data.files,
         );
 
-        // Queue into context so the AI stays in sync on all clients
+        // Keep AI context in sync on all clients
         if (!window._pendingContextUpdate) window._pendingContextUpdate = [];
-        window._pendingContextUpdate.push({
-          role: data.sender === 'bot' ? 'assistant' : 'user',
-          content: data.userName ? `${data.userName}: ${data.message}` : data.message,
-        });
+        if (window._inClassMode && window.context !== undefined) {
+          const role = data.sender === 'bot' ? 'assistant' : 'user';
+          const content = data.sender === 'bot'
+            ? data.message
+            : `${data.userName}: ${data.message}`;
+          if (data.userName !== this.userName || data.sender === 'bot') {
+            window._pendingContextUpdate.push({ role, content });
+          }
+        }
 
-        // Save incoming messages from others into the shared session record.
-        // (The sender's own messages are saved by _addMessageInternal in tutor-chat.js.)
+        // Save incoming messages from others into the shared DB record
         if (window._inClassMode && data.userName !== this.userName && window.chatHistoryManager) {
           const role = data.sender === 'bot' ? 'bot' : 'user';
           window.chatHistoryManager.appendMessage(role, data.message, data.userName);
@@ -1071,16 +1057,17 @@ class SessionManager {
 
     const time = new Date(timestamp).toLocaleTimeString();
 
-    // Convert LaTeX to Unicode for bot messages
+    // Use formatChatText for full markdown+math rendering if available
     let displayText = message;
-    if (sender === "bot" && window.convertLatexToUnicode) {
-      displayText = window.convertLatexToUnicode(message);
+    if (window.formatChatText) {
+      displayText = window.formatChatText(message);
+    } else {
+      displayText = message.replace(/\n/g, "<br>");
     }
 
     let filesHtml = "";
     if (files && files.length > 0) {
-      filesHtml =
-        '<div class="message-files" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;">';
+      filesHtml = '<div class="message-files" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;">';
       files.forEach((file) => {
         const icon = this.getFileIcon(file.type);
         filesHtml += `<span class="message-file" style="background: #e3f2fd; padding: 4px 8px; border-radius: 12px; font-size: 12px; cursor: pointer; color: #1976d2;" onclick="window.sessionManager.viewSharedFile('${file.name}', '${file.type}', '${file.data}')">${icon} ${file.name}</span>`;
@@ -1089,22 +1076,33 @@ class SessionManager {
     }
 
     content.innerHTML = `
-            <div class="message-header">
-                <span class="message-author">${userName}</span>
-                <span class="message-time">${time}</span>
-            </div>
-            <div class="message-text">${displayText
-              .replace(/\n/g, "<br>")
-              .replace(/<https?:\/\/[^>]+>/g, (match) => {
-                const url = match.slice(1, -1);
-                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-              })}</div>
-            ${filesHtml}
-        `;
+      <div class="message-header">
+        <span class="message-author">${userName || ''}</span>
+        <span class="message-time">${time}</span>
+      </div>
+      <div class="message-text">${displayText}</div>
+      ${filesHtml}
+    `;
 
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(content);
     chatMessages.appendChild(messageDiv);
+
+    // Render KaTeX for bot messages
+    if (sender === 'bot' && window.renderMathInElement) {
+      try {
+        window.renderMathInElement(content, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$',  right: '$',  display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true },
+          ],
+          throwOnError: false,
+        });
+      } catch (_) {}
+    }
+
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
@@ -1909,46 +1907,58 @@ class SessionManager {
    * Called by tutor.html after revealTutor() when the student selected "In Class".
    * Sets identity, joins the WebSocket session, and shows the banner.
    */
-  joinInClassSession() {
-    const sessionId    = window._inClassSessionId;
-    const sessionTitle = window._inClassSessionTitle;
-    const name         = window._inClassStudentName || 'Student';
-    const email        = window.studentEmail || '';
+  // Called directly from tutor.html after the student finishes the in-class modal.
+  // All window._inClass* vars are guaranteed set at this point.
+  async joinInClassSession() {
+    const sessionId     = window._inClassSessionId;
+    const sessionTitle  = window._inClassSessionTitle  || '';
+    const tableNumber   = window._inClassTableNumber   || 0;
+    const email         = window.studentEmail          || '';
+    const name          = window._inClassStudentName   || email.split('@')[0] || 'Student';
 
-    if (!sessionId) return;
+    if (!sessionId) {
+      console.warn('[in-class] joinInClassSession called but _inClassSessionId is not set');
+      return;
+    }
 
-    this.userName             = name;
-    this.userEmail            = email;
-    this.sessionId            = sessionId;
-    this.currentSessionTitle  = sessionTitle;
-    this.isHost               = false;
+    this.userName  = name;
+    this.userEmail = email;
+
+    // Reset history flag so the AI context loader runs fresh
     window._inClassHistoryLoaded = false;
 
-    this.joinSession(sessionId);
-    this.showInClassBanner();
+    await this.joinSession(sessionId, tableNumber);
+    this.showInClassBanner(sessionTitle);
   }
 
   /**
    * Renders the red in-class banner at the top of the chat.
    */
-  showInClassBanner() {
-    const table   = window._inClassTableNumber  || '?';
-    const session = window._inClassSessionNumber || '?';
-    const count   = this.participants.size || 1;
+  showInClassBanner(sessionTitle) {
+    // Remove existing banner if any
+    const existing = document.getElementById('inClassBanner');
+    if (existing) existing.remove();
 
-    let banner = document.getElementById('inClassBanner');
-    if (!banner) {
-      banner = document.createElement('div');
-      banner.id = 'inClassBanner';
-      banner.style.cssText = `
-        background: #881c1c; color: #fff; font-size: 13px; font-weight: 600;
-        padding: 8px 16px; display: flex; align-items: center; gap: 10px;
-        flex-shrink: 0; z-index: 10;
-      `;
-      const chatContainer = document.querySelector('.chat-container');
-      if (chatContainer) chatContainer.insertBefore(banner, chatContainer.firstChild);
+    const banner = document.createElement('div');
+    banner.id = 'inClassBanner';
+    banner.style.cssText = `
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 8px 16px; background: #881c1c; color: white;
+      font-size: 13px; font-weight: 600; text-align: center;
+      position: sticky; top: 0; z-index: 100; flex-shrink: 0;
+    `;
+    banner.innerHTML = `
+      <span>🏫 In-Class Mode</span>
+      <span style="opacity:0.7;">|</span>
+      <span>${sessionTitle || window._inClassSessionTitle || ''}</span>
+      <span style="opacity:0.7;">|</span>
+      <span id="inClassParticipantCount" style="font-weight:400; font-size:12px;">Loading...</span>
+    `;
+
+    const chatContainer = document.querySelector('.chat-container');
+    if (chatContainer) {
+      chatContainer.insertBefore(banner, chatContainer.firstChild);
     }
-    banner.innerHTML = `🏫 In-Class Mode &nbsp;|&nbsp; Table ${table} Session ${session} &nbsp;|&nbsp; <span id="inClassParticipantCount">${count}</span> student${count !== 1 ? 's' : ''}`;
   }
 
   /**

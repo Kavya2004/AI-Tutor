@@ -174,6 +174,8 @@ wss.on('connection', (ws, req) => {
                         const msgObj = { id: uuidv4(), message: msg.message, sender: msg.sender, userName, timestamp: new Date().toISOString(), files: msg.files || [] };
                         session.messages.push(msgObj);
                         session.lastActivity = new Date();
+                        // Broadcast to ALL clients including sender so the sender's UI
+                        // renders via addSharedMessage just like everyone else
                         broadcastToSession(sessionId, { type: 'message', ...msgObj });
                     }
                     break;

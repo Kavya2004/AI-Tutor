@@ -1167,8 +1167,8 @@ async function processUserMessage(message) {
 
   // Handle message display/broadcasting (only once!)
   if (window.sessionManager && window.sessionManager.sessionId) {
-    // In session mode, render locally first, then broadcast to the session
-    addMessage(userMessage, "user", fileData, null, false);
+    // In session mode: only broadcast — the WS echo displays it for everyone
+    // including the sender (via addSharedMessage in handleSessionMessage)
     window.sessionManager.broadcastMessage(userMessage, "user", fileData);
   } else {
     // Not in session, add message locally
@@ -1380,15 +1380,18 @@ async function processUserMessage(message) {
 
     // Handle bot response display/broadcasting
     if (window.sessionManager && window.sessionManager.sessionId) {
-      addMessage(botResponse, "bot", [], extractedCitation, false);
+      // In session mode: only broadcast — WS echo displays on all clients including sender
       window.sessionManager.broadcastMessage(botResponse, "bot");
+      // Auto-title from the session host client
+      if (window.chatHistoryManager) {
+        window.chatHistoryManager.autoTitle(message, botResponse);
+      }
     } else {
       addMessage(botResponse, "bot", [], extractedCitation);
-    }
-
-    // Trigger auto-title generation after first exchange
-    if (window.chatHistoryManager) {
-      window.chatHistoryManager.autoTitle(message, botResponse);
+      // Trigger auto-title generation after first exchange
+      if (window.chatHistoryManager) {
+        window.chatHistoryManager.autoTitle(message, botResponse);
+      }
     }
     if (diagramRequest && targetBoard) {
       setTimeout(() => generateAIDiagram(diagramRequest, targetBoard), 500);
@@ -1422,7 +1425,6 @@ async function processUserMessage(message) {
 
     // Handle error message display/broadcasting
     if (window.sessionManager && window.sessionManager.sessionId) {
-      addMessage(errorMessage, "bot", [], null, false);
       window.sessionManager.broadcastMessage(errorMessage, "bot");
     } else {
       addMessage(errorMessage, "bot");
@@ -1878,8 +1880,9 @@ window.bookRefChangePage = bookRefChangePage;
 window.showBookRef = showBookRef;
 window.showUrlRef = showUrlRef;
 
-// Expose globals for chat-history-manager.js
+// Expose globals for chat-history-manager.js and session-manager.js
 window.addMessage = addMessage;
+window.formatChatText = formatChatText;
 
 window._addMessageSilent = function(text, sender) {
   _addMessageInternal(text, sender, [], null, false, true);
