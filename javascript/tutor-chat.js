@@ -723,10 +723,8 @@ function _addMessageInternal(text, sender, files = [], citation = null, shouldBr
 
   // Persist to MongoDB (skip when replaying history to avoid double-saving)
   if (!silent && window.chatHistoryManager) {
-    const userName = (window._inClassMode && sender === 'user')
-      ? (window._inClassStudentName || window.sessionManager?.userName || '')
-      : '';
-    window.chatHistoryManager.appendMessage({ role: sender, content: text, userName });
+    const userName = (window.sessionManager && window.sessionManager.userName) || '';
+    window.chatHistoryManager.appendMessage(sender === 'bot' ? 'bot' : 'user', text, userName);
   }
 }
 

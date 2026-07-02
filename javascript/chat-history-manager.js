@@ -1,495 +1,429 @@
 /**
  * chat-history-manager.js
- * Client-side singleton — manages the slide-in history sidebar and
- * MongoDB persistence via the Render Express backend.
+ * Manages per-user conversation persistence and the left sidebar UI.
  *
- * Render base URL (Express backend):
- *   https://ai-tutor-53f1.onrender.com
+ * Public API (window.chatHistoryManager):
+ *   .init(email)                        — at-home login; loads sidebar + starts fresh convo
+ *   .initInClass(email)                 — in-class login; finds/creates shared session record
+ *   .getCurrentConvoId()                — active conversation _id
+ *   .appendMessage(role, txt, userName) — saves one message to the active convo
+ *   .autoTitle(userMsg, botMsg)         — generates + saves title after first exchange
+ *   .loadConversation(id)               — switches to a past conversation
+ *   .startNewConversation()             — creates a new blank conversation
  */
 
 (function () {
-  const RENDER_BASE = "https://ai-tutor-53f1.onrender.com";
+  const BACKEND = 'https://ai-tutor-53f1.onrender.com';
 
   // ─── State ────────────────────────────────────────────────────────────────
   let _email = null;
-  let _conversationId = null;
-  let _titleSaved = false;
-  let _initialized = false;
+  let _currentId = null;
+  let _titleSet = false;
+  let _messageQueue = [];
+  let _writing = false;
+  let _sidebarVisible = false;
+  let _ready = false;
 
-  // Queue for messages that arrive before init() is called or before
-  // the first conversation is created.
-  let _pendingMessages = [];
-  let _flushTimer = null;
+  // ─── DOM helpers ──────────────────────────────────────────────────────────
+  function getSidebar()   { return document.getElementById('chatHistorySidebar'); }
+  function getConvoList() { return document.getElementById('convoList'); }
 
-  // ── In-class state ──────────────────────────────────────────────────────
-  let _inClassConvoId = null;
-  let _inClassTitleSaved = false;
-  let _inClassPendingMessages = [];
-  let _inClassFlushTimer = null;
-
-  // ─── Public API ───────────────────────────────────────────────────────────
-  const manager = {
-    /** Call once the student email is known (after gate closes). */
-    async init(email) {
-      _email = email;
-      _initialized = true;
-      _buildUI();
-      await _loadList();
-      // Start a fresh conversation for this session
-      await _createConversation();
-      // Flush any messages that arrived before init completed
-      _scheduleFlush();
-
-      // If in-class mode, also init the shared in-class chat record
-      if (window._inClassMode) {
-        await manager.initInClass();
-      }
-    },
-
-    /**
-     * Initialize the shared in-class chat record.
-     * Tries to reuse an existing record first; if none, creates one.
-     */
-    async initInClass() {
-      const sessionId = window._inClassSessionId;
-      if (!sessionId) return;
-
-      try {
-        const res = await fetch(`${RENDER_BASE}/api/in-class/chat/by-session/${encodeURIComponent(sessionId)}`);
-        if (res.ok) {
-          const data = await res.json();
-          _inClassConvoId = data._id;
-          console.log('[chat-history] Reusing in-class chat record:', _inClassConvoId);
-        } else {
-          // First student — create the shared record
-          const createRes = await fetch(`${RENDER_BASE}/api/in-class/chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId,
-              tableNumber:   window._inClassTableNumber   || null,
-              sessionNumber: window._inClassSessionNumber || null,
-            }),
-          });
-          if (createRes.ok) {
-            const created = await createRes.json();
-            _inClassConvoId = created._id;
-            console.log('[chat-history] Created in-class chat record:', _inClassConvoId);
-          }
-        }
-      } catch (err) {
-        console.warn('[chat-history] initInClass failed:', err.message);
-      }
-    },
-
-    /** Queue a single message {role, content, userName?} for persistence. */
-    appendMessage(msg) {
-      const msgObj = { ...msg, timestamp: new Date().toISOString() };
-
-      if (window._inClassMode) {
-        // In-class: include userName so the shared record is attributed
-        _inClassPendingMessages.push(msgObj);
-        _scheduleInClassFlush();
-      } else {
-        _pendingMessages.push(msgObj);
-        _scheduleFlush();
-      }
-    },
-
-    /**
-     * After the first user+bot exchange, generate a 4-7 word title
-     * via /api/gemini (Vercel) and save it to MongoDB via Render.
-     */
-    async autoTitle(userMsg, botMsg) {
-      if (window._inClassMode) {
-        // In-class: update the shared record title
-        if (_inClassTitleSaved || !_inClassConvoId) return;
-        _inClassTitleSaved = true;
-        try {
-          const prompt = `Given this first exchange in a tutoring session, write a short 4-7 word title that summarises the topic. Reply with ONLY the title, nothing else.\n\nStudent: ${userMsg}\nTutor: ${botMsg}`;
-          const res = await fetch('/api/gemini', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ messages: [{ role: 'user', content: prompt }] }),
-          });
-          if (!res.ok) throw new Error(`status ${res.status}`);
-          const data = await res.json();
-          const title = (data.response || '').trim().replace(/^["']|["']$/g, '').slice(0, 80);
-          if (!title) return;
-          await fetch(`${RENDER_BASE}/api/in-class/chat/${_inClassConvoId}/title`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title }),
-          });
-        } catch (err) {
-          console.warn('[chat-history] in-class autoTitle failed:', err.message);
-          _inClassTitleSaved = false;
-        }
-        return;
-      }
-
-      if (_titleSaved || !_conversationId || !_email) return;
-      _titleSaved = true; // set immediately to prevent duplicate calls
-
-      try {
-        const prompt = `Given this first exchange in a tutoring session, write a short 4-7 word title that summarises the topic. Reply with ONLY the title, nothing else.\n\nStudent: ${userMsg}\nTutor: ${botMsg}`;
-
-        const res = await fetch("/api/gemini", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: [{ role: "user", content: prompt }],
-          }),
-        });
-
-        if (!res.ok) throw new Error(`Gemini status ${res.status}`);
-        const data = await res.json();
-        const title = (data.response || "")
-          .trim()
-          .replace(/^["']|["']$/g, "")
-          .slice(0, 80);
-        if (!title) return;
-
-        await fetch(
-          `${RENDER_BASE}/api/chat-history/${_conversationId}/title`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title }),
-          },
-        );
-
-        // Refresh sidebar so the new title shows up
-        await _loadList();
-        _renderList();
-      } catch (err) {
-        // non-critical — fail silently
-        console.warn("[chat-history] autoTitle failed:", err.message);
-        _titleSaved = false; // allow retry
-      }
-    },
-  };
-
-  // Expose globally
-  window.chatHistoryManager = manager;
-
-  // ─── Conversation helpers ─────────────────────────────────────────────────
-  let _conversations = [];
-
-  async function _createConversation() {
-    if (!_email) return;
-    try {
-      const res = await fetch(`${RENDER_BASE}/api/chat-history`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: _email }),
-      });
-      if (!res.ok) throw new Error(`status ${res.status}`);
-      const data = await res.json();
-      _conversationId = data._id;
-      _titleSaved = false;
-    } catch (err) {
-      console.warn("[chat-history] createConversation failed:", err.message);
-    }
+  // ─── API wrappers ─────────────────────────────────────────────────────────
+  async function apiGet(path) {
+    const r = await fetch(`${BACKEND}${path}`);
+    if (!r.ok) throw new Error(`GET ${path} → ${r.status}`);
+    return r.json();
   }
 
-  async function _loadList() {
-    if (!_email) return;
-    try {
-      const res = await fetch(
-        `${RENDER_BASE}/api/chat-history?email=${encodeURIComponent(_email)}`,
-      );
-      if (!res.ok) return;
-      _conversations = await res.json();
-    } catch (err) {
-      console.warn("[chat-history] loadList failed:", err.message);
-    }
+  async function apiPost(path, body) {
+    const r = await fetch(`${BACKEND}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`POST ${path} → ${r.status}`);
+    return r.json();
   }
 
-  // ─── Flush queue ──────────────────────────────────────────────────────────
-  function _scheduleFlush() {
-    if (_flushTimer) clearTimeout(_flushTimer);
-    _flushTimer = setTimeout(_flush, 800);
+  async function apiPatch(path, body) {
+    const r = await fetch(`${BACKEND}${path}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`PATCH ${path} → ${r.status}`);
+    return r.json();
   }
 
-  async function _flush() {
-    _flushTimer = null;
-    if (!_conversationId || _pendingMessages.length === 0) return;
-
-    const batch = _pendingMessages.splice(0);
-    try {
-      const res = await fetch(
-        `${RENDER_BASE}/api/chat-history/${_conversationId}/messages`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: batch }),
-        },
-      );
-      if (!res.ok) {
-        // Put messages back so we can retry
-        _pendingMessages = [...batch, ..._pendingMessages];
-      }
-    } catch (err) {
-      _pendingMessages = [...batch, ..._pendingMessages];
-      console.warn("[chat-history] flush failed:", err.message);
-    }
+  async function apiDelete(path) {
+    const r = await fetch(`${BACKEND}${path}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error(`DELETE ${path} → ${r.status}`);
+    return r.json();
   }
 
-  // ── In-class flush ──────────────────────────────────────────────────────
-  function _scheduleInClassFlush() {
-    if (_inClassFlushTimer) clearTimeout(_inClassFlushTimer);
-    _inClassFlushTimer = setTimeout(_flushInClassQueue, 800);
-  }
+  // ─── Sidebar UI ───────────────────────────────────────────────────────────
+  function buildSidebar() {
+    if (document.getElementById('chatHistorySidebar')) return;
 
-  async function _flushInClassQueue() {
-    _inClassFlushTimer = null;
-    if (!_inClassConvoId && window._inClassMode) {
-      // Might not be initialised yet — retry after a short delay
-      await manager.initInClass();
-    }
-    if (!_inClassConvoId || _inClassPendingMessages.length === 0) return;
-
-    const batch = _inClassPendingMessages.splice(0);
-    try {
-      const res = await fetch(`${RENDER_BASE}/api/in-class/chat/${_inClassConvoId}/messages`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: batch }),
-      });
-      if (!res.ok) {
-        _inClassPendingMessages = [...batch, ..._inClassPendingMessages];
-      }
-    } catch (err) {
-      _inClassPendingMessages = [...batch, ..._inClassPendingMessages];
-      console.warn('[chat-history] in-class flush failed:', err.message);
-    }
-  }
-
-  // ─── Load & replay a past conversation ────────────────────────────────────
-  async function _loadConversation(id) {
-    try {
-      const res = await fetch(`${RENDER_BASE}/api/chat-history/${id}`);
-      if (!res.ok) throw new Error(`status ${res.status}`);
-      const convo = await res.json();
-
-      // Clear current chat
-      const chatMessages = document.getElementById("chatMessages");
-      if (chatMessages) chatMessages.innerHTML = "";
-
-      // Reset context to system prompt only
-      if (window._resetChatContext) window._resetChatContext();
-
-      // Replay messages silently (no persistence, no broadcast)
-      const msgs = convo.messages || [];
-      msgs.forEach((msg) => {
-        if (window._addMessageSilent) {
-          window._addMessageSilent(msg.content, msg.role);
-        }
-      });
-
-      // Rebuild AI context so the tutor remembers the thread
-      if (window._rebuildContext) window._rebuildContext(msgs);
-
-      // Switch current conversation to the loaded one
-      _conversationId = id;
-      _titleSaved = true; // don't overwrite existing title
-
-      _setActiveItem(id);
-      _closeSidebar();
-    } catch (err) {
-      console.warn("[chat-history] loadConversation failed:", err.message);
-    }
-  }
-
-  async function _deleteConversation(id) {
-    try {
-      await fetch(`${RENDER_BASE}/api/chat-history/${id}`, {
-        method: "DELETE",
-      });
-      _conversations = _conversations.filter((c) => c._id !== id);
-      _renderList();
-      // If deleted the active one, start a fresh conversation
-      if (id === _conversationId) {
-        await _newChat();
-      }
-    } catch (err) {
-      console.warn("[chat-history] delete failed:", err.message);
-    }
-  }
-
-  async function _newChat() {
-    // Clear screen
-    const chatMessages = document.getElementById("chatMessages");
-    if (chatMessages) chatMessages.innerHTML = "";
-    if (window._resetChatContext) window._resetChatContext();
-    if (window.addMessage)
-      window.addMessage(
-        "Hi there! I'm your physics tutor! Ask me anything about physics!",
-        "bot",
-      );
-
-    // Create a new DB conversation
-    await _createConversation();
-
-    // Refresh sidebar
-    await _loadList();
-    _renderList();
-    _closeSidebar();
-  }
-
-  // ─── UI ───────────────────────────────────────────────────────────────────
-  function _buildUI() {
-    // Don't build twice
-    if (document.getElementById("chatHistorySidebar")) return;
-
-    // Dim overlay
-    const overlay = document.createElement("div");
-    overlay.id = "chatHistoryOverlay";
-    overlay.addEventListener("click", _closeSidebar);
-    document.body.appendChild(overlay);
-
-    // Sidebar
-    const sidebar = document.createElement("div");
-    sidebar.id = "chatHistorySidebar";
+    const sidebar = document.createElement('div');
+    sidebar.id = 'chatHistorySidebar';
+    sidebar.className = 'ch-sidebar ch-sidebar--closed';
     sidebar.innerHTML = `
-      <div class="ch-sidebar-header">
-        <h3>💬 Chat History</h3>
-        <button class="ch-new-btn" id="chNewBtn">＋ New Chat</button>
-        <button class="ch-close-btn" id="chCloseBtn">×</button>
+      <div class="ch-sidebar__header">
+        <span class="ch-sidebar__title">💬 Conversations</span>
+        <button class="ch-sidebar__close" id="chSidebarClose" title="Close">✕</button>
       </div>
-      <div class="ch-list" id="chList"></div>
+      <button class="ch-new-btn" id="chNewBtn">＋ New Chat</button>
+      <div class="ch-convo-list" id="convoList"></div>
     `;
     document.body.appendChild(sidebar);
 
-    sidebar.querySelector("#chNewBtn").addEventListener("click", _newChat);
-    sidebar
-      .querySelector("#chCloseBtn")
-      .addEventListener("click", _closeSidebar);
+    // History toggle button — insert into the sign-out topbar
+    const toggleBtn = document.createElement('button');
+    toggleBtn.id = 'chToggleBtn';
+    toggleBtn.innerHTML = '📋 History';
+    toggleBtn.style.cssText = `
+      padding: 5px 14px; font-size: 12px; font-weight: 600;
+      background: rgba(255,255,255,0.15); color: #fff;
+      border: 1px solid rgba(255,255,255,0.35); border-radius: 6px;
+      cursor: pointer; transition: background 0.15s; white-space: nowrap;
+    `;
+    toggleBtn.onmouseover = () => toggleBtn.style.background = 'rgba(255,255,255,0.28)';
+    toggleBtn.onmouseout  = () => toggleBtn.style.background = 'rgba(255,255,255,0.15)';
+    toggleBtn.addEventListener('click', toggleSidebar);
 
-    // Wire up the sign-out bar that is already in the HTML header
-    _activateSignOutBar();
+    const sobActions = document.querySelector('.sob-actions');
+    const signOutBtn = document.getElementById('signOutBtn');
+    if (sobActions && signOutBtn) {
+      sobActions.insertBefore(toggleBtn, signOutBtn);
+    }
+
+    // Wire up the existing History button in the HTML if present
+    const existingHistBtn = document.getElementById('chatHistoryToggleBtn');
+    if (existingHistBtn) {
+      existingHistBtn.addEventListener('click', toggleSidebar);
+    }
+
+    document.getElementById('chSidebarClose').addEventListener('click', closeSidebar);
+    document.getElementById('chNewBtn').addEventListener('click', () => window.chatHistoryManager.startNewConversation());
   }
 
-  function _activateSignOutBar() {
-    // The bar is already in tutor.html as .tutor-header-topbar / #signOutBar
-    const bar = document.getElementById("signOutBar");
-    if (!bar) return;
+  function toggleSidebar() { _sidebarVisible ? closeSidebar() : openSidebar(); }
 
-    // Populate email
-    const emailEl = document.getElementById("sobEmail");
-    if (emailEl) emailEl.textContent = _email || "";
-
-    // Show the bar
-    bar.classList.add("visible");
-
-    // Wire buttons (guard against double-binding)
-    const histBtn = document.getElementById("chatHistoryToggleBtn");
-    const signBtn = document.getElementById("signOutBtn");
-    if (histBtn && !histBtn.dataset.wired) {
-      histBtn.dataset.wired = "1";
-      histBtn.addEventListener("click", _toggleSidebar);
-    }
-    if (signBtn && !signBtn.dataset.wired) {
-      signBtn.dataset.wired = "1";
-      signBtn.addEventListener("click", _signOut);
-    }
+  function openSidebar() {
+    const s = getSidebar(); if (!s) return;
+    s.classList.remove('ch-sidebar--closed');
+    s.classList.add('ch-sidebar--open');
+    _sidebarVisible = true;
   }
 
-  function _renderList() {
-    const list = document.getElementById("chList");
-    if (!list) return;
+  function closeSidebar() {
+    const s = getSidebar(); if (!s) return;
+    s.classList.remove('ch-sidebar--open');
+    s.classList.add('ch-sidebar--closed');
+    _sidebarVisible = false;
+  }
 
-    if (!_conversations.length) {
-      list.innerHTML =
-        '<div class="ch-empty">No past conversations yet.<br>Start chatting to save history!</div>';
+  function renderConvoList(convos) {
+    const list = getConvoList(); if (!list) return;
+    list.innerHTML = '';
+    if (convos.length === 0) {
+      list.innerHTML = '<p class="ch-empty">No conversations yet.</p>';
       return;
     }
-
-    list.innerHTML = "";
-    _conversations.forEach((convo) => {
-      const item = document.createElement("div");
-      item.className =
-        "ch-item" + (convo._id === _conversationId ? " active" : "");
-      item.dataset.id = convo._id;
-
-      const date = new Date(convo.updatedAt || convo.createdAt);
-      const dateStr = _formatDate(date);
-
+    convos.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'ch-convo-item' + (c._id === _currentId ? ' ch-convo-item--active' : '');
+      item.dataset.id = c._id;
+      const date = new Date(c.updatedAt);
+      const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       item.innerHTML = `
-        <span class="ch-item-title">${_escHtml(convo.title || "Untitled")}</span>
-        <span class="ch-item-date">${dateStr}</span>
-        <button class="ch-delete-btn" title="Delete conversation">🗑</button>
+        <div class="ch-convo-item__body">
+          <span class="ch-convo-item__title">${escapeHtml(c.title || 'Conversation')}</span>
+          <span class="ch-convo-item__date">${dateStr}</span>
+        </div>
+        <button class="ch-convo-item__del" data-id="${c._id}" title="Delete">🗑</button>
       `;
-
-      item.addEventListener("click", (e) => {
-        if (e.target.classList.contains("ch-delete-btn")) {
-          e.stopPropagation();
-          if (confirm("Delete this conversation?"))
-            _deleteConversation(convo._id);
-          return;
-        }
-        _loadConversation(convo._id);
+      item.querySelector('.ch-convo-item__body').addEventListener('click', () => {
+        window.chatHistoryManager.loadConversation(c._id);
+        closeSidebar();
       });
-
+      item.querySelector('.ch-convo-item__del').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm('Delete this conversation?')) return;
+        await deleteConversation(c._id);
+      });
       list.appendChild(item);
     });
   }
 
-  function _setActiveItem(id) {
-    document.querySelectorAll(".ch-item").forEach((el) => {
-      el.classList.toggle("active", el.dataset.id === id);
+  function markActiveInList(id) {
+    document.querySelectorAll('.ch-convo-item').forEach(el => {
+      el.classList.toggle('ch-convo-item--active', el.dataset.id === id);
     });
   }
 
-  function _toggleSidebar() {
-    const sidebar = document.getElementById("chatHistorySidebar");
-    const overlay = document.getElementById("chatHistoryOverlay");
-    if (!sidebar) return;
-    const isOpen = sidebar.classList.contains("open");
-    if (!isOpen) {
-      _loadList().then(() => _renderList());
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ─── Conversation actions ─────────────────────────────────────────────────
+  async function loadConvoList() {
+    try {
+      const list = await apiGet(`/api/chat-history?email=${encodeURIComponent(_email)}`);
+      renderConvoList(list);
+    } catch (e) { console.warn('[chat-history] loadConvoList failed:', e.message); }
+  }
+
+  async function createNewConvo() {
+    try {
+      const doc = await apiPost('/api/chat-history', { email: _email });
+      _currentId = doc._id;
+      _titleSet = false;
+      return doc;
+    } catch (e) {
+      console.warn('[chat-history] createNewConvo failed:', e.message);
+      _currentId = null;
+      return null;
     }
-    sidebar.classList.toggle("open");
-    overlay && overlay.classList.toggle("visible");
   }
 
-  function _closeSidebar() {
-    const sidebar = document.getElementById("chatHistorySidebar");
-    const overlay = document.getElementById("chatHistoryOverlay");
-    sidebar && sidebar.classList.remove("open");
-    overlay && overlay.classList.remove("visible");
+  async function deleteConversation(id) {
+    try {
+      await apiDelete(`/api/chat-history/${id}`);
+      if (_currentId === id) { await startNewConversation(); }
+      else { await loadConvoList(); }
+    } catch (e) { console.warn('[chat-history] delete failed:', e.message); }
   }
 
-  async function _signOut() {
-    // Record logout
-    if (window._activityId) {
-      try {
-        await fetch(`${RENDER_BASE}/api/user-activity/logout`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ activityId: window._activityId }),
+  // ─── Message persistence (debounced batching) ─────────────────────────────
+  async function flushQueue() {
+    if (_writing || _messageQueue.length === 0 || !_currentId || !_ready) return;
+    _writing = true;
+    const batch = _messageQueue.splice(0, _messageQueue.length);
+    try {
+      await apiPatch(`/api/chat-history/${_currentId}/messages`, { messages: batch });
+    } catch (e) {
+      console.warn('[chat-history] flush failed:', e.message);
+      _messageQueue.unshift(...batch);
+    }
+    _writing = false;
+    if (_messageQueue.length > 0) flushQueue();
+  }
+
+  // ─── Auto-title ───────────────────────────────────────────────────────────
+  async function autoTitle(userMsg, botMsg) {
+    if (_titleSet || !_currentId) return;
+    _titleSet = true;
+    try {
+      const prompt = `Given this physics tutoring exchange, generate a short 4-7 word descriptive title (no quotes, no punctuation at end):\nStudent: ${userMsg}\nTutor: ${botMsg.substring(0, 300)}`;
+      const r = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: 'Generate a very short title (4-7 words, no quotes). Return ONLY the title text.' },
+            { role: 'user', content: prompt }
+          ]
+        })
+      });
+      const data = await r.json();
+      const title = (data.response || '').trim().replace(/^["']|["']$/g, '').substring(0, 60) || 'Physics Discussion';
+      await apiPatch(`/api/chat-history/${_currentId}/title`, { title });
+      await loadConvoList();
+      markActiveInList(_currentId);
+    } catch (e) {
+      console.warn('[chat-history] autoTitle failed:', e.message);
+      _titleSet = false;
+    }
+  }
+
+  // ─── Load a past conversation ─────────────────────────────────────────────
+  async function loadConversation(id) {
+    try {
+      const doc = await apiGet(`/api/chat-history/${id}`);
+      _currentId = id;
+      _titleSet = true;
+      const chatMessages = document.getElementById('chatMessages');
+      if (chatMessages) chatMessages.innerHTML = '';
+      if (window._resetChatContext) window._resetChatContext();
+      doc.messages.forEach(msg => {
+        if (window._addMessageSilent) {
+          window._addMessageSilent(msg.content, msg.role === 'user' ? 'user' : 'bot');
+        }
+      });
+      if (window._rebuildContext) window._rebuildContext(doc.messages);
+      markActiveInList(id);
+    } catch (e) { console.warn('[chat-history] loadConversation failed:', e.message); }
+  }
+
+  // ─── Start a brand-new conversation ───────────────────────────────────────
+  async function startNewConversation() {
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) chatMessages.innerHTML = '';
+    if (window._resetChatContext) window._resetChatContext();
+    if (window.addMessage) {
+      window.addMessage("Hi there! I'm your physics tutor! Ask me anything about physics!", 'bot');
+    }
+    _ready = false;
+    await createNewConvo();
+    await loadConvoList();
+    _ready = true;
+    markActiveInList(_currentId);
+    if (_messageQueue.length > 0) flushQueue();
+  }
+
+  // ─── Init (at-home) ───────────────────────────────────────────────────────
+  async function init(email) {
+    _email = email;
+    buildSidebar();
+    // Show the topbar with email
+    const bar = document.getElementById('signOutBar');
+    if (bar) bar.classList.add('visible');
+    const emailEl = document.getElementById('sobEmail');
+    if (emailEl) emailEl.textContent = email;
+    await loadConvoList();
+    await createNewConvo();
+    _ready = true;
+    markActiveInList(_currentId);
+    if (_messageQueue.length > 0) flushQueue();
+  }
+
+  // ─── In-Class mode ────────────────────────────────────────────────────────
+  let _inClassMode = false;
+  let _inClassConvoId = null;
+  let _inClassWriting = false;
+  let _inClassQueue = [];
+  let _inClassReady = false;
+  let _inClassTitleSet = false;
+
+  async function inClassApiPost(path, body) {
+    const r = await fetch(`${BACKEND}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`POST ${path} → ${r.status}`);
+    return r.json();
+  }
+
+  async function inClassApiPatch(path, body) {
+    const r = await fetch(`${BACKEND}${path}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`PATCH ${path} → ${r.status}`);
+    return r.json();
+  }
+
+  async function flushInClassQueue() {
+    if (_inClassWriting || _inClassQueue.length === 0 || !_inClassConvoId || !_inClassReady) return;
+    _inClassWriting = true;
+    const batch = _inClassQueue.splice(0, _inClassQueue.length);
+    try {
+      await inClassApiPatch(`/api/in-class/chat/${_inClassConvoId}/messages`, { messages: batch });
+    } catch (e) {
+      console.warn('[in-class chat] flush failed:', e.message);
+      _inClassQueue.unshift(...batch);
+    }
+    _inClassWriting = false;
+    if (_inClassQueue.length > 0) flushInClassQueue();
+  }
+
+  async function initInClass(email) {
+    _inClassMode = true;
+    _email = email;
+    const sessionId     = window._inClassSessionId     || '';
+    const sessionTitle  = window._inClassSessionTitle  || '';
+    const tableNumber   = Number(window._inClassTableNumber   || 0);
+    const sessionNumber = Number(window._inClassSessionNumber || 0);
+
+    // Show the topbar
+    const bar = document.getElementById('signOutBar');
+    if (bar) bar.classList.add('visible');
+    const emailEl = document.getElementById('sobEmail');
+    if (emailEl) emailEl.textContent = email;
+
+    buildSidebar();
+
+    try {
+      const findRes = await fetch(`${BACKEND}/api/in-class/chat/by-session/${encodeURIComponent(sessionId)}`);
+      if (findRes.ok) {
+        const existing = await findRes.json();
+        _inClassConvoId = existing._id;
+        console.log('[in-class chat] joined existing shared record:', _inClassConvoId);
+      } else {
+        const doc = await inClassApiPost('/api/in-class/chat', {
+          sessionId, sessionTitle, tableNumber, sessionNumber,
+          email: email.trim().toLowerCase(),
+          title: sessionTitle,
         });
-      } catch (_) {}
+        _inClassConvoId = doc._id;
+        console.log('[in-class chat] created shared session record:', _inClassConvoId);
+      }
+      _inClassReady = true;
+      if (_inClassQueue.length > 0) flushInClassQueue();
+    } catch (e) {
+      console.warn('[in-class chat] initInClass failed:', e.message);
     }
-    window.location.reload();
   }
 
-  // ─── Utilities ────────────────────────────────────────────────────────────
-  function _formatDate(date) {
-    const now = new Date();
-    const diff = now - date;
-    if (diff < 60000) return "just now";
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  async function autoTitleInClass(userMsg, botMsg) {
+    if (_inClassTitleSet || !_inClassConvoId) return;
+    _inClassTitleSet = true;
+    try {
+      const prompt = `Given this physics tutoring exchange, generate a short 4-7 word descriptive title (no quotes, no punctuation at end):\nStudent: ${userMsg}\nTutor: ${botMsg.substring(0, 300)}`;
+      const r = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: 'Generate a very short title (4-7 words, no quotes). Return ONLY the title text.' },
+            { role: 'user', content: prompt }
+          ]
+        })
+      });
+      const data = await r.json();
+      const title = (data.response || '').trim().replace(/^["']|["']$/g, '').substring(0, 60) || 'In-Class Discussion';
+      await inClassApiPatch(`/api/in-class/chat/${_inClassConvoId}/title`, { title });
+    } catch (e) {
+      console.warn('[in-class chat] autoTitle failed:', e.message);
+      _inClassTitleSet = false;
+    }
   }
 
-  function _escHtml(str) {
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
+  // ─── Public API ───────────────────────────────────────────────────────────
+  window.chatHistoryManager = {
+    init,
+    initInClass,
+    getCurrentConvoId: () => _inClassMode ? _inClassConvoId : _currentId,
+    isInClassMode: () => _inClassMode,
+
+    /**
+     * appendMessage(role, content, userName?)
+     * role: 'user' | 'bot'
+     * content: message text
+     * userName: optional sender name (used in in-class shared transcript)
+     */
+    appendMessage(role, content, userName) {
+      if (_inClassMode) {
+        _inClassQueue.push({ role, content, userName: userName || _email || '', timestamp: new Date() });
+        setTimeout(flushInClassQueue, 800);
+      } else {
+        _messageQueue.push({ role, content, timestamp: new Date() });
+        setTimeout(flushQueue, 800);
+      }
+    },
+
+    autoTitle(userMsg, botMsg) {
+      if (_inClassMode) { autoTitleInClass(userMsg, botMsg); }
+      else              { autoTitle(userMsg, botMsg); }
+    },
+
+    loadConversation,
+    startNewConversation,
+    refreshList: loadConvoList,
+  };
+
 })();

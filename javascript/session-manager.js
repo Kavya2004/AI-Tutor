@@ -966,13 +966,11 @@ class SessionManager {
           content: data.userName ? `${data.userName}: ${data.message}` : data.message,
         });
 
-        // Save to shared in-class DB record
-        if (window._inClassMode && window.chatHistoryManager && typeof window.chatHistoryManager.appendMessage === 'function') {
-          window.chatHistoryManager.appendMessage({
-            role: data.sender === 'bot' ? 'bot' : 'user',
-            content: data.message,
-            userName: data.userName || '',
-          });
+        // Save incoming messages from others into the shared session record.
+        // (The sender's own messages are saved by _addMessageInternal in tutor-chat.js.)
+        if (window._inClassMode && data.userName !== this.userName && window.chatHistoryManager) {
+          const role = data.sender === 'bot' ? 'bot' : 'user';
+          window.chatHistoryManager.appendMessage(role, data.message, data.userName);
         }
         break;
       case "participant_joined":
