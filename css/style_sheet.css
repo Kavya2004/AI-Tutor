@@ -511,7 +511,164 @@ a.nostyle {
 	text-decoration: underline;
 }
 
-/* Notes toolbar — see the full definition further down in this file */
+.notes-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 25px;
+	padding: 12px 16px;
+	background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+	border-top: 1px solid #dee2e6;
+	border-radius: 0 0 8px 8px;
+	box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+	flex-wrap: wrap;
+}
+
+.pen-size-group {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	/* Very small gap */
+	height: 24px
+}
+
+.pen-color-group {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	/* Very small gap */
+	height: 24px
+}
+
+.notes-toolbar label {
+	font-size: 13px;
+	font-weight: 600;
+	color: #495057;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin: 0;
+	white-space: nowrap;
+}
+
+.notes-toolbar input[type="range"] {
+	width: 100px;
+	height: 6px;
+	background: #dee2e6;
+	border-radius: 3px;
+	outline: none;
+	appearance: none;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	margin: 0;
+	/* Remove any default margins */
+}
+
+.notes-toolbar input[type="range"]::-webkit-slider-thumb {
+	appearance: none;
+	width: 18px;
+	height: 18px;
+	background: linear-gradient(135deg, #007bff, #0056b3);
+	border-radius: 50%;
+	cursor: pointer;
+	box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3);
+	transition: all 0.2s ease;
+}
+
+.notes-toolbar input[type="range"]::-webkit-slider-thumb:hover {
+	transform: scale(1.1);
+	box-shadow: 0 3px 10px rgba(0, 123, 255, 0.4);
+}
+
+.pen-size-display {
+	min-width: 25px;
+	padding: 4px 8px;
+	background: #fff;
+	border: 1px solid #dee2e6;
+	border-radius: 4px;
+	font-size: 12px;
+	font-weight: 600;
+	text-align: center;
+	color: #495057;
+	margin: 0;
+	/* Remove any default margins */
+}
+
+.notes-toolbar input[type="color"] {
+	width: 40px;
+	height: 40px;
+	border: 2px solid #dee2e6;
+	border-radius: 8px;
+	cursor: pointer;
+	background: transparent;
+	transition: all 0.2s ease;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	margin: 0;
+	/* Remove any default margins */
+}
+
+.notes-toolbar input[type="color"]:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	border-color: #007bff;
+}
+
+.notes-toolbar input[type="color"]::-webkit-color-swatch-wrapper {
+	padding: 0;
+	border: none;
+	border-radius: 6px;
+}
+
+.notes-toolbar input[type="color"]::-webkit-color-swatch {
+	border: none;
+	border-radius: 6px;
+}
+
+.eraser-btn {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 16px;
+	background: linear-gradient(135deg, #6c757d, #5a6268);
+	color: white;
+	border: none;
+	border-radius: 6px;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin: 0;
+	/* Remove any default margins */
+}
+
+.eraser-btn:hover {
+	background: linear-gradient(135deg, #5a6268, #495057);
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.eraser-btn:active {
+	transform: translateY(0);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.eraser-btn.active {
+	background: linear-gradient(135deg, #dc3545, #c82333);
+	animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+	0%,
+	100% {
+		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	}
+
+	50% {
+		box-shadow: 0 4px 20px rgba(220, 53, 69, 0.4);
+	}
+}
 
 .extendlist ul {
 	cursor: pointer;
@@ -814,79 +971,28 @@ body {
 	position: relative;
 }
 
-/* ── Tutor header: topbar + title area ─────────────────────── */
 .tutor-header {
-	background: linear-gradient(135deg, #881c1c, #6e1616);
+	background: linear-gradient(135deg, #881c1c);
 	color: #ffffff;
+	padding: 20px;
 	text-align: center;
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+	box-shadow: 0 2px 10px rgba(237, 234, 234, 0.2);
 	position: relative;
 	z-index: 100;
-	padding: 0;
 }
 
-/* Top bar — email + History + Sign Out */
-.tutor-header-topbar {
-	display: none;
-	/* shown by chat-history-manager */
-	align-items: center;
-	justify-content: flex-end;
-	gap: 10px;
-	padding: 8px 16px;
-	background: rgba(0, 0, 0, 0.18);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.tutor-header-topbar.visible {
-	display: flex;
-}
-
-.tutor-header-topbar .sob-email {
-	flex: 1;
-	font-size: 13px;
-	color: rgba(255, 255, 255, 0.85);
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.tutor-header-topbar .sob-actions {
-	display: flex;
-	gap: 8px;
-	flex-shrink: 0;
-}
-
-.tutor-header-topbar button {
-	background: rgba(255, 255, 255, 0.15);
-	color: #fff;
-	border: 1px solid rgba(255, 255, 255, 0.35);
-	border-radius: 6px;
-	padding: 5px 14px;
-	font-size: 12px;
-	font-weight: 600;
-	cursor: pointer;
-	transition: background 0.15s;
-	white-space: nowrap;
-}
-
-.tutor-header-topbar button:hover {
-	background: rgba(255, 255, 255, 0.28);
-}
-
-/* Title row */
 .tutor-header h1 {
-	font-size: 2.2em;
-	margin: 16px 0 4px;
-	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
+	font-size: 2.5em;
+	margin-bottom: 10px;
+	text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 	color: #ffffff;
 	font-weight: bold;
 }
 
 .tutor-header p {
-	font-size: 1.1em;
-	color: rgba(255, 255, 255, 0.85);
-	margin: 0 0 16px;
-	font-weight: 400;
+	font-size: 1.2em;
+	color: #f5e8e8;
+	font-weight: 500;
 }
 
 .close-button {
@@ -968,7 +1074,7 @@ body {
 	display: flex;
 	gap: 12px;
 	max-width: 85%;
-	animation: slideIn 0.3s ease-out;
+	animation: msgFadeIn 0.15s ease-out;
 }
 
 .user-message {
@@ -1125,48 +1231,86 @@ body {
 	background: white;
 }
 
-/* Chat controls — Save Chat + Generate Summary pill buttons */
-#chatControls {
-	display: flex;
-	gap: 8px;
-	padding: 10px 16px;
-	background: #f8fafc;
-	border-bottom: 1px solid #e5e7eb;
-	flex-shrink: 0;
-}
-
-#chatControls button,
-#chatControls button:first-child,
-#chatControls button:last-child {
-	background: #881c1c;
+/* Enhanced Save Chat Button */
+#chatControls button:first-child {
+	background: linear-gradient(135deg, #881c1c 0%, #6e1616 100%);
 	color: white;
 	border: none;
-	padding: 7px 16px;
-	border-radius: 20px;
-	font-weight: 600;
-	font-size: 12px;
-	cursor: pointer;
-	transition: all 0.2s ease;
-	white-space: nowrap;
-	position: static;
-	overflow: visible;
-	letter-spacing: normal;
+	padding: 10px 18px;
+	border-radius: 25px;
+	font-weight: 700;
+	font-size: 13px;
+	letter-spacing: 0.5px;
+	position: relative;
+	overflow: hidden;
+	transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-#chatControls button:hover,
-#chatControls button:first-child:hover,
+#chatControls button:first-child:hover {
+	background: linear-gradient(135deg, #6e1616 0%, #4d0f0f 100%);
+	transform: translateY(-3px) scale(1.05);
+}
+
+#chatControls button:first-child:active {
+	transform: translateY(-1px) scale(1.02);
+}
+
+/* Subtle shine effect for Save Chat button */
+#chatControls button:first-child::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -100%;
+	width: 100%;
+	height: 100%;
+	transition: left 0.5s;
+}
+
+#chatControls button:first-child:hover::before {
+	left: 100%;
+}
+
+/* Enhanced Generate Summary Button */
+#chatControls button:last-child {
+	background: linear-gradient(135deg, #a83232 0%, #881c1c 100%);
+	color: white;
+	border: none;
+	padding: 10px 18px;
+	border-radius: 25px;
+	font-weight: 700;
+	font-size: 13px;
+	letter-spacing: 0.5px;
+	position: relative;
+	overflow: hidden;
+	transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
 #chatControls button:last-child:hover {
-	background: #6e1616;
-	transform: translateY(-1px);
-	box-shadow: 0 2px 6px rgba(136, 28, 28, 0.3);
+	background: linear-gradient(135deg, #881c1c 0%, #6e1616 100%);
+	transform: translateY(-3px) scale(1.05);
 }
 
-#chatControls button:first-child::before,
+#chatControls button:last-child:active {
+	transform: translateY(-1px) scale(1.02);
+}
+
+/* Subtle shine effect for Summary button */
 #chatControls button:last-child::before {
-	display: none;
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -100%;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+	transition: left 0.5s;
 }
 
-/* Pulse animation for buttons when working */
+#chatControls button:last-child:hover::before {
+	left: 100%;
+}
+
+/* Pulse animation for both buttons when they're working */
 #chatControls button.processing {
 	animation: pulse 2s infinite;
 }
@@ -1213,106 +1357,122 @@ body {
 .whiteboard-header {
 	display: flex;
 	justify-content: space-between;
-	align-items: center;
-	padding: 14px 20px;
-	background: #ffffff;
-	border-bottom: 1px solid #e9ecef;
+	align-items: flex-start;
+	padding: 16px 24px;
+	background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+	border-bottom: 2px solid #dee2e6;
 	flex-wrap: wrap;
-	gap: 10px;
+	gap: 12px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .whiteboard-header h3 {
-	color: #1a1a1a;
-	font-size: 1.2em;
+	color: #2c3e50;
+	font-size: 1.4em;
 	font-weight: 700;
 	margin: 0;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+	background: linear-gradient(135deg, #2c3e50, #34495e);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
 }
 
 .whiteboard-controls {
 	display: flex;
-	gap: 8px;
+	gap: 10px;
 	flex-wrap: wrap;
 	align-items: center;
 }
 
 .whiteboard-controls button {
-	padding: 7px 16px;
-	border: 2px solid #881c1c;
+	padding: 10px 18px;
+	border: 2px solid #dee2e6;
 	background: white;
-	color: #881c1c;
-	border-radius: 6px;
+	border-radius: 8px;
 	cursor: pointer;
-	transition: all 0.2s ease;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	flex-shrink: 0;
 	white-space: nowrap;
-	font-weight: 700;
-	font-size: 12px;
+	font-weight: 600;
+	font-size: 13px;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
+	position: relative;
+	overflow: hidden;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 	pointer-events: auto;
 	z-index: 10;
 }
 
+.whiteboard-controls button::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -100%;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+	transition: left 0.6s;
+}
+
+.whiteboard-controls button:hover::before {
+	left: 100%;
+}
+
 .whiteboard-controls button:hover {
-	background: #881c1c;
-	color: white;
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .whiteboard-controls button:nth-child(1) {
+	/* Draw button */
 	border-color: #881c1c;
 	color: #881c1c;
 }
 
 .whiteboard-controls button:nth-child(1):hover,
 .whiteboard-controls button:nth-child(1).active {
-	background: #881c1c;
+	background: linear-gradient(135deg, #881c1c, #a83232);
 	color: white;
-	border-color: #881c1c;
+	border-color: #a83232;
 }
 
 .whiteboard-controls button:nth-child(2) {
-	border-color: #881c1c;
-	color: #881c1c;
-}
-
-.whiteboard-controls button:nth-child(2):hover,
-.whiteboard-controls button:nth-child(2).active {
-	background: #881c1c;
-	color: white;
-	border-color: #881c1c;
-}
-
-.whiteboard-controls button:nth-child(3) {
+	/* Eraser button */
 	border-color: #dc3545;
 	color: #dc3545;
 }
 
-.whiteboard-controls button:nth-child(3):hover {
-	background: #dc3545;
+.whiteboard-controls button:nth-child(2):hover,
+.whiteboard-controls button:nth-child(2).active {
+	background: linear-gradient(135deg, #dc3545, #fd7e14);
 	color: white;
-	border-color: #dc3545;
+	border-color: #fd7e14;
+}
+
+.whiteboard-controls button:nth-child(3) {
+	/* Clear button */
+	border-color: #ffc107;
+	color: #856404;
+}
+
+.whiteboard-controls button:nth-child(3):hover {
+	background: linear-gradient(135deg, #ffc107, #ffca2c);
+	color: white;
+	border-color: #ffca2c;
 }
 
 .whiteboard-controls button:nth-child(4) {
-	border-color: #e6a817;
-	color: #8a6300;
-}
-
-.whiteboard-controls button:nth-child(4):hover {
-	background: #e6a817;
-	color: white;
-	border-color: #e6a817;
-}
-
-.whiteboard-controls button:nth-child(5) {
+	/* Expand button */
 	border-color: #17a2b8;
 	color: #17a2b8;
 }
 
-.whiteboard-controls button:nth-child(5):hover {
-	background: #17a2b8;
+.whiteboard-controls button:nth-child(4):hover {
+	background: linear-gradient(135deg, #17a2b8, #20c997);
 	color: white;
-	border-color: #17a2b8;
+	border-color: #20c997;
 }
 
 /* Math buttons styling */
@@ -1946,25 +2106,26 @@ body {
 /* Whiteboard Tabs Styling */
 .whiteboard-tabs {
 	display: flex;
-	background: #881c1c;
-	border-bottom: none;
+	background: #f8f9fa;
+	border-bottom: 1px solid #e9ecef;
 	flex-wrap: wrap;
-	gap: 0;
+	/* Add this for small screens */
+	gap: 2px;
+	/* Add small gap */
 }
 
 .tab-button {
 	flex: 1;
+	/* Make tabs flexible */
 	padding: 12px 20px;
 	border: none;
 	background: transparent;
 	cursor: pointer;
-	transition: all 0.2s ease;
+	transition: all 0.3s ease;
 	white-space: nowrap;
+	/* Prevent text wrapping */
 	min-width: 0;
-	color: rgba(255, 255, 255, 0.75);
-	font-size: 14px;
-	font-weight: 600;
-	letter-spacing: 0.3px;
+	/* Allow shrinking if needed */
 }
 
 .tab-button:last-child {
@@ -1972,12 +2133,11 @@ body {
 }
 
 .tab-button:hover {
-	background: rgba(255, 255, 255, 0.12);
-	color: #fff;
+	background: #dee2e6;
 }
 
 .tab-button.active {
-	background: rgba(0, 0, 0, 0.18);
+	background: #881c1c;
 	color: white;
 	font-weight: bold;
 }
@@ -2149,32 +2309,34 @@ body {
 .notebook-mode-toggle {
 	display: flex;
 	gap: 4px;
+	background: #f0f0f0;
+	border-radius: 0;
+	overflow: hidden;
 	flex-shrink: 0;
+	/* Add this */
 }
 
 .mode-btn {
-	padding: 7px 16px;
-	border: 2px solid #881c1c;
-	background: white;
-	color: #881c1c;
-	border-radius: 6px;
+	padding: 8px 16px;
+	border: 2px solid #ccc;
+	background: transparent;
 	cursor: pointer;
-	transition: all 0.2s ease;
-	font-weight: 700;
-	font-size: 12px;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
+	transition: all 0.3s ease;
+	flex: 1;
+	/* Make buttons equal width */
 	white-space: nowrap;
+	/* Prevent text wrapping */
 }
 
 .mode-btn:hover {
-	background: #f5eaea;
+	background: #f0f8ff;
+	transform: translateY(-1px);
 }
 
 .mode-btn.active {
 	background: #881c1c;
 	color: white;
-	border-color: #881c1c;
+	box-shadow: 0 2px 4px rgba(136, 28, 28, 0.3);
 }
 
 #studentNotes {
@@ -2304,152 +2466,14 @@ body {
 		repeating-linear-gradient(transparent, transparent 29px, #e8f4f8 29px, #e8f4f8 30px);
 }
 
-/* Quiz launch button in input bar */
-.quiz-launch-btn {
-	background: white;
-	color: #333;
-	border: 2px solid #ccc;
-	padding: 0 18px;
-	border-radius: 22px;
-	cursor: pointer;
-	font-size: 14px;
-	font-weight: 600;
-	height: 44px;
-	white-space: nowrap;
-	transition: all 0.2s ease;
+/* Chat controls styling */
+#chatControls {
+	display: flex;
+	gap: 8px;
+	padding: 12px 20px;
+	background: #f8fafc;
+	border-bottom: 1px solid #e5e7eb;
 	flex-shrink: 0;
-}
-
-.quiz-launch-btn:hover {
-	border-color: #881c1c;
-	color: #881c1c;
-	background: #fdf5f5;
-}
-
-/* Notes toolbar — matches screenshot layout */
-.notes-toolbar {
-	display: flex;
-	align-items: center;
-	gap: 20px;
-	padding: 14px 20px;
-	background: #f8f9fa;
-	border-top: 1px solid #e9ecef;
-	flex-wrap: wrap;
-}
-
-.pen-size-group {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-}
-
-.pen-color-group {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-}
-
-.notes-toolbar label {
-	font-size: 13px;
-	font-weight: 700;
-	color: #333;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	margin: 0;
-	white-space: nowrap;
-}
-
-.notes-toolbar input[type="range"] {
-	width: 120px;
-	height: 6px;
-	background: #dee2e6;
-	border-radius: 3px;
-	outline: none;
-	appearance: none;
-	cursor: pointer;
-}
-
-.notes-toolbar input[type="range"]::-webkit-slider-thumb {
-	appearance: none;
-	width: 18px;
-	height: 18px;
-	background: #4a90e2;
-	border-radius: 50%;
-	cursor: pointer;
-	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-}
-
-.pen-size-display {
-	min-width: 22px;
-	font-size: 13px;
-	font-weight: 600;
-	color: #333;
-	text-align: center;
-}
-
-.notes-toolbar input[type="color"] {
-	width: 40px;
-	height: 40px;
-	border: 2px solid #ccc;
-	border-radius: 6px;
-	cursor: pointer;
-	background: transparent;
-	padding: 0;
-}
-
-.notes-toolbar input[type="color"]::-webkit-color-swatch-wrapper {
-	padding: 2px;
-}
-
-.notes-toolbar input[type="color"]::-webkit-color-swatch {
-	border: none;
-	border-radius: 4px;
-}
-
-.eraser-btn {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	padding: 9px 18px;
-	background: #6c757d;
-	color: white;
-	border: none;
-	border-radius: 6px;
-	font-size: 13px;
-	font-weight: 700;
-	cursor: pointer;
-	transition: background 0.2s ease;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	margin-left: auto;
-}
-
-.eraser-btn:hover {
-	background: #5a6268;
-}
-
-.eraser-btn.active {
-	background: #dc3545;
-}
-
-@keyframes pulse {
-
-	0%,
-	100% {
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-	}
-
-	50% {
-		box-shadow: 0 4px 20px rgba(220, 53, 69, 0.4);
-	}
-}
-
-display: flex;
-gap: 8px;
-padding: 12px 20px;
-background: #f8fafc;
-border-bottom: 1px solid #e5e7eb;
-flex-shrink: 0;
 }
 
 #chatControls button {
@@ -2812,13 +2836,18 @@ figure figcaption {
 	border-color: #881c1c;
 }
 
-/* ── KaTeX math rendering ──────────────────────────────────── */
+/* KaTeX math rendering */
 .katex-display {
-	padding: 8px 0;
 	overflow-x: auto;
 	overflow-y: hidden;
+	padding: 8px 0;
 }
 
 .katex {
 	font-size: 1.05em;
+}
+
+.message-content .katex-display {
+	margin: 6px 0;
+	text-align: left;
 }

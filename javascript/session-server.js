@@ -50,6 +50,8 @@ app.post('/api/pinecone', (req, res) => pineconeHandler(req, res));
 app.post('/api/pdf-content', (req, res) => pdfContentHandler(req, res));
 app.post('/api/pdf-page', (req, res) => pdfPageHandler(req, res));
 app.post('/api/image-gen', (req, res) => imageGenHandler(req, res));
+// Handle OPTIONS preflight for all /api routes
+app.options('/api/:path', cors());
 
 const sessions = new Map();
 const sessionConnections = new Map(); 
