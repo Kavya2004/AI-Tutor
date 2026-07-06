@@ -8,11 +8,30 @@ import {
   getInClassSessionModel,
   getInClassChatModel,
   getInClassUserActivityModel,
+  getLabSessionModel,
+  getProfessorEventModel,
   createInClassSessionRecord,
   addStudentToInClassSession,
   recordInClassLogin,
   recordInClassLogout,
 } from '../config/mongodb.js';
+import { broadcastToProfessors } from '../lib/professor-ws.js';
+
+// Find the active lab session for a given sessionNumber and push a WS event
+async function notifyProfessors(sessionNumber, eventType, payload = {}) {
+  try {
+    const LabSession = getLabSessionModel();
+    const labSession = await LabSession.findOne({ status: 'active' }).lean();
+    if (!labSession) return;
+    const labNum = parseInt(labSession.labNumber.replace(/\D/g, '')) || 1;
+    if (labNum !== sessionNumber) return;
+    const ProfessorEvent = getProfessorEventModel();
+    await ProfessorEvent.create({ labSessionId: labSession._id, type: eventType, payload });
+    broadcastToProfessors(labSession._id.toString(), { event: eventType, payload });
+  } catch (err) {
+    console.error('[in-class] notifyProfessors error:', err.message);
+  }
+}
 
 const router = express.Router();
 
@@ -42,6 +61,9 @@ router.post('/sessions/:id/join', async (req, res) => {
     const record = await addStudentToInClassSession({ sessionRecordId: req.params.id, name, email });
     if (!record) return res.status(404).json({ error: 'Session record not found' });
     res.json({ ok: true });
+    setImmediate(() => notifyProfessors(record.sessionNumber, 'student_join', {
+      name, email, tableNumber: record.tableNumber,
+    }));
   } catch (err) {
     console.error('[in-class] join session error:', err.message);
     res.status(500).json({ error: err.message });
@@ -58,6 +80,7 @@ router.post('/activity/login', async (req, res) => {
     const record = await recordInClassLogin({ email, name, tableNumber, sessionNumber });
     if (!record) return res.status(500).json({ error: 'Could not record login' });
     res.json({ activityId: record._id.toString(), loginTime: record.loginTime });
+    setImmediate(() => notifyProfessors(sessionNumber, 'student_join', { name, email, tableNumber }));
   } catch (err) {
     console.error('[in-class] login error:', err.message);
     res.status(500).json({ error: err.message });
@@ -67,11 +90,17 @@ router.post('/activity/login', async (req, res) => {
 // POST /api/in-class/activity/logout
 router.post('/activity/logout', async (req, res) => {
   try {
-    const { activityId } = req.body;
+    const { activityId, email, name, tableNumber, sessionNumber } = req.body;
     if (!activityId) return res.status(400).json({ error: 'activityId is required' });
     const record = await recordInClassLogout(activityId);
     if (!record) return res.status(404).json({ error: 'Activity record not found' });
     res.json({ ok: true, durationSeconds: record.durationSeconds });
+    const sn = sessionNumber ?? record.sessionNumber;
+    setImmediate(() => notifyProfessors(sn, 'student_leave', {
+      email: email ?? record.email,
+      name: name ?? record.name,
+      tableNumber: tableNumber ?? record.tableNumber,
+    }));
   } catch (err) {
     console.error('[in-class] logout error:', err.message);
     res.status(500).json({ error: err.message });
@@ -176,10 +205,20 @@ router.patch('/chat/:id/messages', async (req, res) => {
     const convo = await InClassChat.findByIdAndUpdate(
       req.params.id,
       { $push: { messages: { $each: messages } } },
-      { new: true, select: '_id title' }
+      { new: true }
     );
     if (!convo) return res.status(404).json({ error: 'Not found' });
     res.json({ ok: true });
+    const lastMsg = messages[messages.length - 1];
+    const eventType = lastMsg?.role === 'bot'
+      ? (/hint/i.test(lastMsg.content || '') ? 'hint_given' : 'ai_response')
+      : 'chat_message';
+    setImmediate(() => notifyProfessors(convo.sessionNumber, eventType, {
+      tableNumber: convo.tableNumber,
+      messageCount: convo.messages.length,
+      role: lastMsg?.role,
+      preview: (lastMsg?.content || '').slice(0, 80),
+    }));
   } catch (err) {
     console.error('[in-class] append messages error:', err.message);
     res.status(500).json({ error: err.message });

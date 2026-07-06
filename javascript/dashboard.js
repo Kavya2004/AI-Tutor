@@ -18,6 +18,305 @@ const state = {
   },
 };
 
+// ── WebSocket realtime sync ────────────────────────────────────────────────
+const ws = {
+  socket:      null,
+  labSessionId: null,
+  retryDelay:  1000,
+  retryTimer:  null,
+  pingTimer:   null,
+
+  connect(labSessionId) {
+    if (this.socket && this.socket.readyState <= 1 && this.labSessionId === labSessionId) return;
+    this.disconnect();
+    this.labSessionId = labSessionId;
+    const url = BACKEND.replace(/^http/, 'ws') + `/ws/professor/${labSessionId}`;
+    this.socket = new WebSocket(url);
+
+    this.socket.onopen = () => {
+      this.retryDelay = 1000;
+      // keepalive ping every 25 s
+      this.pingTimer = setInterval(() => {
+        if (this.socket?.readyState === 1) this.socket.send(JSON.stringify({ type: 'ping' }));
+      }, 25000);
+    };
+
+    this.socket.onmessage = (e) => {
+      try { handleWsMessage(JSON.parse(e.data)); } catch (_) {}
+    };
+
+    this.socket.onclose = () => {
+      clearInterval(this.pingTimer);
+      // auto-reconnect with backoff (max 30 s)
+      this.retryTimer = setTimeout(() => {
+        if (this.labSessionId) this.connect(this.labSessionId);
+      }, this.retryDelay);
+      this.retryDelay = Math.min(this.retryDelay * 2, 30000);
+    };
+
+    this.socket.onerror = () => this.socket.close();
+  },
+
+  disconnect() {
+    clearInterval(this.pingTimer);
+    clearTimeout(this.retryTimer);
+    if (this.socket) { this.socket.onclose = null; this.socket.close(); this.socket = null; }
+    this.labSessionId = null;
+  },
+};
+
+// ── WS message dispatcher ──────────────────────────────────────────────────
+function handleWsMessage(msg) {
+  // Server sends { type: 'classroom_update', ...payload } for full-state pushes
+  // and { type: 'classroom_update', event, payload } for targeted events
+  if (msg.type === 'pong') return;
+
+  const event   = msg.event;    // targeted event name (may be undefined)
+  const payload = msg.payload;  // event payload (may be undefined)
+
+  // Full classroom state push (from pushClassroomState)
+  if (!event && msg.tables !== undefined) {
+    state.classroomState = msg;
+    applyClassroomStateUpdate(msg);
+    return;
+  }
+
+  switch (event) {
+    case 'student_join':
+      handleStudentJoin(payload);
+      break;
+    case 'student_leave':
+      handleStudentLeave(payload);
+      break;
+    case 'chat_message':
+    case 'ai_response':
+    case 'hint_given':
+      handleChatActivity(event, payload);
+      break;
+    case 'help_request':
+      handleHelpRequest(payload);
+      break;
+    case 'help_resolved':
+      handleHelpResolved(payload);
+      break;
+    case 'follow_up':
+      handleFollowUp(payload);
+      break;
+    case 'assignment_distributed':
+      handleAssignmentDistributed(payload);
+      break;
+    case 'broadcast_all':
+    case 'broadcast_table':
+    case 'broadcast_section':
+      handleBroadcastSent(event, payload);
+      break;
+    default:
+      // Unknown event — push to activity feed and refresh dashboard
+      pushActivityItem({ icon: '⚡', label: event || 'update', detail: '' });
+  }
+}
+
+// ── Surgical update helpers ────────────────────────────────────────────────
+
+// Apply a full classroom state snapshot without re-fetching
+function applyClassroomStateUpdate(cs) {
+  if (!cs.labSession) return;
+  state.classroomState = cs;
+  state.activeLabSession = cs.labSession;
+  renderHeader(cs);
+  renderStatGrid(cs);
+  renderHelpRequests(cs.tables || []);
+  renderTableGrid(cs.tables || [], 'homeTableGrid');
+  // Update badges
+  $('badgeTables').textContent = (cs.tables || []).length;
+  $('badgeStudents').textContent = cs.studentsTotal ?? 0;
+  $('hdrOnline').textContent = `${cs.studentsOnline ?? 0} online`;
+  // If Tables panel is open, refresh its grid too
+  if ($('panel-tables').classList.contains('active')) {
+    renderAllTables(cs.tables || []);
+  }
+}
+
+function pushActivityItem({ icon, label, detail }) {
+  const feed = $('recentActivityFeed');
+  if (!feed) return;
+  // Remove empty-state placeholder if present
+  const empty = feed.querySelector('.empty-state');
+  if (empty) empty.remove();
+  const item = document.createElement('div');
+  item.className = 'activity-item';
+  item.innerHTML = `
+    <div class="activity-icon">${icon}</div>
+    <div class="activity-text"><strong>${label}</strong>${detail ? ` — ${detail}` : ''}</div>
+    <div class="activity-time">just now</div>`;
+  feed.insertBefore(item, feed.firstChild);
+  // Keep feed to 12 items
+  while (feed.children.length > 12) feed.removeChild(feed.lastChild);
+  // Update event badge
+  state.events.unshift({ type: label, payload: { message: detail }, createdAt: new Date().toISOString() });
+}
+
+function updateTableCardInGrid(tableNumber, updater) {
+  // Update in state
+  if (state.classroomState?.tables) {
+    const t = state.classroomState.tables.find(t => t.tableNumber === tableNumber);
+    if (t) updater(t);
+  }
+  // Re-render only the affected card in homeTableGrid and allTablesGrid
+  ['homeTableGrid', 'allTablesGrid'].forEach(gridId => {
+    const grid = $(gridId);
+    if (!grid) return;
+    const card = grid.querySelector(`[data-table="${tableNumber}"]`);
+    if (!card || !state.classroomState?.tables) return;
+    const t = state.classroomState.tables.find(t => t.tableNumber === tableNumber);
+    if (!t) return;
+    const newCard = document.createElement('div');
+    newCard.innerHTML = (gridId === 'homeTableGrid')
+      ? buildHomeTableCard(t)
+      : buildTableCard(t, true);
+    const replacement = newCard.firstElementChild;
+    replacement.addEventListener('click', () => openTableDetail(tableNumber));
+    card.replaceWith(replacement);
+  });
+}
+
+// Minimal home-grid card builder (mirrors renderTableGrid inline template)
+function buildHomeTableCard(t) {
+  const onlineCount = (t.students || []).filter(s => s.online).length;
+  const totalCount  = (t.students || []).length;
+  const helpClass   = t.helpRequested ? 'help-requested' : '';
+  const chips = (t.students || []).slice(0, 4).map(s =>
+    `<div class="student-chip"><span class="dot ${s.online ? 'online' : 'offline'}"></span>${s.name || s.email?.split('@')[0] || '?'}</div>`
+  ).join('');
+  const more = totalCount > 4 ? `<div class="student-chip">+${totalCount - 4} more</div>` : '';
+  return `
+    <div class="table-card ${helpClass}" data-table="${t.tableNumber}">
+      <div class="tc-title">Table ${t.tableNumber}${t.helpRequested ? '<span class="badge help" style="margin-left:6px">Help</span>' : ''}</div>
+      <div class="tc-row"><span>Students</span><strong>${onlineCount} online / ${totalCount} total</strong></div>
+      <div class="tc-row"><span>AI messages</span><strong>${t.chatMessageCount ?? 0}</strong></div>
+      <div class="tc-row"><span>Last active</span><strong>${ago(t.lastActivity)}</strong></div>
+      <div class="tc-students">${chips}${more}</div>
+    </div>`;
+}
+
+// ── Per-event handlers ─────────────────────────────────────────────────────
+
+function handleStudentJoin(payload) {
+  const { name, email, tableNumber } = payload || {};
+  pushActivityItem({ icon: '👋', label: 'Student joined', detail: name || email || '' });
+  // Update online count in header
+  if (state.classroomState) {
+    state.classroomState.studentsOnline = (state.classroomState.studentsOnline || 0) + 1;
+    state.classroomState.studentsTotal  = (state.classroomState.studentsTotal  || 0) + 1;
+    $('hdrOnline').textContent = `${state.classroomState.studentsOnline} online`;
+    $('badgeStudents').textContent = state.classroomState.studentsTotal;
+    // Add student to table in state
+    if (tableNumber && state.classroomState.tables) {
+      let t = state.classroomState.tables.find(t => t.tableNumber === tableNumber);
+      if (!t) {
+        t = { tableNumber, students: [], chatMessageCount: 0, lastActivity: new Date().toISOString() };
+        state.classroomState.tables.push(t);
+      }
+      if (!t.students.find(s => s.email === email)) {
+        t.students.push({ name, email, online: true });
+      } else {
+        const s = t.students.find(s => s.email === email);
+        if (s) s.online = true;
+      }
+      updateTableCardInGrid(tableNumber, () => {});
+      renderStatGrid(state.classroomState);
+    }
+  }
+}
+
+function handleStudentLeave(payload) {
+  const { name, email, tableNumber } = payload || {};
+  pushActivityItem({ icon: '🚪', label: 'Student left', detail: name || email || '' });
+  if (state.classroomState) {
+    state.classroomState.studentsOnline = Math.max(0, (state.classroomState.studentsOnline || 1) - 1);
+    $('hdrOnline').textContent = `${state.classroomState.studentsOnline} online`;
+    if (tableNumber && state.classroomState.tables) {
+      const t = state.classroomState.tables.find(t => t.tableNumber === tableNumber);
+      if (t) {
+        const s = t.students.find(s => s.email === email);
+        if (s) s.online = false;
+        updateTableCardInGrid(tableNumber, () => {});
+      }
+    }
+    renderStatGrid(state.classroomState);
+  }
+}
+
+function handleChatActivity(eventType, payload) {
+  const { tableNumber, messageCount, preview } = payload || {};
+  const icons = { chat_message: '💬', ai_response: '🤖', hint_given: '💡' };
+  const labels = { chat_message: 'Chat message', ai_response: 'AI response', hint_given: 'Hint given' };
+  pushActivityItem({ icon: icons[eventType], label: labels[eventType], detail: preview || '' });
+  if (tableNumber && state.classroomState?.tables) {
+    updateTableCardInGrid(tableNumber, t => {
+      t.chatMessageCount = messageCount ?? (t.chatMessageCount || 0) + 1;
+      t.lastActivity = new Date().toISOString();
+    });
+  }
+  // If table detail is open for this table, refresh it
+  if (tableNumber && tableState.selectedTable === tableNumber) {
+    openTableDetail(tableNumber);
+  }
+}
+
+function handleHelpRequest(payload) {
+  const { tableNumber, name } = payload || {};
+  pushActivityItem({ icon: '🆘', label: 'Help requested', detail: `Table ${tableNumber}` });
+  const badge = $('badgeHelp');
+  if (state.classroomState?.tables && tableNumber) {
+    updateTableCardInGrid(tableNumber, t => { t.helpRequested = true; });
+    const helpCount = state.classroomState.tables.filter(t => t.helpRequested).length;
+    $('helpCount').textContent = helpCount;
+    badge.textContent = helpCount;
+    badge.style.display = '';
+    renderHelpRequests(state.classroomState.tables);
+  }
+  // Toast alert
+  toast(`🆘 Table ${tableNumber} is requesting help!`, 'error');
+}
+
+function handleHelpResolved(payload) {
+  const { tableNumber } = payload || {};
+  pushActivityItem({ icon: '✅', label: 'Help resolved', detail: `Table ${tableNumber}` });
+  if (state.classroomState?.tables && tableNumber) {
+    updateTableCardInGrid(tableNumber, t => { t.helpRequested = false; });
+    const helpCount = state.classroomState.tables.filter(t => t.helpRequested).length;
+    $('helpCount').textContent = helpCount;
+    const badge = $('badgeHelp');
+    badge.textContent = helpCount;
+    if (helpCount === 0) badge.style.display = 'none';
+    renderHelpRequests(state.classroomState.tables);
+  }
+}
+
+function handleFollowUp(payload) {
+  const { tableNumber } = payload || {};
+  pushActivityItem({ icon: '🔖', label: 'Follow-up marked', detail: `Table ${tableNumber}` });
+  if (state.classroomState?.tables && tableNumber) {
+    updateTableCardInGrid(tableNumber, t => { t.followUp = true; });
+  }
+}
+
+function handleAssignmentDistributed(payload) {
+  const { fileCount } = payload || {};
+  pushActivityItem({ icon: '📄', label: 'Assignment distributed', detail: `${fileCount} file(s)` });
+  $('badgeAssignment').textContent = '✓';
+  $('badgeAssignment').style.display = '';
+  toast('Assignment distributed to all tables ✓', 'success');
+  // Refresh assignment card if panel is open
+  if ($('panel-assignments').classList.contains('active')) loadAssignmentsPanel();
+}
+
+function handleBroadcastSent(eventType, payload) {
+  const labels = { broadcast_all: 'Broadcast sent', broadcast_table: 'Table message', broadcast_section: 'Section message' };
+  pushActivityItem({ icon: '📢', label: labels[eventType] || 'Broadcast', detail: payload?.message || '' });
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 function $(id) { return document.getElementById(id); }
 
@@ -283,13 +582,17 @@ async function refreshDashboard() {
     if (!active) {
       state.activeLabSession = null;
       state.classroomState   = null;
+      ws.disconnect();
       renderNoSession();
       return;
     }
 
     state.activeLabSession = active;
 
-    // 2. Fetch classroom state + events in parallel
+    // 2. Connect WS for realtime updates (no-op if already connected to same session)
+    ws.connect(active._id);
+
+    // 3. Fetch classroom state + events in parallel
     const [cs, events] = await Promise.all([
       fetchClassroomState(active._id),
       fetchEvents(active._id),
@@ -298,7 +601,7 @@ async function refreshDashboard() {
     state.classroomState = cs;
     state.events = events;
 
-    // 3. Render everything
+    // 4. Render everything
     renderHeader(cs);
     renderStatGrid(cs);
     renderHelpRequests(cs.tables || []);

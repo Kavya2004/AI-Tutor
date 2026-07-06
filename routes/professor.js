@@ -126,12 +126,16 @@ router.post('/lab-sessions/:id/assignment', async (req, res) => {
     labSession.assignment = assignment._id;
     await labSession.save();
 
-    // Emit a professor event so the WS layer can push it to all tables
     const ProfessorEvent = getProfessorEventModel();
     await ProfessorEvent.create({
       labSessionId: labSession._id,
       type: 'assignment_distributed',
       payload: { assignmentId: assignment._id.toString(), fileCount: files.length, extractedText },
+    });
+
+    broadcastToProfessors(labSession._id.toString(), {
+      event: 'assignment_distributed',
+      payload: { assignmentId: assignment._id.toString(), fileCount: files.length },
     });
 
     res.json({ assignmentId: assignment._id.toString(), fileCount: files.length });
@@ -288,10 +292,13 @@ router.post('/broadcast', async (req, res) => {
       payload: { target, message, sentAt: new Date().toISOString() },
     });
 
-    // The WS layer in server.js picks this up and pushes to relevant clients
-    res.json({ ok: true, eventId: event._id.toString() });
     // Push updated state to any connected professor dashboards
     if (labSessionId) setImmediate(() => pushClassroomState(labSessionId));
+    broadcastToProfessors(labSessionId, {
+      event: `broadcast_${type || 'all'}`,
+      payload: { target, message, sentAt: new Date().toISOString() },
+    });
+    res.json({ ok: true, eventId: event._id.toString() });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -590,6 +597,10 @@ router.post('/classroom/:labSessionId/table/:tableNumber/resolve-help', async (r
       type: 'help_resolved',
       payload: { tableNumber: parseInt(req.params.tableNumber) },
     });
+    broadcastToProfessors(req.params.labSessionId, {
+      event: 'help_resolved',
+      payload: { tableNumber: parseInt(req.params.tableNumber) },
+    });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -605,6 +616,10 @@ router.post('/classroom/:labSessionId/table/:tableNumber/follow-up', async (req,
       labSessionId: req.params.labSessionId,
       type: 'follow_up',
       payload: { tableNumber: parseInt(req.params.tableNumber), note: req.body.note || '' },
+    });
+    broadcastToProfessors(req.params.labSessionId, {
+      event: 'follow_up',
+      payload: { tableNumber: parseInt(req.params.tableNumber) },
     });
     res.json({ ok: true });
   } catch (err) {
