@@ -289,9 +289,17 @@
     if (_messageQueue.length > 0) flushQueue();
   }
 
+
   // ─── In-Class mode ────────────────────────────────────────────────────────
+  // When a student is in-class, all chat history is stored in the separate
+  // in-class DB under /api/in-class/chat. We switch the endpoints here.
+
   let _inClassMode = false;
   let _inClassConvoId = null;
+  let _inClassSessionId = null;
+  let _inClassSessionTitle = null;
+  let _inClassTableNumber = null;
+  let _inClassSessionNumber = null;
   let _inClassWriting = false;
   let _inClassQueue = [];
   let _inClassReady = false;
@@ -331,7 +339,7 @@
     if (_inClassQueue.length > 0) flushInClassQueue();
   }
 
-async function initInClass(email) {
+  async function initInClass(email) {
     _inClassMode = true;
     _email = email;
     _inClassSessionId     = window._inClassSessionId     || '';
@@ -391,9 +399,9 @@ async function initInClass(email) {
       await inClassApiPatch(`/api/in-class/chat/${_inClassConvoId}/title`, { title });
     } catch (e) {
       console.warn('[in-class chat] autoTitle failed:', e.message);
-      _inClassTitleSet = false;
     }
   }
+
 
   // ─── Public API ───────────────────────────────────────────────────────────
   window.chatHistoryManager = {
@@ -401,15 +409,10 @@ async function initInClass(email) {
     initInClass,
     getCurrentConvoId: () => _inClassMode ? _inClassConvoId : _currentId,
     isInClassMode: () => _inClassMode,
-
-    /**
-     * appendMessage(role, content, userName?)
-     * role: 'user' | 'bot'
-     * content: message text
-     * userName: optional sender name (used in in-class shared transcript)
-     */
     appendMessage(role, content, userName) {
       if (_inClassMode) {
+        // For in-class, every message goes into the shared session record.
+        // userName identifies who said it in the shared transcript.
         _inClassQueue.push({ role, content, userName: userName || _email || '', timestamp: new Date() });
         setTimeout(flushInClassQueue, 800);
       } else {
@@ -417,12 +420,13 @@ async function initInClass(email) {
         setTimeout(flushQueue, 800);
       }
     },
-
     autoTitle(userMsg, botMsg) {
-      if (_inClassMode) { autoTitleInClass(userMsg, botMsg); }
-      else              { autoTitle(userMsg, botMsg); }
+      if (_inClassMode) {
+        autoTitleInClass(userMsg, botMsg);
+      } else {
+        autoTitle(userMsg, botMsg);
+      }
     },
-
     loadConversation,
     startNewConversation,
     refreshList: loadConvoList,

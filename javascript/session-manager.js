@@ -2018,23 +2018,36 @@ class SessionManager {
    * Update the live participant count in the in-class banner.
    */
   updateParticipants(participants) {
+    // Update participant map
     this.participants.clear();
-    participants.forEach((p) => this.participants.set(p.userName, p));
+
+    participants.forEach((p) => {
+        this.participants.set(p.userName, p);
+    });
+
+    // Refresh participant list
     this.renderParticipants();
 
-    if (window._inClassMode) {
-      const countEl = document.getElementById('inClassParticipantCount');
-      if (countEl) {
+    // Update banner only if we're in an in-class session
+    if (!window._inClassMode) return;
+
+    const countEl = document.getElementById("inClassParticipantCount");
+
+    if (countEl) {
         const n = this.participants.size;
-        countEl.textContent = String(n);
-        const banner = document.getElementById('inClassBanner');
-        if (banner) {
-          const table   = window._inClassTableNumber  || '?';
-          const session = window._inClassSessionNumber || '?';
-          banner.innerHTML = `🏫 In-Class Mode &nbsp;|&nbsp; Table ${table} Session ${session} &nbsp;|&nbsp; <span id="inClassParticipantCount">${n}</span> student${n !== 1 ? 's' : ''}`;
-        }
-      }
+        countEl.textContent = `${n} student${n !== 1 ? "s" : ""}`;
     }
-  }
+
+    // Optional: keep these synced if they can change
+    const tableEl = document.getElementById("tableNumber");
+    if (tableEl) {
+        tableEl.textContent = window._inClassTableNumber ?? "?";
+    }
+
+    const sessionEl = document.getElementById("sessionNumber");
+    if (sessionEl) {
+        sessionEl.textContent = window._inClassSessionNumber ?? "?";
+    }
+}
 }
 window.sessionManager = new SessionManager();
