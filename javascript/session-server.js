@@ -50,6 +50,8 @@ app.post('/api/pinecone', (req, res) => pineconeHandler(req, res));
 app.post('/api/pdf-content', (req, res) => pdfContentHandler(req, res));
 app.post('/api/pdf-page', (req, res) => pdfPageHandler(req, res));
 app.post('/api/image-gen', (req, res) => imageGenHandler(req, res));
+// Handle OPTIONS preflight for all /api routes
+app.options('/api/:path', cors());
 
 const sessions = new Map();
 const sessionConnections = new Map(); 
@@ -328,6 +330,18 @@ app.get("/api/sessions/by-table/:tableNumber", (req, res) => {
   }
 
   res.json({ sessionId: match.sessionId, sessionTitle: match.sessionTitle });
+});
+
+// Lookup by table number + session number (in-class mode)
+app.get("/api/sessions/by-table-session/:tableNumber/:sessionNumber", (req, res) => {
+  const tableNumber = Number(req.params.tableNumber);
+  const sessionNumber = Number(req.params.sessionNumber);
+  const sessionTitle = `Table ${tableNumber} Session ${sessionNumber}`;
+  const session = Array.from(sessions.values()).find(
+    s => s.sessionTitle === sessionTitle
+  );
+  if (!session) return res.status(404).json({ error: `No active session found for ${sessionTitle}` });
+  res.json({ sessionId: session.sessionId, sessionTitle: session.sessionTitle });
 });
 
 app.get("/api/sessions/public", (req, res) => {

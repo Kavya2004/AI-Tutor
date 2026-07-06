@@ -334,22 +334,35 @@ function viewFile(fileName) {
 }
 
 async function processFilesForTutor(files) {
-  const processedFiles = [];
+	const processedFiles = [];
 
-  for (const file of files) {
-    if (file.size > 10 * 1024 * 1024) {
-      throw new Error("File too large (max 10MB)");
-    }
+	for (const file of files) {
+		if (file.size > 10 * 1024 * 1024) {
+			throw new Error('File too large (max 10MB)');
+		}
 
-    const base64 = await fileToBase64(file);
-    processedFiles.push({
-      name: file.name,
-      type: file.type,
-      data: base64,
-    });
-  }
+		const base64 = await fileToBase64(file);
+		const fileEntry = {
+			name: file.name,
+			type: file.type,
+			data: base64
+		};
 
-  return processedFiles;
+		if (file.type.startsWith('image/')) {
+			try {
+				const ocrText = await getOcrFromImage(base64);
+				if (ocrText && ocrText.trim() && ocrText.trim().toLowerCase() !== 'error reading image text.') {
+					fileEntry.ocrText = ocrText.trim();
+				}
+			} catch (ocrError) {
+				fileEntry.ocrText = null;
+			}
+		}
+
+		processedFiles.push(fileEntry);
+	}
+
+	return processedFiles;
 }
 
 function fileToBase64(file) {
@@ -385,32 +398,35 @@ function fileToBase64(file) {
 }
 
 async function getOcrFromImage(base64Image) {
-  try {
-    const response = await fetch(
-      "https://tutor.probabilitycourse.com/api/ocr",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ image: base64Image }),
+  const endpoints = ['/api/ocr', 'https://tutor.probabilitycourse.com/api/ocr'];
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ image: base64Image }),
+    });
+      if (!response.ok) {
+          continue;
+        }
+
+      const data = await response.json();
+
+      if (data.text && data.text.trim()) {
+        return data.text;
+      } else if (Array.isArray(data.data) && data.data.length > 0) {
+        return data.data.map((entry) => entry.value || '').join(' ');
+      } else {
+        return "No recognizable text found in image.";
       }
-    );
+    } catch (error) {
+      continue;
+		}
+	}
 
-    if (!response.ok) throw new Error("OCR request failed");
-
-    const data = await response.json();
-
-    if (data.text && data.text.trim()) {
-      return data.text;
-    } else if (data.data?.value?.length > 0) {
-      return data.data.value.map((entry) => entry.value).join(" ");
-    } else {
-      return "No recognizable text found in image.";
-    }
-  } catch (error) {
-    return "Error reading image text.";
-  }
+	return 'Error reading image text.';
 }
 
 function createChatControls() {
@@ -625,8 +641,20 @@ function _addMessageInternal(text, sender, files = [], citation = null, shouldBr
   avatar.className = "message-avatar";
   avatar.innerHTML = sender === "bot" ? "🤖" : "👤";
 
-  const displayText = text;
-
+  // Convert LaTeX to Unicode for bot messages
+  // Protect $...$ and $$...$$ blocks from unicode conversion so KaTeX can render them
+  let displayText = text;
+  if (sender === 'bot' && window.convertLatexToUnicode) {
+    // Temporarily pull out math blocks before unicode conversion
+    const mathBlocks = [];
+    let protected_text = displayText
+      .replace(/\$\$[\s\S]+?\$\$/g, (m) => { mathBlocks.push(m); return `\x00MATH${mathBlocks.length - 1}\x00`; })
+      .replace(/\$[^$\n]+?\$/g,      (m) => { mathBlocks.push(m); return `\x00MATH${mathBlocks.length - 1}\x00`; });
+    protected_text = window.convertLatexToUnicode(protected_text);
+    // Restore math blocks
+    displayText = protected_text.replace(/\x00MATH(\d+)\x00/g, (_, i) => mathBlocks[i]);
+  }
+  
   const content = document.createElement("div");
   content.className = "message-content";
 
@@ -714,8 +742,32 @@ function _addMessageInternal(text, sender, files = [], citation = null, shouldBr
   messageDiv.appendChild(avatar);
   messageDiv.appendChild(content);
   chatMessages.appendChild(messageDiv);
-  renderMathInElement(content);
   chatMessages.scrollTop = chatMessages.scrollHeight;
+
+	// Render LaTeX math in this message using KaTeX
+	if (sender === 'bot') {
+		const renderKatex = () => {
+			if (window.renderMathInElement) {
+				renderMathInElement(content, {
+					delimiters: [
+						{ left: '$$', right: '$$', display: true },
+						{ left: '$',  right: '$',  display: false },
+						{ left: '\\(', right: '\\)', display: false },
+						{ left: '\\[', right: '\\]', display: true }
+					],
+					throwOnError: false,
+					output: 'html'
+				});
+				chatMessages.scrollTop = chatMessages.scrollHeight;
+			}
+		};
+		// KaTeX scripts are deferred — wait for them if not yet ready
+		if (window.renderMathInElement) {
+			renderKatex();
+		} else {
+			window.addEventListener('load', renderKatex, { once: true });
+		}
+	}
 
   if (shouldBroadcast && window.sessionManager && window.sessionManager.sessionId) {
     window.sessionManager.broadcastMessage(text, sender, files);
@@ -1150,20 +1202,23 @@ async function processUserMessage(message) {
     filePreview.style.display = "none";
   }
 
-  // Prepare user message (include file info if files were uploaded)
-  let userMessage = message.trim();
-  if (processedFiles.length > 0) {
-    const hasImages = processedFiles.some((f) => f.type.startsWith("image/"));
-    if (!userMessage) {
-      if (hasImages) {
-        userMessage = "I uploaded an image. Please look at it carefully and engage with it as my physics tutor.";
-      } else {
-        const fileNames = processedFiles.map((f) => f.name).join(", ");
-        userMessage = `I've uploaded these files: ${fileNames}`;
-      }
-    }
-    // Files will be sent directly to Gemini API
-  }
+  // Detect if any of the uploaded files are images
+	const hasImages = processedFiles.some(f => f.type && f.type.startsWith('image/'));
+
+
+
+	// Prepare user message (include file info if files were uploaded)
+	let userMessage = message.trim();
+	if (processedFiles.length > 0) {
+		if (hasImages && !userMessage) {
+			// No text provided — give Gemini something to work with in socratic mode
+			userMessage = 'I uploaded an image. Please look at it carefully and engage with it as my physics tutor.';
+		} else if (!userMessage) {
+			const fileNames = processedFiles.map((f) => f.name).join(', ');
+			userMessage = `I've uploaded these files: ${fileNames}`;
+		}
+		// Files (with base64 data) are sent directly to Gemini API
+	}
 
   // Handle message display/broadcasting (only once!)
   if (window.sessionManager && window.sessionManager.sessionId) {
@@ -1252,12 +1307,14 @@ async function processUserMessage(message) {
           content: `${window.sessionManager.userName}: ${userMessage}`,
         });
       }
+      context.push({ role: 'user', content: `${window.sessionManager.userName}: ${userMessage}` });
     } else {
       // Not in session, just add current message
-      context.push({ role: "user", content: userMessage });
+      // Use userMessage (which includes fallback text for image-only uploads)
+			context.push({ role: 'user', content: userMessage });
     }
     // Search for matching physics textbook sections
-    const searchResults = await searchPhysicsTextbook(userMessage);
+		const searchResults = await searchPhysicsTextbook(userMessage || message);
 
     // Build a url lookup map: source name -> url (for YouTube links)
     const sourceUrlMap = {};

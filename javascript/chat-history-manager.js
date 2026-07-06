@@ -289,9 +289,17 @@
     if (_messageQueue.length > 0) flushQueue();
   }
 
+
   // ─── In-Class mode ────────────────────────────────────────────────────────
+  // When a student is in-class, all chat history is stored in the separate
+  // in-class DB under /api/in-class/chat. We switch the endpoints here.
+
   let _inClassMode = false;
   let _inClassConvoId = null;
+  let _inClassSessionId = null;
+  let _inClassSessionTitle = null;
+  let _inClassTableNumber = null;
+  let _inClassSessionNumber = null;
   let _inClassWriting = false;
   let _inClassQueue = [];
   let _inClassReady = false;
@@ -334,38 +342,40 @@
   async function initInClass(email) {
     _inClassMode = true;
     _email = email;
-    const sessionId     = window._inClassSessionId     || '';
-    const sessionTitle  = window._inClassSessionTitle  || '';
-    const tableNumber   = Number(window._inClassTableNumber   || 0);
-    const sessionNumber = Number(window._inClassSessionNumber || 0);
+    _inClassSessionId     = window._inClassSessionId     || '';
+    _inClassSessionTitle  = window._inClassSessionTitle  || '';
+    _inClassTableNumber   = Number(window._inClassTableNumber  || 0);
+    _inClassSessionNumber = Number(window._inClassSessionNumber || 0);
 
-    // Show the topbar
-    const bar = document.getElementById('signOutBar');
-    if (bar) bar.classList.add('visible');
-    const emailEl = document.getElementById('sobEmail');
-    if (emailEl) emailEl.textContent = email;
-
-    buildSidebar();
+    console.log('[in-class chat] init for', email, _inClassSessionTitle);
 
     try {
-      const findRes = await fetch(`${BACKEND}/api/in-class/chat/by-session/${encodeURIComponent(sessionId)}`);
+      // First try to find the existing shared record for this session
+      const findRes = await fetch(`${BACKEND}/api/in-class/chat/by-session/${encodeURIComponent(_inClassSessionId)}`);
+
       if (findRes.ok) {
+        // Shared record already exists — reuse it
         const existing = await findRes.json();
         _inClassConvoId = existing._id;
         console.log('[in-class chat] joined existing shared record:', _inClassConvoId);
       } else {
+        // First student — create the shared record
         const doc = await inClassApiPost('/api/in-class/chat', {
-          sessionId, sessionTitle, tableNumber, sessionNumber,
-          email: email.trim().toLowerCase(),
-          title: sessionTitle,
+          sessionId:     _inClassSessionId,
+          sessionTitle:  _inClassSessionTitle,
+          tableNumber:   _inClassTableNumber,
+          sessionNumber: _inClassSessionNumber,
+          email:         email.trim().toLowerCase(),
+          title:         _inClassSessionTitle,
         });
         _inClassConvoId = doc._id;
         console.log('[in-class chat] created shared session record:', _inClassConvoId);
       }
+
       _inClassReady = true;
       if (_inClassQueue.length > 0) flushInClassQueue();
     } catch (e) {
-      console.warn('[in-class chat] initInClass failed:', e.message);
+      console.warn('[in-class chat] init failed:', e.message);
     }
   }
 
@@ -389,9 +399,9 @@
       await inClassApiPatch(`/api/in-class/chat/${_inClassConvoId}/title`, { title });
     } catch (e) {
       console.warn('[in-class chat] autoTitle failed:', e.message);
-      _inClassTitleSet = false;
     }
   }
+
 
   // ─── Public API ───────────────────────────────────────────────────────────
   window.chatHistoryManager = {
@@ -399,15 +409,10 @@
     initInClass,
     getCurrentConvoId: () => _inClassMode ? _inClassConvoId : _currentId,
     isInClassMode: () => _inClassMode,
-
-    /**
-     * appendMessage(role, content, userName?)
-     * role: 'user' | 'bot'
-     * content: message text
-     * userName: optional sender name (used in in-class shared transcript)
-     */
     appendMessage(role, content, userName) {
       if (_inClassMode) {
+        // For in-class, every message goes into the shared session record.
+        // userName identifies who said it in the shared transcript.
         _inClassQueue.push({ role, content, userName: userName || _email || '', timestamp: new Date() });
         setTimeout(flushInClassQueue, 800);
       } else {
@@ -415,12 +420,13 @@
         setTimeout(flushQueue, 800);
       }
     },
-
     autoTitle(userMsg, botMsg) {
-      if (_inClassMode) { autoTitleInClass(userMsg, botMsg); }
-      else              { autoTitle(userMsg, botMsg); }
+      if (_inClassMode) {
+        autoTitleInClass(userMsg, botMsg);
+      } else {
+        autoTitle(userMsg, botMsg);
+      }
     },
-
     loadConversation,
     startNewConversation,
     refreshList: loadConvoList,
