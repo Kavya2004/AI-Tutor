@@ -437,6 +437,8 @@ wss.on("connection", (ws, req) => {
           }
           sessionConnections.get(sessionId).push({ ws, userName });
 
+          // Send session info only to the new joiner
+
           if (message.userEmail && message.tableNumber) {
             addStudentToSession({
               sessionId,
@@ -445,17 +447,6 @@ wss.on("connection", (ws, req) => {
               tableNumber: parseInt(message.tableNumber, 10),
             }).catch((err) => console.error("[MongoDB] addStudent error:", err));
           }
-
-          broadcastToSession(
-            sessionId,
-            {
-              type: "participant_joined",
-              userName: userName,
-              timestamp: new Date().toISOString(),
-            },
-            ws,
-          );
-
           ws.send(
             JSON.stringify({
               type: "session_info",
@@ -465,11 +456,26 @@ wss.on("connection", (ws, req) => {
             }),
           );
 
-          ws.send(
-            JSON.stringify({
+          // Notify existing participants that someone joined (for the system chat message)
+          broadcastToSession(
+            sessionId,
+            {
+              type: "participant_joined",
+              userName: userName,
+              timestamp: new Date().toISOString(),
+            },
+            ws, // exclude the new joiner themselves
+          );
+        
+          // Broadcast full participants list to ALL clients (including existing ones)
+          // so their participant count updates immediately
+          broadcastToSession(
+            sessionId,
+            {
               type: "participants_update",
               participants: session.getParticipantsList(),
-            }),
+            },
+            ws, // new joiner already got the list via session_info above
           );
 
           console.log(`${userName} connected to session ${sessionId}`);

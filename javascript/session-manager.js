@@ -125,6 +125,18 @@ class SessionManager {
           </div>
         </div>
       </div>
+      <span style="opacity:0.7;">|</span>
+      <button id="inClassSignOutBtn" style="
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+      ">Sign Out</button>
     `;
 
     // Toggle dropdown on button click
@@ -143,6 +155,11 @@ class SessionManager {
           list.style.display = 'none';
           if (arrow) arrow.textContent = '▼';
         });
+      }
+
+      const signOutBtn = document.getElementById('inClassSignOutBtn');
+      if (signOutBtn) {
+        signOutBtn.addEventListener('click', () => this.signOutInClass());
       }
     }, 0);
 
@@ -1092,12 +1109,33 @@ class SessionManager {
         }
         break;
       case "participant_joined":
-        this.addParticipant(data.userName, data.participant || {
-          userName:  data.userName,
-          avatar:    data.avatar    || '👤',
-          color:     data.color     || '#6c757d',
-          joinedAt:  data.timestamp || new Date().toISOString(),
-        });
+        // Fetch the authoritative participant list from the server so the
+        // count is always correct for existing clients, regardless of server version.
+        if (this.sessionId) {
+          fetch(`${BACKEND_URL}/api/sessions/${this.sessionId}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(session => {
+              if (session && session.participants) {
+                this.updateParticipants(session.participants);
+              } else {
+                // Fallback: just add the participant locally
+                this.addParticipant(data.userName, {
+                  userName:  data.userName,
+                  avatar:    data.avatar    || '👤',
+                  color:     data.color     || '#6c757d',
+                  joinedAt:  data.timestamp || new Date().toISOString(),
+                });
+              }
+            })
+            .catch(() => {
+              this.addParticipant(data.userName, {
+                userName: data.userName,
+                avatar: data.avatar || "👤",
+                color: data.color || "#6c757d",
+                joinedAt: data.timestamp || new Date().toISOString(),
+              });
+            });
+        }
         this.addSystemMessage(`${data.userName} joined the session`);
         break;
       case "participant_left":
@@ -2101,6 +2139,8 @@ class SessionManager {
           </div>
         </div>
       </div>
+      <span style="opacity:0.7;">|</span>
+      <button id="inClassSignOutBtn" style="background: rgba(255,255,255,0.15);border: 1px solid rgba(255,255,255,0.3);color: white; padding: 3px 10px; border-radius: 12px;font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap;">Sign Out</button>
     `;
 
     const chatContainer = document.querySelector('.chat-container');
@@ -2125,10 +2165,45 @@ class SessionManager {
           if (arrow) arrow.textContent = '▼';
         });
       }
+
+      const signOutBtn = document.getElementById('inClassSignOutBtn');
+      if (signOutBtn) {
+        signOutBtn.addEventListener('click', () => this.signOutInClass());
+      }
     }, 0);
 
     // Populate immediately in case participants are already known
     this.updateInClassBanner();
+  }
+
+  async signOutInClass() {
+    // 1. Record logout in the in-class activity DB
+    if (window._inClassActivityId) {
+      try {
+        await fetch(`${BACKEND_URL}/api/in-class/activity/logout`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ activityId: window._inClassActivityId }),
+        });
+      } catch (_) {}
+    }
+
+    // 2. Leave the WebSocket table session cleanly
+    this.leaveSession();
+
+    // 3. Clear all in-class session state
+    window._inClassMode = false;
+    window._inClassSessionId = null;
+    window._inClassSessionTitle = null;
+    window._inClassTableNumber = null;
+    window._inClassSessionNumber = null;
+    window._inClassStudentName = null;
+    window._inClassActivityId = null;
+    window._inClassHistoryLoaded = false;
+    window.studentEmail = null;
+
+    // 4. Reload to return to the login/landing screen
+    window.location.reload();
   }
 
   updateParticipants(participants) {

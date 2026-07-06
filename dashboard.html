@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Professor Dashboard</title>
+  <link rel="icon" type="image/png" href="images/dice.png" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <style>
+    @keyframes pulse {
+      from { opacity: 1; }
+      to   { opacity: 0.4; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Top Header ─────────────────────────────────────────────────────── -->
+  <header class="dash-header">
+    <div class="logo">🎓 ClassRoom <span>Professor Dashboard</span></div>
+    <div class="spacer"></div>
+    <div class="hdr-pill" id="hdrCourse">No session</div>
+    <div class="hdr-pill" id="hdrSessionStatus">—</div>
+    <div class="hdr-pill" id="hdrOnline">0 online</div>
+  </header>
+
+  <!-- ── Body ───────────────────────────────────────────────────────────── -->
+  <div class="dash-body">
+
+    <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+    <nav class="dash-sidebar" id="sidebar">
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Overview</div>
+        <div class="nav-item active" data-panel="dashboard">
+          <span class="nav-icon">🏠</span> Dashboard
+          <span class="nav-badge green" id="badgeHelp" style="display:none">0</span>
+        </div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Session</div>
+        <div class="nav-item" data-panel="lab-sessions">
+          <span class="nav-icon">🧪</span> Lab Sessions
+        </div>
+        <div class="nav-item" data-panel="assignments">
+          <span class="nav-icon">📄</span> Assignments
+          <span class="nav-badge" id="badgeAssignment" style="display:none">!</span>
+        </div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Classroom</div>
+        <div class="nav-item" data-panel="sections">
+          <span class="nav-icon">🗂️</span> Sections
+        </div>
+        <div class="nav-item" data-panel="tables">
+          <span class="nav-icon">🪑</span> Tables
+          <span class="nav-badge yellow" id="badgeTables">0</span>
+        </div>
+        <div class="nav-item" data-panel="students">
+          <span class="nav-icon">👥</span> Students
+          <span class="nav-badge" id="badgeStudents">0</span>
+        </div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Insights</div>
+        <div class="nav-item" data-panel="analytics">
+          <span class="nav-icon">📊</span> Analytics
+        </div>
+      </div>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Config</div>
+        <div class="nav-item" data-panel="settings">
+          <span class="nav-icon">⚙️</span> Settings
+        </div>
+      </div>
+
+    </nav>
+
+    <!-- ── Main ─────────────────────────────────────────────────────────── -->
+    <main class="dash-main" id="dashMain">
+
+      <!-- ── Panel: Dashboard Home ───────────────────────────────────────── -->
+      <section class="panel active" id="panel-dashboard">
+
+        <div class="stat-grid" id="homeStatGrid">
+          <!-- populated by JS -->
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+          <div class="card">
+            <div class="card-header">
+              <span>🆘</span>
+              <h3>Tables Requesting Help</h3>
+              <span class="nav-badge" id="helpCount">0</span>
+            </div>
+            <div class="card-body" id="helpRequestList">
+              <!-- populated by JS -->
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span>⚡</span>
+              <h3>Recent Activity</h3>
+            </div>
+            <div class="card-body">
+              <div class="activity-feed" id="recentActivityFeed">
+                <!-- populated by JS -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>🪑</span>
+            <h3>Live Table Overview</h3>
+            <div class="spacer"></div>
+            <button class="btn btn-secondary btn-sm" id="refreshOverviewBtn">↻ Refresh</button>
+          </div>
+          <div class="card-body">
+            <div class="table-grid" id="homeTableGrid">
+              <!-- populated by JS -->
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ── Panel: Lab Sessions ─────────────────────────────────────────── -->
+      <section class="panel" id="panel-lab-sessions">
+
+        <div class="card">
+          <div class="card-header">
+            <span>➕</span>
+            <h3>Create Lab Session</h3>
+          </div>
+          <div class="card-body">
+            <div class="session-creator" id="sessionCreatorForm">
+              <div class="form-group">
+                <label for="inputCourse">Course</label>
+                <input id="inputCourse" class="form-control" placeholder="e.g. CS250" />
+              </div>
+              <div class="arrow">→</div>
+              <div class="form-group">
+                <label for="inputLabNumber">Lab</label>
+                <input id="inputLabNumber" class="form-control" placeholder="e.g. Lab 3" />
+              </div>
+              <div class="arrow">→</div>
+              <div class="form-group">
+                <label for="inputSections">Sections (comma-separated)</label>
+                <input id="inputSections" class="form-control" placeholder="e.g. A, B, C" />
+              </div>
+              <div class="arrow">→</div>
+              <div class="form-group">
+                <label for="inputTables">Tables per section</label>
+                <input id="inputTables" class="form-control" type="number" min="1" max="30" placeholder="e.g. 6" />
+              </div>
+              <button class="btn btn-primary" id="createSessionBtn">Start Session</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>🧪</span>
+            <h3>Active Session</h3>
+          </div>
+          <div class="card-body" id="activeSessionCard">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>🕓</span>
+            <h3>Previous Sessions</h3>
+          </div>
+          <div class="card-body">
+            <div id="previousSessionsList">
+              <!-- populated by JS -->
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ── Panel: Assignments ──────────────────────────────────────────── -->
+      <section class="panel" id="panel-assignments">
+
+        <div class="card">
+          <div class="card-header">
+            <span>📤</span>
+            <h3>Upload Assignment</h3>
+          </div>
+          <div class="card-body">
+            <div class="upload-zone" id="uploadZone">
+              <div class="uz-icon">📎</div>
+              <div class="uz-title">Drop files here or click to browse</div>
+              <div class="uz-sub">PDF, images, Markdown, plain text — multiple files supported</div>
+              <input type="file" id="assignmentFileInput" multiple
+                accept=".pdf,.png,.jpg,.jpeg,.webp,.md,.txt,.text"
+                style="display:none" />
+            </div>
+            <div class="file-list" id="uploadFileList">
+              <!-- populated by JS -->
+            </div>
+            <div class="btn-row" style="margin-top:14px">
+              <button class="btn btn-primary" id="uploadAssignmentBtn" disabled>
+                📤 Upload &amp; Distribute
+              </button>
+              <span id="uploadStatus" style="font-size:13px; color:var(--gray-500)"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>📋</span>
+            <h3>Current Assignment</h3>
+          </div>
+          <div class="card-body" id="currentAssignmentCard">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ── Panel: Sections ────────────────────────────────────────────── -->
+      <section class="panel" id="panel-sections">
+
+        <div class="card">
+          <div class="card-header">
+            <span>🗂️</span>
+            <h3>Section Management</h3>
+            <div class="spacer"></div>
+            <button class="btn btn-secondary btn-sm" id="refreshSectionsBtn">↻ Refresh</button>
+          </div>
+          <div class="card-body" id="sectionsContainer">
+            <!-- section blocks injected by JS:
+                 <div class="section-block">
+                   <div class="section-title">Section A</div>
+                   <div class="table-grid"> ... table cards ... </div>
+                 </div>
+            -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ── Panel: Tables ──────────────────────────────────────────────── -->
+      <section class="panel" id="panel-tables">
+
+        <div class="card">
+          <div class="card-header">
+            <span>🪑</span>
+            <h3>All Tables</h3>
+            <div class="spacer"></div>
+            <button class="btn btn-primary btn-sm" id="newTableBtn">+ New Table</button>
+            <button class="btn btn-secondary btn-sm" id="refreshTablesBtn">↻ Refresh</button>
+          </div>
+          <div class="card-body">
+            <div class="table-grid" id="allTablesGrid">
+              <!-- populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Table detail — shown when a table card is clicked -->
+        <div class="card" id="tableDetailCard" style="display:none">
+          <div class="card-header">
+            <span>🔍</span>
+            <h3 id="tableDetailTitle">Table —</h3>
+            <div class="spacer"></div>
+            <button class="btn btn-secondary btn-sm" id="tableDetailCloseBtn">✕ Close</button>
+          </div>
+          <div class="card-body">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px">
+              <div>
+                <div class="card-header" style="padding:0 0 10px; border:none">
+                  <h3 style="font-size:13px">Connected Students</h3>
+                </div>
+                <div id="tableDetailStudents"></div>
+              </div>
+              <div>
+                <div class="card-header" style="padding:0 0 10px; border:none">
+                  <h3 style="font-size:13px">Status</h3>
+                </div>
+                <div id="tableDetailStatus"></div>
+              </div>
+            </div>
+
+            <div class="card-header" style="padding:0 0 10px; border:none">
+              <h3 style="font-size:13px">Shared Chat</h3>
+            </div>
+            <div class="chat-preview" id="tableDetailChat"></div>
+
+            <div class="card-header" style="padding:10px 0; border:none">
+              <h3 style="font-size:13px">Uploaded Files</h3>
+            </div>
+            <div id="tableDetailUploads"></div>
+
+            <div class="card-header" style="padding:10px 0; border:none">
+              <h3 style="font-size:13px">AI Interaction History</h3>
+            </div>
+            <div class="chat-preview" id="tableDetailAI"></div>
+
+            <div class="btn-row" style="margin-top:16px" id="tableDetailActions">
+              <button class="btn btn-primary btn-sm" id="tableMessageBtn">💬 Message Table</button>
+              <button class="btn btn-secondary btn-sm" id="tableObserveBtn">👁 Join as Observer</button>
+              <button class="btn btn-warning btn-sm" id="tableCloseBtn">🚫 Close Table</button>
+              <button class="btn btn-danger btn-sm" id="tableEndBtn">⏹ End Session</button>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ── Panel: Students ────────────────────────────────────────────── -->
+      <section class="panel" id="panel-students">
+
+        <div class="card">
+          <div class="card-header">
+            <span>👥</span>
+            <h3>All Students</h3>
+            <div class="spacer"></div>
+            <input class="form-control" id="studentSearchInput"
+              placeholder="Search by name or email…"
+              style="width:220px; margin:0" />
+          </div>
+          <div class="card-body" id="studentsTableContainer">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <!-- Student detail — shown when a student row is clicked -->
+        <div class="card" id="studentDetailCard" style="display:none">
+          <div class="card-header">
+            <span>🎓</span>
+            <h3 id="studentDetailName">Student</h3>
+            <div class="spacer"></div>
+            <button class="btn btn-secondary btn-sm" id="studentDetailCloseBtn">✕ Close</button>
+          </div>
+          <div class="card-body">
+
+            <div class="student-detail-grid" id="studentDetailMeta" style="margin-bottom:16px">
+              <!-- name / email / section / table / join time chips -->
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px">
+
+              <div>
+                <div class="card-header" style="padding:0 0 10px; border:none">
+                  <h3 style="font-size:13px">Activity Timeline</h3>
+                </div>
+                <div class="timeline" id="studentTimeline"></div>
+              </div>
+
+              <div>
+                <div class="card-header" style="padding:0 0 10px; border:none">
+                  <h3 style="font-size:13px">Conversation History</h3>
+                </div>
+                <div class="chat-preview" id="studentChatHistory"></div>
+              </div>
+
+            </div>
+
+            <div class="card-header" style="padding:10px 0; border:none">
+              <h3 style="font-size:13px">Uploaded Work</h3>
+            </div>
+            <div id="studentUploads"></div>
+
+            <div class="btn-row" style="margin-top:16px">
+              <button class="btn btn-primary btn-sm" id="moveStudentBtn">↔ Move Table</button>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ── Panel: Analytics ───────────────────────────────────────────── -->
+      <section class="panel" id="panel-analytics">
+
+        <div class="card">
+          <div class="card-header">
+            <span>📊</span>
+            <h3>Analytics</h3>
+            <div class="spacer"></div>
+            <button class="btn btn-secondary btn-sm" id="refreshAnalyticsBtn">↻ Refresh</button>
+          </div>
+        </div>
+
+        <!-- Summary stat cards -->
+        <div class="stat-grid" id="analyticsStatGrid"></div>
+
+        <!-- Row 1: two line/bar charts -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-header"><span>👥</span><h3>Students Online Over Time</h3></div>
+            <div class="card-body"><div id="analyticsOnlineWrap"><canvas id="chartOnlineOverTime"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span>🙋</span><h3>Participation Rate</h3></div>
+            <div class="card-body"><div id="analyticsParticipationWrap"><canvas id="chartParticipation"></canvas></div></div>
+          </div>
+        </div>
+
+        <!-- Row 2: per-table bar charts -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-header"><span>📤</span><h3>Uploads per Table</h3></div>
+            <div class="card-body"><div id="analyticsUploadsWrap"><canvas id="chartUploads"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span>💡</span><h3>Hints Requested per Table</h3></div>
+            <div class="card-body"><div id="analyticsHintsWrap"><canvas id="chartHints"></canvas></div></div>
+          </div>
+        </div>
+
+        <!-- Row 3: confidence + table activity -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-header"><span>🤖</span><h3>AI Confidence by Table</h3></div>
+            <div class="card-body"><div id="analyticsConfidenceWrap"><canvas id="chartConfidence"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span>⚡</span><h3>Table Activity (Total Messages)</h3></div>
+            <div class="card-body"><div id="analyticsActivityWrap"><canvas id="chartTableActivity"></canvas></div></div>
+          </div>
+        </div>
+
+        <!-- Row 4: difficult questions + intervention -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-header"><span>❓</span><h3>Most Repeated Questions</h3></div>
+            <div class="card-body"><div id="analyticsDifficultWrap"><canvas id="chartDifficult"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span>🚨</span><h3>Intervention Frequency per Table</h3></div>
+            <div class="card-body"><div id="analyticsInterventionWrap"><canvas id="chartIntervention"></canvas></div></div>
+          </div>
+        </div>
+
+        <!-- Most / Least active + intervention list -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-header"><span>🔥</span><h3>Most Active Tables</h3></div>
+            <div class="card-body"><div class="bar-chart" id="chartMostActive"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span>🧊</span><h3>Least Active Tables</h3></div>
+            <div class="card-body"><div class="bar-chart" id="chartLeastActive"></div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span>🚨</span><h3>Tables Needing Intervention</h3></div>
+            <div class="card-body" id="interventionList"></div>
+          </div>
+        </div>
+
+        <!-- Difficult questions list -->
+        <div class="card">
+          <div class="card-header"><span>📋</span><h3>Difficult Questions Detail</h3></div>
+          <div class="card-body" id="difficultQuestions"></div>
+        </div>
+
+      </section>
+
+      <!-- ── Panel: Settings ────────────────────────────────────────────── -->
+      <section class="panel" id="panel-settings">
+
+        <div class="card">
+          <div class="card-header"><span>👤</span><h3>Professor Profile</h3></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="settingName">Display Name</label>
+              <input id="settingName" class="form-control" placeholder="Professor name" />
+            </div>
+            <div class="form-group">
+              <label for="settingEmail">Email</label>
+              <input id="settingEmail" class="form-control" type="email" placeholder="professor@umass.edu" />
+            </div>
+            <button class="btn btn-primary" id="saveProfileBtn">Save Profile</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span>📡</span><h3>Backend Connection</h3></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="settingBackend">Backend URL</label>
+              <input id="settingBackend" class="form-control" placeholder="https://ai-tutor-53f1.onrender.com" />
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-secondary" id="testConnectionBtn">Test Connection</button>
+              <span id="connectionTestResult" style="font-size:13px; color:var(--gray-500)"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><span>🔔</span><h3>Notifications</h3></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="notifyHelp" checked />
+                Alert when a table requests help
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="notifyJoin" checked />
+                Alert when a student joins
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="notifyDisconnect" />
+                Alert when a student disconnects
+              </label>
+            </div>
+            <button class="btn btn-primary" id="saveNotifBtn">Save Preferences</button>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ── Broadcast Modal ────────────────────────────────────────────────── -->
+  <div class="modal-overlay" id="broadcastModal">
+    <div class="modal-box">
+      <div class="modal-hdr">
+        <span>📢</span>
+        <h3>Send Message</h3>
+        <button class="modal-close" id="broadcastModalClose">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="broadcastTarget">Send to</label>
+          <select id="broadcastTarget" class="form-control">
+            <option value="all">Everyone</option>
+            <option value="section">Section…</option>
+            <option value="table">Table…</option>
+          </select>
+        </div>
+        <div class="form-group" id="broadcastTargetDetail" style="display:none">
+          <label for="broadcastTargetValue">Section / Table</label>
+          <input id="broadcastTargetValue" class="form-control" placeholder="e.g. A  or  3" />
+        </div>
+        <div class="form-group">
+          <label for="broadcastMessage">Message</label>
+          <textarea id="broadcastMessage" class="form-control" rows="4"
+            placeholder="Type your announcement…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="broadcastCancelBtn">Cancel</button>
+        <button class="btn btn-primary" id="broadcastSendBtn">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Move Student Modal ─────────────────────────────────────────────── -->
+  <div class="modal-overlay" id="moveStudentModal">
+    <div class="modal-box">
+      <div class="modal-hdr">
+        <span>↔</span>
+        <h3>Move Student</h3>
+        <button class="modal-close" id="moveStudentModalClose">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Student</label>
+          <div id="moveStudentName" style="font-weight:600; font-size:14px; color:var(--gray-800)"></div>
+        </div>
+        <div class="form-group">
+          <label for="moveToTable">Move to Table</label>
+          <select id="moveToTable" class="form-control"></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="moveStudentCancelBtn">Cancel</button>
+        <button class="btn btn-primary" id="moveStudentConfirmBtn">Move</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Toast Container ────────────────────────────────────────────────── -->
+  <div id="toastContainer"></div>
+
+  <!-- ── Persistent broadcast button ───────────────────────────────────── -->
+  <button class="btn btn-primary" id="globalBroadcastBtn"
+    style="position:fixed; bottom:24px; right:24px; border-radius:50px; box-shadow:var(--shadow-lg); z-index:500">
+    📢 Broadcast
+  </button>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="javascript/dashboard.js"></script>
+</body>
+</html>

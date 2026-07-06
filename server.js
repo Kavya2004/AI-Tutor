@@ -18,6 +18,8 @@ import sessionDbRouter from './api/sessions-db.js';
 import chatHistoryRouter from './routes/chat-history.js';
 import userActivityRouter from './routes/user-activity.js';
 import inClassRouter from './routes/in-class.js';
+import professorRouter from './routes/professor.js';
+import { professorConnections, broadcastToProfessors } from './lib/professor-ws.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,6 +46,10 @@ app.use('/api/db', sessionDbRouter);
 app.use('/api/chat-history', chatHistoryRouter);
 app.use('/api/user-activity', userActivityRouter);
 app.use('/api/in-class', inClassRouter);
+app.use('/api/professor', professorRouter);
+
+// broadcastToProfessors is exported from lib/professor-ws.js
+export { broadcastToProfessors };
 
 // ── Session store ──────────────────────────────────────────────
 const sessions = new Map();
@@ -146,7 +152,29 @@ function serializeSession(session) {
 
 // ── WebSocket ──────────────────────────────────────────────────
 wss.on('connection', (ws, req) => {
-    const sessionId = new URL(req.url, `http://localhost`).pathname.split('/')[2];
+    const url = new URL(req.url, `http://localhost`);
+    const parts = url.pathname.split('/');
+
+    // ── Professor dashboard subscription: /ws/professor/:labSessionId ──
+    if (parts[1] === 'ws' && parts[2] === 'professor') {
+        const labSessionId = parts[3];
+        if (!labSessionId) { ws.close(1008, 'labSessionId required'); return; }
+        if (!professorConnections.has(labSessionId)) professorConnections.set(labSessionId, new Set());
+        professorConnections.get(labSessionId).add(ws);
+        ws.on('message', data => {
+            try {
+                const msg = JSON.parse(data.toString());
+                if (msg.type === 'ping') ws.send(JSON.stringify({ type: 'pong' }));
+            } catch (_) {}
+        });
+        ws.on('close', () => {
+            const conns = professorConnections.get(labSessionId);
+            if (conns) { conns.delete(ws); if (!conns.size) professorConnections.delete(labSessionId); }
+        });
+        return;
+    }
+
+    const sessionId = parts[2];
     const session = sessions.get(sessionId);
     if (!session) { ws.close(1008, 'Session not found'); return; }
     if (!sessionConnections.has(sessionId)) sessionConnections.set(sessionId, []);

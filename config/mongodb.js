@@ -223,6 +223,39 @@ export async function updateConversationsOnLogout(activityId, logoutTime, durati
   }
 }
 
+// ── Lab Session / Professor Schemas ──────────────────────────────────────
+
+const labSessionSchema = new mongoose.Schema({
+  course:        { type: String, required: true },          // e.g. "CS250"
+  labNumber:     { type: String, required: true },          // e.g. "Lab 3"
+  title:         { type: String, default: '' },
+  status:        { type: String, enum: ['active','ended','archived'], default: 'active' },
+  sections:      { type: [String], default: [] },           // ["A","B"]
+  tables:        { type: [Number], default: [] },           // [1,2,3,...]
+  createdBy:     { name: String, email: String },
+  endedAt:       { type: Date, default: null },
+  assignment:    { type: mongoose.Schema.Types.ObjectId, ref: 'LabAssignment', default: null },
+}, { timestamps: true });
+
+const labAssignmentSchema = new mongoose.Schema({
+  labSessionId:  { type: mongoose.Schema.Types.ObjectId, ref: 'LabSession', required: true },
+  files: [{
+    name:     String,
+    mimeType: String,
+    data:     String,   // base64
+    size:     Number,
+  }],
+  extractedText: { type: String, default: '' },
+  uploadedBy:    { name: String, email: String },
+}, { timestamps: true });
+
+const professorEventSchema = new mongoose.Schema({
+  labSessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'LabSession' },
+  type:         { type: String },   // 'broadcast','table_message','section_message','help_request','student_join','student_leave'
+  payload:      { type: mongoose.Schema.Types.Mixed },
+  createdAt:    { type: Date, default: Date.now },
+}, { timestamps: false });
+
 // ── In-Class Schemas ───────────────────────────────────────────────────────
 
 const inClassStudentSchema = new mongoose.Schema({
@@ -311,6 +344,24 @@ export function getInClassUserActivityModel() {
   if (!_inClassConnection) throw new Error('[MongoDB InClass] Not connected');
   return _inClassConnection.models.InClassUserActivity ||
     _inClassConnection.model('InClassUserActivity', inClassUserActivitySchema);
+}
+
+export function getLabSessionModel() {
+  if (!_inClassConnection) throw new Error('[MongoDB InClass] Not connected');
+  return _inClassConnection.models.LabSession ||
+    _inClassConnection.model('LabSession', labSessionSchema);
+}
+
+export function getLabAssignmentModel() {
+  if (!_inClassConnection) throw new Error('[MongoDB InClass] Not connected');
+  return _inClassConnection.models.LabAssignment ||
+    _inClassConnection.model('LabAssignment', labAssignmentSchema);
+}
+
+export function getProfessorEventModel() {
+  if (!_inClassConnection) throw new Error('[MongoDB InClass] Not connected');
+  return _inClassConnection.models.ProfessorEvent ||
+    _inClassConnection.model('ProfessorEvent', professorEventSchema);
 }
 
 // ── In-Class Helpers ───────────────────────────────────────────────────────
