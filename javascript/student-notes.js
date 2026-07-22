@@ -323,7 +323,10 @@ class NotebookManager {
 // Initialize
 const notebookManager = new NotebookManager();
 
-function switchWhiteboard(type) {
+
+// Note: switchWhiteboard is defined in tutor-whiteboard.js and handles all panels
+// including 'notes'. The function below is kept for reference only and not exposed globally.
+function _switchNotesTab(type) {
     if (notebookManager && notebookManager.canvas) {
         notebookManager.saveCanvasState();
     }

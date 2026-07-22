@@ -32,19 +32,20 @@ class ShapeTools {
     }
 
     startDrawing(e, boardType) {
-        const canvas = boardType === 'teacher' ? window.teacherCanvas : window.studentCanvas;
-        const ctx = boardType === 'teacher' ? window.teacherCtx : window.studentCtx;
-        
+        const canvas = boardType === "teacher"
+            ? window.teacherCanvas
+            : window.studentCanvas;
+
+        const ctx = boardType === "teacher"
+            ? window.teacherCtx
+            : window.studentCtx;
+
         if (!canvas || !ctx) return;
 
         this.isDrawing = true;
-        const rect = canvas.getBoundingClientRect();
-        this.startPoint = {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
-        };
+        this.startPoint = this.getCanvasPoint(e, canvas);
 
-        if (this.currentTool === 'freehand') {
+        if (this.currentTool === "freehand") {
             ctx.beginPath();
             ctx.moveTo(this.startPoint.x, this.startPoint.y);
         } else {
@@ -55,23 +56,33 @@ class ShapeTools {
     draw(e, boardType) {
         if (!this.isDrawing) return;
 
-        const canvas = boardType === 'teacher' ? window.teacherCanvas : window.studentCanvas;
-        const ctx = boardType === 'teacher' ? window.teacherCtx : window.studentCtx;
-        
+        const canvas = boardType === "teacher"
+            ? window.teacherCanvas
+            : window.studentCanvas;
+
+        const ctx = boardType === "teacher"
+            ? window.teacherCtx
+            : window.studentCtx;
+
         if (!canvas || !ctx) return;
 
-        const rect = canvas.getBoundingClientRect();
-        const currentPoint = {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
-        };
+        const currentPoint = this.getCanvasPoint(e, canvas);
 
-        if (this.currentTool === 'freehand') {
+        if (this.currentTool === "freehand") {
             ctx.lineTo(currentPoint.x, currentPoint.y);
             ctx.stroke();
         } else {
             this.drawPreview(currentPoint);
         }
+    }
+
+    getCanvasPoint(e, canvas) {
+        const rect = canvas.getBoundingClientRect();
+
+        return {
+            x: (e.clientX - rect.left) * (canvas.width / rect.width),
+            y: (e.clientY - rect.top) * (canvas.height / rect.height)
+        };
     }
 
     stopDrawing(boardType) {

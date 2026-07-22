@@ -62,7 +62,7 @@
   }
 
   // ─── Sidebar UI ───────────────────────────────────────────────────────────
-  function buildSidebar() {
+  function buildSidebar(inClassMode) {
     if (document.getElementById('chatHistorySidebar')) return;
 
     const sidebar = document.createElement('div');
@@ -70,10 +70,10 @@
     sidebar.className = 'ch-sidebar ch-sidebar--closed';
     sidebar.innerHTML = `
       <div class="ch-sidebar__header">
-        <span class="ch-sidebar__title">💬 Conversations</span>
+        <span class="ch-sidebar__title">${inClassMode ? '🏫 Class Sessions' : '💬 Conversations'}</span>
         <button class="ch-sidebar__close" id="chSidebarClose" title="Close">✕</button>
       </div>
-      <button class="ch-new-btn" id="chNewBtn">＋ New Chat</button>
+      ${inClassMode ? '' : '<button class="ch-new-btn" id="chNewBtn">＋ New Chat</button>'}
       <div class="ch-convo-list" id="convoList"></div>
     `;
     document.body.appendChild(sidebar);
@@ -105,7 +105,8 @@
     }
 
     document.getElementById('chSidebarClose').addEventListener('click', closeSidebar);
-    document.getElementById('chNewBtn').addEventListener('click', () => window.chatHistoryManager.startNewConversation());
+    const newBtn = document.getElementById('chNewBtn');
+    if (newBtn) newBtn.addEventListener('click', () => window.chatHistoryManager.startNewConversation());
   }
 
   function toggleSidebar() { _sidebarVisible ? closeSidebar() : openSidebar(); }
@@ -133,7 +134,9 @@
     }
     convos.forEach(c => {
       const item = document.createElement('div');
-      item.className = 'ch-convo-item' + (c._id === _currentId ? ' ch-convo-item--active' : '');
+      const activeId = _inClassMode ? _inClassConvoId : _currentId;
+      const item = document.createElement('div');
+      item.className = 'ch-convo-item' + (c._id === activeId ? ' ch-convo-item--active' : '');
       item.dataset.id = c._id;
       const date = new Date(c.updatedAt);
       const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -142,17 +145,19 @@
           <span class="ch-convo-item__title">${escapeHtml(c.title || 'Conversation')}</span>
           <span class="ch-convo-item__date">${dateStr}</span>
         </div>
-        <button class="ch-convo-item__del" data-id="${c._id}" title="Delete">🗑</button>
+        ${_inClassMode ? '' : `<button class="ch-convo-item__del" data-id="${c._id}" title="Delete">🗑</button>`}
       `;
       item.querySelector('.ch-convo-item__body').addEventListener('click', () => {
         window.chatHistoryManager.loadConversation(c._id);
         closeSidebar();
       });
-      item.querySelector('.ch-convo-item__del').addEventListener('click', async (e) => {
-        e.stopPropagation();
-        if (!confirm('Delete this conversation?')) return;
-        await deleteConversation(c._id);
-      });
+      if (!_inClassMode) {
+        item.querySelector('.ch-convo-item__del').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('Delete this conversation?')) return;
+          await deleteConversation(c._id);
+        });
+      }
       list.appendChild(item);
     });
   }
@@ -170,9 +175,18 @@
   // ─── Conversation actions ─────────────────────────────────────────────────
   async function loadConvoList() {
     try {
-      const list = await apiGet(`/api/chat-history?email=${encodeURIComponent(_email)}`);
-      renderConvoList(list);
-    } catch (e) { console.warn('[chat-history] loadConvoList failed:', e.message); }
+      if (_inClassMode) {
+        const list = await apiGet(`/api/in-class/chat?email=${encodeURIComponent(_email)}`);
+        // Sort newest first
+        list.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        renderConvoList(list);
+      } else {
+        const list = await apiGet(`/api/chat-history?email=${encodeURIComponent(_email)}`);
+        renderConvoList(list);
+      }
+    } catch (e) {
+      console.warn('[chat-history] loadConvoList failed:', e.message);
+    }
   }
 
   async function createNewConvo() {
@@ -241,20 +255,40 @@
   // ─── Load a past conversation ─────────────────────────────────────────────
   async function loadConversation(id) {
     try {
-      const doc = await apiGet(`/api/chat-history/${id}`);
-      _currentId = id;
-      _titleSet = true;
+      // Use the correct endpoint based on current mode
+      const endpoint = _inClassMode
+        ? `/api/in-class/chat/${id}`
+        : `/api/chat-history/${id}`;
+      const doc = await apiGet(endpoint);
+
+      if (_inClassMode) {
+        _inClassConvoId = id;
+      } else {
+        _currentId = id;
+        _titleSet = true; // existing convo already has a title
+      }
+
+      // Clear chat UI
       const chatMessages = document.getElementById('chatMessages');
       if (chatMessages) chatMessages.innerHTML = '';
+
+      // Restore the tutor-chat context array (keep only the system prompt)
       if (window._resetChatContext) window._resetChatContext();
+
+      // Replay messages in the UI
       doc.messages.forEach(msg => {
         if (window._addMessageSilent) {
           window._addMessageSilent(msg.content, msg.role === 'user' ? 'user' : 'bot');
         }
       });
+
+      // Rebuild context from stored messages for AI continuity
       if (window._rebuildContext) window._rebuildContext(doc.messages);
+
       markActiveInList(id);
-    } catch (e) { console.warn('[chat-history] loadConversation failed:', e.message); }
+    } catch (e) {
+      console.warn('[chat-history] loadConversation failed:', e.message);
+    }
   }
 
   // ─── Start a brand-new conversation ───────────────────────────────────────
@@ -276,7 +310,7 @@
   // ─── Init (at-home) ───────────────────────────────────────────────────────
   async function init(email) {
     _email = email;
-    buildSidebar();
+    buildSidebar(false);
     // Show the topbar with email
     const bar = document.getElementById('signOutBar');
     if (bar) bar.classList.add('visible');
@@ -347,32 +381,72 @@
     _inClassTableNumber   = Number(window._inClassTableNumber  || 0);
     _inClassSessionNumber = Number(window._inClassSessionNumber || 0);
 
+    // Build the history sidebar (in-class variant — no "New Chat" button)
+    buildSidebar(true);
+
+    // Date key: YYYY-MM-DD in local time — one channel per class day
+    const today = new Date();
+    const dateKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const dateTitle = today.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+
     console.log('[in-class chat] init for', email, _inClassSessionTitle);
 
     try {
-      // First try to find the existing shared record for this session
-      const findRes = await fetch(`${BACKEND}/api/in-class/chat/by-session/${encodeURIComponent(_inClassSessionId)}`);
+      // Look up today's record for this table+session (date-keyed channel)
+      const findRes = await fetch(
+        `${BACKEND}/api/in-class/chat/by-date/${_inClassTableNumber}/${_inClassSessionNumber}/${dateKey}`
+      );
 
       if (findRes.ok) {
-        // Shared record already exists — reuse it
+        // Today's record already exists — reuse it and replay messages in UI
         const existing = await findRes.json();
         _inClassConvoId = existing._id;
-        console.log('[in-class chat] joined existing shared record:', _inClassConvoId);
+        console.log('[in-class chat] joined existing daily record:', _inClassConvoId);
+
+        // Fetch full record with messages and replay them
+        try {
+          const fullRes = await fetch(`${BACKEND}/api/in-class/chat/${existing._id}`);
+          if (fullRes.ok) {
+            const full = await fullRes.json();
+            const msgs = full.messages || [];
+            if (msgs.length > 0) {
+              const chatMessages = document.getElementById('chatMessages');
+              if (chatMessages) chatMessages.innerHTML = '';
+              if (window._resetChatContext) window._resetChatContext();
+              msgs.forEach(m => {
+                if (window._addMessageSilent) {
+                  window._addMessageSilent(m.content, m.role === 'user' ? 'user' : 'bot');
+                }
+              });
+              if (window._rebuildContext) window._rebuildContext(msgs);
+              _inClassTitleSet = true;
+            }
+          }
+        } catch (e) {
+          console.warn('[in-class chat] failed to replay history:', e.message);
+        }
       } else {
-        // First student — create the shared record
+        // First student today — create the daily record with date as title
         const doc = await inClassApiPost('/api/in-class/chat', {
           sessionId:     _inClassSessionId,
           sessionTitle:  _inClassSessionTitle,
           tableNumber:   _inClassTableNumber,
           sessionNumber: _inClassSessionNumber,
+          dateKey,
           email:         email.trim().toLowerCase(),
-          title:         _inClassSessionTitle,
+          title:         dateTitle,
         });
         _inClassConvoId = doc._id;
+        _inClassTitleSet = true;  // title is the date, no need for AI-generated title
         console.log('[in-class chat] created shared session record:', _inClassConvoId);
       }
 
       _inClassReady = true;
+
+      // Populate the history sidebar with all past in-class sessions for this student
+      await loadConvoList();
+      markActiveInList(_inClassConvoId);
+
       if (_inClassQueue.length > 0) flushInClassQueue();
     } catch (e) {
       console.warn('[in-class chat] init failed:', e.message);

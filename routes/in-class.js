@@ -140,23 +140,78 @@ router.post('/chat', async (req, res) => {
   }
 });
 
-// GET /api/in-class/chat/by-session/:sessionId
-router.get('/chat/by-session/:sessionId', async (req, res) => {
-  try {
-    const connected = await connectInClassMongo();
-    if (!connected) return res.status(503).json({ error: 'In-class DB not connected' });
 
-    const InClassChat = getInClassChatModel();
-    const convo = await InClassChat.findOne({ sessionId: req.params.sessionId });
-    if (!convo) return res.status(404).json({ error: 'Not found' });
-    res.json(convo);
+// GET /api/in-class/chat/by-session/:sessionId
+// Find the shared session chat record by sessionId (legacy / same-day reuse).
+router.get('/chat/by-session/:sessionId', async (req, res) => {
+  const { sessionId } = req.params;
+  if (!sessionId) return res.status(400).json({ error: 'sessionId required' });
+  try {
+    const Convo = await getChatModel();
+    const doc = await Convo.findOne({ sessionId });
+    if (!doc) return res.status(404).json({ error: 'not found' });
+    res.json(doc);
   } catch (err) {
-    console.error('[in-class] by-session error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(503).json({ error: err.message });
   }
 });
 
-// GET /api/in-class/chat  — list by email or sessionId
+// GET /api/in-class/chat/by-date/:tableNumber/:sessionNumber/:dateKey
+// Find today's shared chat record for a given table+session (dateKey = YYYY-MM-DD).
+router.get('/chat/by-date/:tableNumber/:sessionNumber/:dateKey', async (req, res) => {
+  const { tableNumber, sessionNumber, dateKey } = req.params;
+  try {
+    const Convo = await getChatModel();
+    const doc = await Convo.findOne({
+      tableNumber: Number(tableNumber),
+      sessionNumber: Number(sessionNumber),
+      dateKey,
+    });
+    if (!doc) return res.status(404).json({ error: 'not found' });
+    res.json(doc);
+  } catch (err) {
+    res.status(503).json({ error: err.message });
+  }
+});
+
+// POST /api/in-class/chat
+// Create the shared session chat record (one per table+session+date).
+// Body: { sessionId, sessionTitle, tableNumber, sessionNumber, email, dateKey, title? }
+// Idempotent — if a record for this table+session+date already exists, returns it.
+router.post('/chat', async (req, res) => {
+  const { sessionId, sessionTitle, tableNumber, sessionNumber, email, dateKey, title } = req.body;
+  if (!sessionId || !tableNumber || !sessionNumber) {
+    return res.status(400).json({ error: 'sessionId, tableNumber, sessionNumber required' });
+  }
+  const key = dateKey || new Date().toISOString().split('T')[0];
+  try {
+    const Convo = await getChatModel();
+    // Return existing record for this table+session+date if already created
+    const existing = await Convo.findOne({
+      tableNumber: Number(tableNumber),
+      sessionNumber: Number(sessionNumber),
+      dateKey: key,
+    });
+    if (existing) return res.json(existing);
+    const doc = await Convo.create({
+      sessionId,
+      sessionTitle: sessionTitle || `Table ${tableNumber} Session ${sessionNumber}`,
+      tableNumber: Number(tableNumber),
+      sessionNumber: Number(sessionNumber),
+      dateKey: key,
+      email: (email || '').trim().toLowerCase(),
+      title: title || key,  // title = the date string e.g. "2025-07-15"
+      messages: [],
+    });
+    res.json(doc);
+  } catch (err) {
+    res.status(503).json({ error: err.message });
+  }
+});
+
+// GET /api/in-class/chat?email=...
+// List all in-class conversations for a student (no messages).
+
 router.get('/chat', async (req, res) => {
   try {
     const { email, sessionId } = req.query;

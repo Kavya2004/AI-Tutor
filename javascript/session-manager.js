@@ -1076,15 +1076,13 @@ class SessionManager {
   handleSessionMessage(data) {
     switch (data.type) {
       case "message":
-        // All messages — including from self — go through addSharedMessage.
-        // tutor-chat.js only broadcasts in session mode, never adds locally,
-        // so the WS echo is the only place messages get rendered.
         this.addSharedMessage(
           data.message,
           data.sender,
           data.timestamp,
           data.userName,
           data.files,
+          data.citations || [],
         );
 
         // Keep the AI context in sync on all clients so every student's
@@ -1109,33 +1107,8 @@ class SessionManager {
         }
         break;
       case "participant_joined":
-        // Fetch the authoritative participant list from the server so the
-        // count is always correct for existing clients, regardless of server version.
-        if (this.sessionId) {
-          fetch(`${BACKEND_URL}/api/sessions/${this.sessionId}`)
-            .then(r => r.ok ? r.json() : null)
-            .then(session => {
-              if (session && session.participants) {
-                this.updateParticipants(session.participants);
-              } else {
-                // Fallback: just add the participant locally
-                this.addParticipant(data.userName, {
-                  userName:  data.userName,
-                  avatar:    data.avatar    || '👤',
-                  color:     data.color     || '#6c757d',
-                  joinedAt:  data.timestamp || new Date().toISOString(),
-                });
-              }
-            })
-            .catch(() => {
-              this.addParticipant(data.userName, {
-                userName: data.userName,
-                avatar: data.avatar || "👤",
-                color: data.color || "#6c757d",
-                joinedAt: data.timestamp || new Date().toISOString(),
-              });
-            });
-        }
+        // The participants_update event sent right after this will re-render
+        // the full list. Just add a system message here.
         this.addSystemMessage(`${data.userName} joined the session`);
         break;
       case "participant_left":
@@ -1189,10 +1162,36 @@ class SessionManager {
         this.updateSessionUI();
         this.updateParticipants(data.participants);
         break;
+      case "session_history":
+        // Replay all previous messages for a newly joined participant
+        if (data.messages && data.messages.length > 0) {
+          const chatMessages = document.getElementById("chatMessages");
+          // Clear any welcome message that was shown before history loaded
+          if (chatMessages) chatMessages.innerHTML = '';
+          data.messages.forEach(msg => {
+            this.addSharedMessage(
+              msg.message,
+              msg.sender,
+              msg.timestamp,
+              msg.userName,
+              msg.files || [],
+              msg.citations || [],
+            );
+          });
+          // Also rebuild AI context from history so the new participant's
+          // next message has full context of what was already discussed.
+          if (window._rebuildContext) {
+            window._rebuildContext(data.messages.map(m => ({
+              role: m.sender === 'bot' ? 'bot' : 'user',
+              content: m.sender === 'bot' ? m.message : `${m.userName}: ${m.message}`,
+            })));
+          }
+        }
+        break;
     }
   }
 
-  shareMessage(message, sender = "user", files = []) {
+  shareMessage(message, sender = "user", files = [], citations = []) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(
         JSON.stringify({
@@ -1202,12 +1201,13 @@ class SessionManager {
           userName: this.userName,
           timestamp: new Date().toISOString(),
           files: files,
+          citations: citations,
         }),
       );
     }
   }
 
-  addSharedMessage(message, sender, timestamp, userName, files = []) {
+  addSharedMessage(message, sender, timestamp, userName, files = [], citations = []) {
     const chatMessages = document.getElementById("chatMessages");
     const messageDiv = document.createElement("div");
     messageDiv.className = `message ${sender}-message shared-message slide-in`;
@@ -1256,6 +1256,26 @@ class SessionManager {
       <div class="message-text">${displayText}</div>
       ${filesHtml}
     `;
+
+    // Attach citation pills for bot messages.
+    // Other participants get citations from the WebSocket payload.
+    // The sender gets them from _pendingCitations (stashed before broadcast).
+    if (sender === 'bot' && typeof window._buildCitationHTML === 'function') {
+      let resolvedCitations = citations && citations.length > 0
+        ? citations
+        : (window._pendingCitations && window._pendingCitations.length > 0
+            ? window._pendingCitations.shift()
+            : null);
+      if (resolvedCitations && resolvedCitations.length > 0) {
+        const citationHTML = window._buildCitationHTML(resolvedCitations);
+        if (citationHTML) {
+          const pill = document.createElement('div');
+          pill.className = 'citation-wrap';
+          pill.innerHTML = citationHTML;
+          content.appendChild(pill);
+        }
+      }
+    }
 
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(content);
@@ -1492,42 +1512,38 @@ class SessionManager {
     }
   }
   updateSessionUI() {
-    const createBtn = document.getElementById("createSessionBtn");
-    const joinBtn = document.getElementById("joinSessionBtn");
-    const browseBtn = document.getElementById("publicSessionsBtn");
-    const leaveBtn = document.getElementById("leaveSessionBtn");
-    const shareBtn = document.getElementById("shareSessionBtn");
+    const createBtn   = document.getElementById("createSessionBtn");
+    const joinBtn     = document.getElementById("joinSessionBtn");
+    const browseBtn   = document.getElementById("publicSessionsBtn");
+    const leaveBtn    = document.getElementById("leaveSessionBtn");
+    const shareBtn    = document.getElementById("shareSessionBtn");
     const downloadBtn = document.getElementById("downloadSessionBtn");
 
-    // Helper: show/hide while stripping any !important flags left from initial HTML
+    // These buttons don't exist in in-class mode.
+    if (!createBtn || !joinBtn || !browseBtn || !leaveBtn || !shareBtn || !downloadBtn) {
+      return;
+    }
+
     const show = (el) => {
       if (!el) return;
+      // Restore whatever display the CSS normally provides.
       el.style.removeProperty("display");
-      el.style.setProperty("display", "inline-flex");
-    };
-    const hide = (el) => {
-      if (!el) return;
-      el.style.removeProperty("display");
-      el.style.setProperty("display", "none");
     };
 
-    if (this.sessionId) {
-      // Inside a session: hide pre-session buttons, show in-session buttons
-      hide(createBtn);
-      hide(joinBtn);
-      hide(browseBtn);
-      show(leaveBtn);
-      show(shareBtn);
-      show(downloadBtn);
-    } else {
-      // No active session: show pre-session buttons, hide in-session buttons
-      show(createBtn);
-      show(joinBtn);
-      show(browseBtn);
-      hide(leaveBtn);
-      hide(shareBtn);
-      hide(downloadBtn);
-    }
+    const hide = (el) => {
+      if (!el) return;
+      el.style.display = "none";
+    };
+
+    const inSession = Boolean(this.sessionId);
+
+    [createBtn, joinBtn, browseBtn].forEach(btn =>
+      inSession ? hide(btn) : show(btn)
+    );
+
+    [leaveBtn, shareBtn, downloadBtn].forEach(btn =>
+      inSession ? show(btn) : hide(btn)
+    );
 
     this.renderParticipants();
     setTimeout(() => this.setupVoiceControls(), 100);
@@ -2004,9 +2020,9 @@ class SessionManager {
     });
   }
 
-  broadcastMessage(message, sender, files = []) {
+  broadcastMessage(message, sender, files = [], citations = []) {
     if (this.sessionId) {
-      this.shareMessage(message, sender, files);
+      this.shareMessage(message, sender, files, citations);
     }
   }
 
@@ -2252,5 +2268,4 @@ class SessionManager {
     }
   }
 }
-
 window.sessionManager = new SessionManager();

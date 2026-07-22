@@ -160,7 +160,7 @@ class TutorSession {
     this.lastActivity = new Date();
   }
 
-  addMessage(message, sender, userName, files = []) {
+  addMessage(message, sender, userName, files = [], citations = []) {
     const messageObj = {
       id: uuidv4(),
       message,
@@ -168,6 +168,7 @@ class TutorSession {
       userName,
       timestamp: new Date().toISOString(),
       files: files || [],
+      citations: citations || [],
     };
     this.messages.push(messageObj);
     this.lastActivity = new Date();
@@ -429,16 +430,18 @@ wss.on("connection", (ws, req) => {
         case "join":
           userName = message.userName;
           isHost = message.isHost;
+          // Update avatar/color from the WS join message (more up-to-date than HTTP join)
           if (session.participants.has(userName)) {
             const participant = session.participants.get(userName);
             participant.avatar = message.avatar || participant.avatar;
             participant.color = message.color || participant.color;
             participant.lastSeen = new Date();
+            } else {
+            // Fallback: add participant if they somehow weren't added via HTTP
+            session.addParticipant(userName, message.avatar || '👤', message.color || '#6c757d');
           }
           sessionConnections.get(sessionId).push({ ws, userName });
-
-          // Send session info only to the new joiner
-
+          // Send session info + full participant list to the new joiner
           if (message.userEmail && message.tableNumber) {
             addStudentToSession({
               sessionId,
@@ -456,26 +459,38 @@ wss.on("connection", (ws, req) => {
             }),
           );
 
-          // Notify existing participants that someone joined (for the system chat message)
+          // Send full chat history to the new joiner so they see previous messages
+          if (session.messages.length > 0) {
+            ws.send(
+              JSON.stringify({
+                type: "session_history",
+                messages: session.messages,
+              }),
+            );
+          }
+
+          // Notify existing participants that someone joined (system chat message)
           broadcastToSession(
             sessionId,
             {
               type: "participant_joined",
               userName: userName,
+              avatar: message.avatar || '👤',
+              color: message.color || '#6c757d',
               timestamp: new Date().toISOString(),
             },
-            ws, // exclude the new joiner themselves
+            ws, // exclude the new joiner
           );
         
-          // Broadcast full participants list to ALL clients (including existing ones)
-          // so their participant count updates immediately
+          // Broadcast the full updated participant list to ALL existing clients
+          // so their count and names update immediately
           broadcastToSession(
             sessionId,
             {
               type: "participants_update",
               participants: session.getParticipantsList(),
             },
-            ws, // new joiner already got the list via session_info above
+            ws, // new joiner already has the list via session_info
           );
 
           console.log(`${userName} connected to session ${sessionId}`);
@@ -488,10 +503,10 @@ wss.on("connection", (ws, req) => {
               message.sender,
               userName,
               message.files,
+              message.citations || [],
             );
 
-            // Broadcast to ALL clients including sender — client renders via
-            // addSharedMessage so the sender sees their own message just like others
+            // Broadcast to all participants including sender so everyone sees the message.
             broadcastToSession(sessionId, {
               type: "message",
               message: message.message,
@@ -499,6 +514,7 @@ wss.on("connection", (ws, req) => {
               userName: userName,
               timestamp: messageObj.timestamp,
               files: message.files || [],
+              citations: message.citations || [],
             });
 
             console.log(

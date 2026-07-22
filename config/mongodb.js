@@ -282,12 +282,17 @@ const inClassMessageSchema = new mongoose.Schema({
 }, { _id: false });
 
 const inClassChatConversationSchema = new mongoose.Schema({
-  sessionId:     { type: String, required: true, unique: true, index: true },
-  tableNumber:   { type: Number, default: null },
-  sessionNumber: { type: Number, default: null },
+  sessionId:     { type: String, required: true, index: true },
+  sessionTitle:  { type: String, required: true },
+  tableNumber:   { type: Number, required: true },
+  sessionNumber: { type: Number, required: true },
+  dateKey:       { type: String, required: true },  // 'YYYY-MM-DD' — one record per table+session+day
+  email:         { type: String, required: true, index: true },  // student who initiated
   title:         { type: String, default: 'In-Class Session' },
   messages:      { type: [inClassMessageSchema], default: [] },
 }, { timestamps: true });
+
+inClassChatConversationSchema.index({ tableNumber: 1, sessionNumber: 1, dateKey: 1 }, { unique: true });
 
 const inClassUserActivitySchema = new mongoose.Schema({
   email:         { type: String, required: true, index: true },

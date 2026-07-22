@@ -65,7 +65,18 @@ function handlePasteEvent(event) {
 }
 
 function initializeChat() {
-  window.processUserMessage = processUserMessage;
+  if (window.chatInitialized) return;
+    window.chatInitialized = true;
+    window.processUserMessage = processUserMessage;
+    window.initializeChat = initializeChat;
+
+    // Allow external code (e.g. whiteboard) to inject a File into the upload queue
+    window.injectFileIntoChat = function (file) {
+        uploadedFiles.push(file);
+        addFileToPreview(file);
+        const fp = document.getElementById('filePreview');
+        if (fp) fp.style.display = 'flex';
+    };
   const sendButton = document.getElementById("sendButton");
   const chatInput = document.getElementById("chatInput");
 
@@ -430,12 +441,20 @@ async function getOcrFromImage(base64Image) {
 }
 
 function createChatControls() {
-  const chatContainer = document.querySelector(".chat-container");
-  if (!chatContainer || document.getElementById("chatControls")) return;
+	const chatContainer = document.querySelector('.chat-container');
+	const existingControls = document.getElementById('chatControls');
+	if (!chatContainer) return;
+	if (existingControls) {
+		if (!chatContainer.contains(existingControls)) {
+			existingControls.remove();
+		} else {
+			return;
+		}
+	}
 
-  const controlsDiv = document.createElement("div");
-  controlsDiv.id = "chatControls";
-  controlsDiv.style.cssText = `
+	const controlsDiv = document.createElement('div');
+	controlsDiv.id = 'chatControls';
+	controlsDiv.style.cssText = `
 		display: flex;
 		gap: 8px;
 		padding: 10px 15px;
@@ -444,9 +463,9 @@ function createChatControls() {
 		flex-shrink: 0;
 	`;
 
-  const saveBtn = document.createElement("button");
-  saveBtn.innerHTML = "💾 Save Chat";
-  saveBtn.style.cssText = `
+	const saveBtn = document.createElement('button');
+	saveBtn.innerHTML = '💾 Save Chat';
+	saveBtn.style.cssText = `
 		padding: 6px 12px;
 		border: 1px solid #ddd;
 		border-radius: 15px;
@@ -456,11 +475,11 @@ function createChatControls() {
 		font-size: 12px;
 		transition: all 0.3s ease;
 	`;
-  saveBtn.addEventListener("click", saveChatHistory);
+	saveBtn.addEventListener('click', saveChatHistory);
 
-  const summaryBtn = document.createElement("button");
-  summaryBtn.innerHTML = "📝 Generate Summary";
-  summaryBtn.style.cssText = `
+	const summaryBtn = document.createElement('button');
+	summaryBtn.innerHTML = '📝 Generate Summary';
+	summaryBtn.style.cssText = `
 		padding: 6px 12px;
 		border: 1px solid #ddd;
 		border-radius: 15px;
@@ -470,11 +489,29 @@ function createChatControls() {
 		font-size: 12px;
 		transition: all 0.3s ease;
 	`;
-  summaryBtn.addEventListener("click", generateChatSummary);
+	summaryBtn.addEventListener('click', generateChatSummary);
 
-  controlsDiv.appendChild(saveBtn);
-  controlsDiv.appendChild(summaryBtn);
-  chatContainer.insertBefore(controlsDiv, chatContainer.firstChild);
+	const quizBtn = document.createElement('button');
+	quizBtn.innerHTML = 'Quiz';
+	quizBtn.id = 'quizControlBtn';
+	quizBtn.style.cssText = `
+		padding: 6px 12px;
+		border: 1px solid #ddd;
+		border-radius: 15px;
+		background: #881c1c;
+		color: white;
+		cursor: pointer;
+		font-size: 12px;
+		transition: all 0.3s ease;
+	`;
+	quizBtn.addEventListener('click', () => {
+		if (window.quizIntegration) window.quizIntegration.showQuizMenu();
+	});
+
+	controlsDiv.appendChild(saveBtn);
+	controlsDiv.appendChild(summaryBtn);
+	controlsDiv.appendChild(quizBtn);
+	chatContainer.insertBefore(controlsDiv, chatContainer.firstChild);
 }
 
 function initializeVoiceInput() {
@@ -1354,6 +1391,17 @@ async function processUserMessage(message) {
         content: refsText,
       });
     }
+    // Reinforce the adversarial rules right before every call so they can
+		// never be buried by history or course-material context messages.
+		context.push({
+        role: 'system',
+        content: `REMINDER — ADVERSARIAL LEARNING MODE IS ACTIVE. You MUST follow ALL rules without exception:
+  • ONE challenge per response only. Do NOT give a lecture or explain the full concept.
+  • Do NOT give the answer. End with exactly ONE direct question the student must answer.
+  • No unsolicited explanations. If the student hasn't tried yet, ask them to try first.
+  • Open with a challenge phrase ("That's a reasonable instinct — but let me push back on it.", "OK, but here's what I'm not sure about...", etc.)
+  • BANNED: Long explanations, numbered lists of concepts, full definitions of laws.`
+      });
 
     // Get AI response with files (only if files processed successfully)
     let botResponse = await getGeminiResponse(
@@ -1361,6 +1409,11 @@ async function processUserMessage(message) {
       processedFiles.length > 0 ? processedFiles : []
     );
 
+    // Remove the reinforcement message from context after use (it's ephemeral)
+		if (context[context.length - 1]?.content?.startsWith('REMINDER — ADVERSARIAL')) {
+			context.pop();
+		}
+    
     // Add bot response to context
     context.push({ role: "assistant", content: botResponse });
 
@@ -1437,12 +1490,16 @@ async function processUserMessage(message) {
 
     // Handle bot response display/broadcasting
     if (window.sessionManager && window.sessionManager.sessionId) {
-      // In session mode: only broadcast — WS echo displays on all clients including sender
-      window.sessionManager.broadcastMessage(botResponse, "bot");
-      // Auto-title from the session host client
-      if (window.chatHistoryManager) {
-        window.chatHistoryManager.autoTitle(message, botResponse);
-      }
+      // Stash citations so addSharedMessage can pick them up when the
+			// WebSocket echo arrives. Keyed by a hash of the message content.
+			window._pendingCitations = window._pendingCitations || [];
+			window._pendingCitations.push(extractedCitation);
+			// Broadcast — citations travel in the payload so all participants see them
+			window.sessionManager.broadcastMessage(botResponse, 'bot', [], extractedCitation);
+			// Also save to in-class DB and auto-title from this client
+			if (window.chatHistoryManager) {
+				window.chatHistoryManager.autoTitle(message, botResponse);
+			}
     } else {
       addMessage(botResponse, "bot", [], extractedCitation);
       // Trigger auto-title generation after first exchange
@@ -1958,6 +2015,35 @@ window._rebuildContext = function(messages) {
     });
   });
 };
+
+// Build citation pill HTML from a citations array — shared with addSharedMessage
+    // in session-manager.js so in-class bot messages get the same pills.
+    window._buildCitationHTML = function (citation) {
+        if (!citation || citation.length === 0) return '';
+        return citation.map(c => {
+            const pageLabel = c.page ? ` · p.${c.page}` : '';
+            const icon = getSourceIcon(c.name);
+            const safeName = (c.name || '').replace(/'/g, "\\'");
+
+            if (/video links|lecture video/i.test(c.name || '')) return '';
+
+            const isTextbook = /college physics|textbook|physics.?2e/i.test(c.name || '');
+            if (isTextbook && c.page) {
+                return `<span class="citation-pill" onclick="showBookRef(${c.page})" style="cursor:pointer" title="View page ${c.page}">${icon} ${c.name}${pageLabel}</span>`;
+            }
+            if (c.drive_file_id) {
+                const driveUrl = `https://drive.google.com/file/d/${c.drive_file_id}/preview${c.page ? `#page=${c.page}` : ''}`;
+                return `<span class="citation-pill" onclick="showDriveRef('${driveUrl}','${safeName}',${c.page||'null'})" style="cursor:pointer" title="View source">${icon} ${c.name}${pageLabel}</span>`;
+            }
+            if (c.url) return '';
+            if (c.text) {
+                const safeText = c.text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+                return `<span class="citation-pill" onclick="showTextRef('${safeText}','${safeName}',${c.page||1})" style="cursor:pointer" title="View source">${icon} ${c.name}${pageLabel}</span>`;
+            }
+            if (!c.name) return '';
+            return `<span class="citation-pill" title="Source reference">${icon} ${c.name}${pageLabel}</span>`;
+        }).join('');
+    };
 
 // ── In-Class History Loader ────────────────────────────────────────────────
 // Runs once per session on the first message send (guarded by _inClassHistoryLoaded).

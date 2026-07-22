@@ -185,6 +185,7 @@
 				const inClassModal = document.getElementById('inClassModal');
 				if (inClassModal) inClassModal.remove();
 
+				// Existing chat-history/session logic...
 				if (window.chatHistoryManager) {
 					if (window._inClassMode) {
 						window.chatHistoryManager.initInClass(email);
@@ -192,14 +193,22 @@
 						window.chatHistoryManager.init(email);
 					}
 				}
-
-				// For in-class: join the shared WebSocket session after DOM is ready
 				if (window._inClassMode) {
 					setTimeout(() => {
-						if (window.sessionManager && typeof window.sessionManager.joinInClassSession === 'function') {
+						if (window.sessionManager &&
+							typeof window.sessionManager.joinInClassSession === 'function') {
 							window.sessionManager.joinInClassSession();
 						}
 					}, 300);
+				}
+
+				// NEW: update sign-out bar
+				const signOutBar = document.getElementById('signOutBar');
+				const sobEmail = document.getElementById('sobEmail');
+				if (signOutBar && sobEmail) {
+					const modeLabel = window._inClassMode ? ' (In Class)' : ' (At Home)';
+					sobEmail.textContent = `${email}${modeLabel}`;
+					signOutBar.style.display = 'flex';
 				}
 			}
 
@@ -391,35 +400,50 @@
 			}
 
 			function showWarning() {
+				if (!window._activityId && !window.studentEmail) {
+					return;
+				}
+
 				removeWarningBanner();
 				let secsLeft = Math.round(WARNING_BEFORE_MS / 1000);
+
 				const banner = document.createElement('div');
 				banner.id = 'idleWarningBanner';
 				banner.style.cssText = `
 					position: fixed; bottom: 0; left: 0; right: 0; z-index: 99998;
 					background: #881c1c; color: #fff;
-					display: flex; align-items: center; justify-content: center; gap: 16px;
-					padding: 14px 20px; font-size: 14px; font-weight: 600;
+					display: flex; align-items: center; justify-content: space-between;
+					padding: 14px 24px; font-size: 14px; font-weight: 500;
 					box-shadow: 0 -2px 12px rgba(0,0,0,0.3);
 				`;
+
 				const msg = document.createElement('span');
-				msg.id = 'idleCountdownMsg';
-				msg.textContent = `Signing you out in ${secsLeft}s due to inactivity…`;
+				msg.innerHTML = `
+					You've been inactive. Signing you out in
+					<strong id="idleCountdown">${secsLeft}</strong>s to protect your session.
+				`;
+
 				const stayBtn = document.createElement('button');
 				stayBtn.textContent = 'Stay Signed In';
 				stayBtn.style.cssText = `
-					background: white; color: #881c1c; border: none;
-					border-radius: 6px; padding: 7px 16px; font-size: 13px;
-					font-weight: 700; cursor: pointer; flex-shrink: 0;
+					background: rgba(255,255,255,0.2); color: #fff;
+					border: 1px solid rgba(255,255,255,0.5);
+					border-radius: 6px; padding: 6px 16px;
+					cursor: pointer; font-size: 13px; font-weight: 600;
 				`;
-				stayBtn.addEventListener('click', () => { resetIdleTimer(); removeWarningBanner(); });
+				stayBtn.addEventListener('click', () => {
+					resetIdleTimer();
+					removeWarningBanner();
+				});
+
 				banner.appendChild(msg);
 				banner.appendChild(stayBtn);
 				document.body.appendChild(banner);
+
 				_countdownInterval = setInterval(() => {
 					secsLeft--;
-					const el = document.getElementById('idleCountdownMsg');
-					if (el) el.textContent = `Signing you out in ${secsLeft}s due to inactivity…`;
+					const el = document.getElementById('idleCountdown');
+					if (el) el.textContent = String(secsLeft);
 					if (secsLeft <= 0) clearInterval(_countdownInterval);
 				}, 1000);
 			}
@@ -527,14 +551,38 @@
 								<button id="drawStudentButton">✏️ Draw</button>
 								<button id="eraserStudentButton">🧽 Eraser</button>
 								<button id="clearStudentButton">🗑️ Clear</button>
+								<button id="stickerToggleBtn" onclick="toggleStickerTray()">
+									🌟 Stickers
+								</button>
+
 								<button id="expandStudentButton">⛶ Expand</button>
+							</div>
 							</div>
 						</div>
 						<div class="whiteboard-container">
+						<!-- Canvas overlay wrapper -->
+						<div id="whiteboardWrapper" style="position: relative; flex: 1; min-height: 0;">
 							<canvas id="studentWhiteboard" class="whiteboard-canvas"></canvas>
+
+							<!-- Overlay: stickers live above the canvas -->
+							<div id="stickerOverlay"
+								style="position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:10;">
+							</div>
 						</div>
-						<div class="math-buttons" id="studentMathButtons">
+
+						<!-- Sticker tray: picker floats over the board -->
+						<div id="physicsStickerTray" class="sticker-tray sticker-tray-hidden">
+							<div class="sticker-tray-inner">
+								<span class="sticker-tray-label">
+									Drag onto board or tap to place at center
+								</span>
+								<!-- actual sticker buttons/items are created by physics-stickers.js -->
+								<div id="physicsStickerList"></div>
+							</div>
 						</div>
+					</div>
+
+					<div class="math-buttons" id="studentMathButtons">
 					</div>
 					<div class="whiteboard-panel" id="notesPanel">
 						<div class="whiteboard-header">
@@ -612,10 +660,11 @@
 	<script src="javascript/chat-history-manager.js"></script>
 	<script src="javascript/tutor-chat.js"></script>
 	<script src="javascript/tutor-whiteboard.js"></script>
+	<script src="javascript/physics-stickers.js"></script>
 	<script src="javascript/student-notes.js"></script>
 	<script src="javascript/session-manager.js"></script>
-	<script src="javascript/quiz-system.js"></script>
-	<script src="javascript/quiz-integration.js"></script>
+	<script src="javascript/quiz-system.js?v=2"></script>
+	<script src="javascript/quiz-integration.js?v=3"></script>
 	<script src="javascript/mobile-navigation.js"></script>
 </body>
 
