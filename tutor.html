@@ -202,12 +202,9 @@
 					}, 300);
 				}
 
-				// NEW: update sign-out bar
 				const signOutBar = document.getElementById('signOutBar');
-				const sobEmail = document.getElementById('sobEmail');
-				if (signOutBar && sobEmail) {
-					const modeLabel = window._inClassMode ? ' (In Class)' : ' (At Home)';
-					sobEmail.textContent = `${email}${modeLabel}`;
+				if (signOutBar) {
+					document.getElementById('signedInEmail').textContent = email;
 					signOutBar.style.display = 'flex';
 				}
 			}
@@ -480,22 +477,52 @@
 	</script>
 
 	<div class="tutor-container">
-		<div class="tutor-header">
-			<div class="tutor-header-topbar" id="signOutBar">
-				<span class="sob-email" id="sobEmail"></span>
-				<div class="sob-actions">
-					<button id="chatHistoryToggleBtn">📋 History</button>
-					<button id="signOutBtn" onclick="(async function(){
-						const BACKEND='https://ai-tutor-53f1.onrender.com';
-						if(window._inClassMode && window._inClassActivityId){
-							try{ await fetch(BACKEND+'/api/in-class/activity/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({activityId:window._inClassActivityId})}); }catch(_){}
-						} else if(window._activityId){
-							try{ await fetch(BACKEND+'/api/user-activity/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({activityId:window._activityId})}); }catch(_){}
+		<!-- Sign-out bar: hidden until login succeeds -->
+		<div id="signOutBar" style="
+			display: none; align-items: center; justify-content: flex-end; gap: 12px;
+			padding: 8px 20px;
+			background: #6e1616;
+			color: #fff; font-size: 13px;
+		">
+			<span>👤 <span id="signedInEmail" style="font-weight:600;"></span></span>
+			<button id="signOutBtn" style="
+				padding: 6px 16px; font-size: 13px; font-weight: 600;
+				background: rgba(255,255,255,0.15); color: #fff;
+				border: 1px solid rgba(255,255,255,0.4); border-radius: 6px;
+				cursor: pointer; transition: background 0.2s;
+			" onmouseover="this.style.background='rgba(255,255,255,0.28)'"
+				onmouseout="this.style.background='rgba(255,255,255,0.15)'">Sign Out</button>
+		</div>
+		<script>
+			(function () {
+				const BACKEND = 'https://ai-tutor-53f1.onrender.com';
+				document.getElementById('signOutBtn').addEventListener('click', async function () {
+					this.disabled = true;
+					this.textContent = 'Signing out…';
+					try {
+						if (window._inClassMode && window._inClassActivityId) {
+							await fetch(`${BACKEND}/api/in-class/activity/logout`, {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json' },
+								body: JSON.stringify({ activityId: window._inClassActivityId }),
+							});
+						} else if (window._activityId) {
+							await fetch(`${BACKEND}/api/user-activity/logout`, {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json' },
+								body: JSON.stringify({ activityId: window._activityId }),
+							});
 						}
-						window.location.reload();
-					})()">Sign Out</button>
-				</div>
-			</div>
+					} catch (_) { /* non-blocking */ }
+					window._activityId = null;
+					window._inClassActivityId = null;
+					window._inClassMode = false;
+					window.studentEmail = null;
+					window.location.reload();
+				});
+			})();
+		</script>
+		<div class="tutor-header">
 			<h1>Physics Tutor</h1>
 			<p>Your friendly guide to physics!</p>
 			<div class="mobile-nav" id="mobileNav">
@@ -523,73 +550,64 @@
 			</div>
 			<div class="whiteboard-section" id="whiteboardSection">
 				<div class="whiteboard-tabs">
-					<button class="tab-button active" id="teacherTab" onclick="switchWhiteboard('teacher')">📋 Teacher Board</button>
-					<button class="tab-button" id="studentTab" onclick="switchWhiteboard('student')">✏️ Student Board</button>
-					<button class="tab-button" id="notesTab" onclick="switchWhiteboard('notes')">📝 Notes</button>
+					<button class="tab-button" id="notesTab" onclick="switchWhiteboard('notes')">📝
+						Notes</button>
+					<button class="tab-button active" id="studentTab" onclick="switchWhiteboard('student')">✏️
+						Whiteboard</button>
 				</div>
 				<div class="whiteboard-container">
-					<div class="whiteboard-panel active" id="teacherPanel">
-						<div class="whiteboard-header">
-							<h3>Teacher Whiteboard</h3>
-							<div class="whiteboard-controls">
-								<button id="drawTeacherButton">✏️ Draw</button>
-								<button id="eraserTeacherButton">🧽 Eraser</button>
-								<button id="clearTeacherButton">🗑️ Clear</button>
-								<button id="expandTeacherButton">⛶ Expand</button>
-							</div>
-						</div>
-						<div class="whiteboard-container">
-							<canvas id="teacherWhiteboard" class="whiteboard-canvas"></canvas>
-						</div>
-						<div class="math-buttons" id="teacherMathButtons">
-						</div>
-					</div>
-					<div class="whiteboard-panel" id="studentPanel">
+					<!-- Teacher Whiteboard (kept disabled — teacher-only feature) -->
+
+					<!-- Student Whiteboard -->
+					<div class="whiteboard-panel active" id="studentPanel">
 						<div class="whiteboard-header">
 							<h3>Student Whiteboard</h3>
 							<div class="whiteboard-controls">
-								<button id="drawStudentButton">✏️ Draw</button>
-								<button id="eraserStudentButton">🧽 Eraser</button>
-								<button id="clearStudentButton">🗑️ Clear</button>
-								<button id="stickerToggleBtn" onclick="toggleStickerTray()">
-									🌟 Stickers
-								</button>
-
-								<button id="expandStudentButton">⛶ Expand</button>
+								<button id="clearStudentButton">Clear</button>
+								<button id="drawStudentButton">Draw</button>
+								<button id="eraserStudentButton" onclick="toggleEraser('student')">Eraser</button>
+								<button id="stickerToggleBtn" onclick="toggleStickerTray()" style="display:none;">🧩
+									Stickers</button>
+								<button id="sendWhiteboardBtn" onclick="sendWhiteboardToTutor()"
+									title="Send whiteboard screenshot to tutor" style="display:none;">📸 Send to
+									Tutor</button>
+								<button id="expandStudentButton">Expand</button>
 							</div>
+							<div class="math-buttons">
+								<button onclick="insertPlus('student')">+</button>
+								<button onclick="insertMinus('student')">−</button>
+								<button onclick="insertMultiply('student')">×</button>
+								<button onclick="insertDivide('student')">÷</button>
+								<button onclick="insertEquals('student')">=</button>
+								<button onclick="insertFraction('student')">½</button>
+								<button onclick="insertSquareRoot('student')">√</button>
+								<button onclick="insertPi('student')">π</button>
 							</div>
 						</div>
-						<div class="whiteboard-container">
-						<!-- Canvas overlay wrapper -->
-						<div id="whiteboardWrapper" style="position: relative; flex: 1; min-height: 0;">
+						<!-- Canvas + overlay wrapper -->
+						<div id="whiteboardWrapper" style="position:relative; flex:1; min-height:0;">
 							<canvas id="studentWhiteboard" class="whiteboard-canvas"></canvas>
-
-							<!-- Overlay: stickers live above the canvas -->
-							<div id="stickerOverlay"
-								style="position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:10;">
-							</div>
-						</div>
-
-						<!-- Sticker tray: picker floats over the board -->
-						<div id="physicsStickerTray" class="sticker-tray sticker-tray-hidden">
-							<div class="sticker-tray-inner">
-								<span class="sticker-tray-label">
-									Drag onto board or tap to place at center
-								</span>
-								<!-- actual sticker buttons/items are created by physics-stickers.js -->
-								<div id="physicsStickerList"></div>
+							<!-- Overlay: placed stickers live here — z-index above canvas so pointer events reach stickers -->
+							<div id="stickerOverlay" style="
+								position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:10;
+								"></div>
+							<!-- Sticker picker dropdown (floats over the board) -->
+							<div id="physicsStickerTray" class="sticker-tray sticker-tray-hidden">
+								<div class="sticker-tray-inner">
+									<span class="sticker-tray-label">Drag onto board — or tap to place at centre</span>
+								</div>
 							</div>
 						</div>
 					</div>
 
-					<div class="math-buttons" id="studentMathButtons">
-					</div>
 					<div class="whiteboard-panel" id="notesPanel">
 						<div class="whiteboard-header">
 							<h3>Student Notes</h3>
 							<div class="whiteboard-controls">
-								<button class="mode-btn active" id="writeModeBtn">Write</button>
-								<button class="mode-btn" id="drawModeBtn">Draw</button>
+								<div class="notebook-mode-toggle">
+									<button class="mode-btn active" id="writeModeBtn">Write</button>
+									<button class="mode-btn" id="drawModeBtn">Draw</button>
+								</div>
 								<button id="clearNotesButton">Clear</button>
 								<button id="saveNotesButton">Save</button>
 								<button id="expandNotesButton">Expand</button>

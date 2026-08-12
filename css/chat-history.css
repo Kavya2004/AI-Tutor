@@ -1,250 +1,200 @@
-/* ── Chat History Sidebar ────────────────────────────────────── */
+/* ── Chat History Sidebar ─────────────────────────────────────────────────── */
 
-#chatHistorySidebar {
-  position: fixed;
-  top: 0;
-  left: -320px;
-  width: 300px;
-  height: 100vh;
-  background: #1a1a1a;
-  color: #e8e8e8;
-  z-index: 10000;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.45);
-  transition: left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+.ch-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    z-index: 9000;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-#chatHistorySidebar.open {
-  left: 0;
+.ch-sidebar--closed {
+    transform: translateX(-100%);
 }
 
-/* Header */
-.ch-sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 14px 12px;
-  background: #881c1c;
-  flex-shrink: 0;
+.ch-sidebar--open {
+    transform: translateX(0);
 }
 
-.ch-sidebar-header h3 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #fff;
-  letter-spacing: 0.3px;
+/* ── Header ────────────────────────────────────────────────────────────────── */
+
+.ch-sidebar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 16px 14px;
+    background: #881c1c;
+    flex-shrink: 0;
 }
+
+.ch-sidebar__title {
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+    letter-spacing: 0.3px;
+}
+
+.ch-sidebar__close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.2s, background 0.2s;
+}
+
+.ch-sidebar__close:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* ── New Chat Button ────────────────────────────────────────────────────────── */
 
 .ch-new-btn {
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
-  padding: 5px 11px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.15s;
-  white-space: nowrap;
+    margin: 12px 12px 8px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #881c1c, #6e1616);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s, transform 0.15s;
+    flex-shrink: 0;
 }
 
 .ch-new-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+    background: linear-gradient(135deg, #a83232, #881c1c);
+    transform: translateY(-1px);
 }
 
-/* Close button */
-.ch-close-btn {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 20px;
-  cursor: pointer;
-  line-height: 1;
-  padding: 0 2px;
-  margin-left: 6px;
-  transition: color 0.15s;
+/* ── Conversation List ──────────────────────────────────────────────────────── */
+
+.ch-convo-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 8px 16px;
 }
 
-.ch-close-btn:hover {
-  color: #fff;
+.ch-convo-list::-webkit-scrollbar {
+    width: 5px;
 }
 
-/* Conversation list */
-.ch-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 0;
+.ch-convo-list::-webkit-scrollbar-track {
+    background: transparent;
 }
 
-.ch-list::-webkit-scrollbar {
-  width: 5px;
+.ch-convo-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
 }
 
-.ch-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.ch-list::-webkit-scrollbar-thumb {
-  background: #444;
-  border-radius: 4px;
-}
-
-.ch-list::-webkit-scrollbar-thumb:hover {
-  background: #666;
-}
-
-/* Empty state */
 .ch-empty {
-  padding: 32px 20px;
-  text-align: center;
-  color: #666;
-  font-size: 13px;
-  line-height: 1.6;
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 13px;
+    text-align: center;
+    margin-top: 24px;
+    font-style: italic;
 }
 
-/* Individual conversation item */
-.ch-item {
-  display: flex;
-  align-items: center;
-  padding: 10px 14px;
-  cursor: pointer;
-  border-left: 3px solid transparent;
-  transition: background 0.12s, border-color 0.12s;
-  gap: 8px;
-  position: relative;
+/* ── Individual Conversation Item ──────────────────────────────────────────── */
+
+.ch-convo-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 10px 10px 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 3px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border: 1px solid transparent;
 }
 
-.ch-item:hover {
-  background: #2a2a2a;
+.ch-convo-item:hover {
+    background: rgba(255, 255, 255, 0.07);
 }
 
-.ch-item.active {
-  background: #2d1a1a;
-  border-left-color: #881c1c;
+.ch-convo-item--active {
+    background: rgba(136, 28, 28, 0.35);
+    border-color: rgba(136, 28, 28, 0.6);
 }
 
-.ch-item-title {
-  flex: 1;
-  font-size: 13px;
-  color: #ccc;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.4;
+.ch-convo-item__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.ch-item.active .ch-item-title {
-  color: #fff;
+.ch-convo-item__title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #e8e8e8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
 }
 
-.ch-item-date {
-  font-size: 11px;
-  color: #555;
-  white-space: nowrap;
-  flex-shrink: 0;
+.ch-convo-item__date {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.35);
 }
 
-.ch-delete-btn {
-  background: none;
-  border: none;
-  color: #555;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-  opacity: 0;
-  transition: opacity 0.15s, color 0.15s;
-  flex-shrink: 0;
+.ch-convo-item__del {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: color 0.2s, background 0.2s;
+    opacity: 0;
 }
 
-.ch-item:hover .ch-delete-btn {
-  opacity: 1;
+.ch-convo-item:hover .ch-convo-item__del {
+    opacity: 1;
 }
 
-.ch-delete-btn:hover {
-  color: #e74c3c;
-  background: rgba(231, 76, 60, 0.12);
+.ch-convo-item__del:hover {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.12);
 }
 
-/* Sidebar overlay (dim background when open) */
-#chatHistoryOverlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 9999;
-}
+/* ── Sign-out bar ───────────────────────────────────────────────────────────── */
 
-#chatHistoryOverlay.visible {
-  display: block;
-}
-
-/* Toggle button in the header topbar */
-#chatHistoryToggleBtn {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-  white-space: nowrap;
-}
-
-#chatHistoryToggleBtn:hover {
-  background: rgba(255, 255, 255, 0.28);
-}
-
-/* Sign-out bar — lives inside .tutor-header as .tutor-header-topbar */
 #signOutBar {
-  display: none;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 8px 16px;
-  background: rgba(0, 0, 0, 0.18);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  color: #fff;
-  font-size: 13px;
-  flex-shrink: 0;
+    display: none;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 8px 20px;
+    background: #6e1616;
+    color: #fff;
+    font-size: 13px;
 }
 
-#signOutBar.visible {
-  display: flex;
-}
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
 
-#signOutBar .sob-email {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  opacity: 0.85;
-  font-size: 13px;
-}
-
-#signOutBar .sob-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-#signOutBtn {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-#signOutBtn:hover {
-  background: rgba(255, 255, 255, 0.28);
+@media (max-width: 600px) {
+    .ch-sidebar {
+        width: 100vw;
+    }
 }
