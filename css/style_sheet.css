@@ -2179,9 +2179,7 @@ body {
 
 .whiteboard-canvas {
 	flex: 1;
-	/* fill remaining space, not 100% height */
 	min-height: 0;
-	/* allow flex shrink */
 	width: 100%;
 	cursor: crosshair;
 	background: white;
