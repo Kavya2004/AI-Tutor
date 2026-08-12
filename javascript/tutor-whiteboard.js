@@ -21,6 +21,7 @@ let pendingSymbol = null;
 // When true, resizeCanvas is a no-op — used to block spurious resizes that
 // fire because toggling the math-buttons toolbar changes the panel layout.
 let _suppressResize = false;
+let _isDraggingResize = false;
 
 
 let teacherSymbols = [];
@@ -50,6 +51,7 @@ document.addEventListener('DOMContentLoaded', initOnce);
 
 if (document.readyState === 'interactive' || document.readyState === 'complete') {
 	setTimeout(initOnce, 100);
+}
 
 function setupWhiteboardControls() {
 
@@ -215,6 +217,7 @@ function initializeWhiteboards() {
 	// Debounced resize handler to prevent excessive operations
 	let resizeTimeout;
 	window.addEventListener('resize', () => {
+		if (_isDraggingResize) return;
 		clearTimeout(resizeTimeout);
 		resizeTimeout = setTimeout(() => {
 			resizeCanvases();
@@ -359,10 +362,7 @@ function setupResizeHandle() {
 	const chatSection = document.querySelector('.chat-section');
 	const whiteboardSection = document.querySelector('.whiteboard-section');
 
-	if (!chatSection || !whiteboardSection) {
-		console.error('Chat or whiteboard section not found');
-		return;
-	}
+	if (!chatSection || !whiteboardSection) return;
 
 	let resizeHandle = document.querySelector('.resize-handle');
 	if (!resizeHandle) {
@@ -372,55 +372,109 @@ function setupResizeHandle() {
 		chatSection.appendChild(resizeHandle);
 	}
 
-	let isResizing = false;
+	let isResizingPanel = false;
 	let startX = 0;
 	let startWidth = 0;
+	let pendingRAF = null;
+	let latestClientX = 0;
 
 	resizeHandle.addEventListener('mousedown', (e) => {
-		isResizing = true;
+		isResizingPanel = true;
+		_isDraggingResize = true;
 		startX = e.clientX;
 		startWidth = parseInt(window.getComputedStyle(chatSection).width, 10);
 		document.body.style.cursor = 'col-resize';
 		document.body.style.userSelect = 'none';
-
+		chatSection.style.transition = 'none';
+		whiteboardSection.style.transition = 'none';
+		chatSection.style.pointerEvents = 'none';
+		whiteboardSection.style.pointerEvents = 'none';
 		resizeHandle.style.background = '#337810';
 		resizeHandle.style.color = 'white';
-
 		e.preventDefault();
 		e.stopPropagation();
 	});
 
 	document.addEventListener('mousemove', (e) => {
-		if (!isResizing) return;
-
-		const deltaX = e.clientX - startX;
-		const newWidth = startWidth + deltaX;
-		const minWidth = 250;
-		const maxWidth = window.innerWidth - 300;
-
-		if (newWidth >= minWidth && newWidth <= maxWidth) {
-			chatSection.style.flexBasis = newWidth + 'px';
-			chatSection.style.width = newWidth + 'px';
-
-			// Debounce the resize during manual resizing
-			clearTimeout(resizeTimeout);
-			resizeTimeout = setTimeout(() => {
-				resizeCanvases();
-			}, 50);
-		}
-
+		if (!isResizingPanel) return;
+		latestClientX = e.clientX;
+		if (pendingRAF) return;
+		pendingRAF = requestAnimationFrame(() => {
+			pendingRAF = null;
+			const newWidth = startWidth + (latestClientX - startX);
+			const minWidth = 250;
+			const maxWidth = window.innerWidth - 300;
+			if (newWidth >= minWidth && newWidth <= maxWidth) {
+				chatSection.style.flexBasis = newWidth + 'px';
+				chatSection.style.maxWidth   = newWidth + 'px';
+			}
+		});
 		e.preventDefault();
 	});
 
 	document.addEventListener('mouseup', () => {
-		if (isResizing) {
-			isResizing = false;
-			document.body.style.cursor = '';
-			document.body.style.userSelect = '';
-			resizeHandle.style.background = '#ddd';
-			resizeHandle.style.color = '#666';
-		}
+		if (!isResizingPanel) return;
+		isResizingPanel = false;
+		_isDraggingResize = false;
+		if (pendingRAF) { cancelAnimationFrame(pendingRAF); pendingRAF = null; }
+		document.body.style.cursor = '';
+		document.body.style.userSelect = '';
+		chatSection.style.pointerEvents = '';
+		whiteboardSection.style.pointerEvents = '';
+		chatSection.style.transition = '';
+		whiteboardSection.style.transition = '';
+		resizeHandle.style.background = '';
+		resizeHandle.style.color = '';
+		requestAnimationFrame(() => { resizeCanvases(); });
 	});
+
+	// Touch support
+	function startResize(clientX) {
+		isResizingPanel = true;
+		_isDraggingResize = true;
+		startX = clientX;
+		startWidth = parseInt(window.getComputedStyle(chatSection).width, 10);
+		document.body.style.userSelect = 'none';
+		chatSection.style.transition = 'none';
+		whiteboardSection.style.transition = 'none';
+		chatSection.style.pointerEvents = 'none';
+		whiteboardSection.style.pointerEvents = 'none';
+		resizeHandle.style.background = '#337810';
+		resizeHandle.style.color = 'white';
+	}
+	function moveResize(clientX) {
+		if (!isResizingPanel) return;
+		latestClientX = clientX;
+		if (pendingRAF) return;
+		pendingRAF = requestAnimationFrame(() => {
+			pendingRAF = null;
+			const newWidth = startWidth + (latestClientX - startX);
+			const minWidth = 250;
+			const maxWidth = window.innerWidth - 300;
+			if (newWidth >= minWidth && newWidth <= maxWidth) {
+				chatSection.style.flexBasis = newWidth + 'px';
+				chatSection.style.maxWidth   = newWidth + 'px';
+			}
+		});
+	}
+	function endResize() {
+		if (!isResizingPanel) return;
+		isResizingPanel = false;
+		_isDraggingResize = false;
+		if (pendingRAF) { cancelAnimationFrame(pendingRAF); pendingRAF = null; }
+		document.body.style.userSelect = '';
+		chatSection.style.pointerEvents = '';
+		whiteboardSection.style.pointerEvents = '';
+		chatSection.style.transition = '';
+		whiteboardSection.style.transition = '';
+		resizeHandle.style.background = '';
+		resizeHandle.style.color = '';
+		requestAnimationFrame(() => { resizeCanvases(); });
+	}
+
+	resizeHandle.addEventListener('touchstart', (e) => { startResize(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
+	document.addEventListener('touchmove', (e) => { if (!isResizingPanel) return; moveResize(e.touches[0].clientX); e.preventDefault(); }, { passive: false });
+	document.addEventListener('touchend', endResize);
 }
 
 function toggleWhiteboardSize() {
@@ -467,7 +521,7 @@ function updateExpandButton() {
 	}
 
 	if (expandStudentButton) {
-		expandStudentButton.textContent = isExpanded ? '⬅️ Shrink' : '➡️ Expand';
+		expandStudentButton.textContent = isExpanded ? '⬅️ Shrink' : '⛶ Expand';
 		expandStudentButton.title = isExpanded ? 'Shrink whiteboard' : 'Expand whiteboard';
 	}
 }
@@ -508,7 +562,7 @@ function resizeCanvases() {
 }
 
 function resizeCanvas(canvas, boardType) {
-	if (_suppressResize) return;
+	if (_suppressResize || _isDraggingResize) return;
 	if (!canvas) {
 		console.warn(`Canvas not found for ${boardType}`);
 		return;
@@ -544,10 +598,7 @@ function resizeCanvas(canvas, boardType) {
 	canvas.width  = newWidth;
 	canvas.height = newHeight;
 
-	const ctx =
-    boardType === "teacher"
-        ? teacherCanvas?.getContext("2d")
-        : studentCanvas?.getContext("2d");
+	const ctx = boardType === 'teacher' ? teacherCtx : studentCtx;
 	if (ctx) {
 		// Restore drawing properties
 		ctx.strokeStyle = '#333';
@@ -725,7 +776,9 @@ function toggleEraser(boardType) {
 		}
 	}
 
+	_suppressResize = true;
 	updateDrawButtons();
+	requestAnimationFrame(() => { _suppressResize = false; });
 
 }
 

@@ -92,16 +92,10 @@
     toggleBtn.onmouseout  = () => toggleBtn.style.background = 'rgba(255,255,255,0.15)';
     toggleBtn.addEventListener('click', toggleSidebar);
 
-    const sobActions = document.querySelector('.sob-actions');
-    const signOutBtn = document.getElementById('signOutBtn');
-    if (sobActions && signOutBtn) {
-      sobActions.insertBefore(toggleBtn, signOutBtn);
-    }
-
-    // Wire up the existing History button in the HTML if present
-    const existingHistBtn = document.getElementById('chatHistoryToggleBtn');
-    if (existingHistBtn) {
-      existingHistBtn.addEventListener('click', toggleSidebar);
+    // Insert before the sign-out button in the signOutBar
+    const signOutBar = document.getElementById('signOutBar');
+    if (signOutBar) {
+      signOutBar.insertBefore(toggleBtn, signOutBar.querySelector('#signOutBtn'));
     }
 
     document.getElementById('chSidebarClose').addEventListener('click', closeSidebar);
@@ -133,7 +127,6 @@
       return;
     }
     convos.forEach(c => {
-      const item = document.createElement('div');
       const activeId = _inClassMode ? _inClassConvoId : _currentId;
       const item = document.createElement('div');
       item.className = 'ch-convo-item' + (c._id === activeId ? ' ch-convo-item--active' : '');
@@ -311,11 +304,6 @@
   async function init(email) {
     _email = email;
     buildSidebar(false);
-    // Show the topbar with email
-    const bar = document.getElementById('signOutBar');
-    if (bar) bar.classList.add('visible');
-    const emailEl = document.getElementById('sobEmail');
-    if (emailEl) emailEl.textContent = email;
     await loadConvoList();
     await createNewConvo();
     _ready = true;

@@ -322,7 +322,7 @@ class NotebookManager {
 
 // Initialize
 const notebookManager = new NotebookManager();
-
+window.notebookManager = notebookManager;
 
 // Note: switchWhiteboard is defined in tutor-whiteboard.js and handles all panels
 // including 'notes'. The function below is kept for reference only and not exposed globally.

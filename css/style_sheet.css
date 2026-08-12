@@ -2047,9 +2047,10 @@ body {
 	color: #6c757d;
 	font-size: 12px;
 	font-weight: bold;
-	transition: all 0.2s ease;
+	/* No transition — animating every mousemove-driven inline style change causes stutter */
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 	z-index: 10;
+	touch-action: none;
 }
 
 .resize-handle:hover {
@@ -2111,9 +2112,8 @@ body {
 	flex: 1;
 	position: relative;
 	min-width: 280px;
+	will-change: flex-basis;
 }
-
-/* Whiteboard Tabs Styling */
 .whiteboard-tabs {
 	display: flex;
 	background: #f8f9fa;
