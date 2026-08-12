@@ -1090,23 +1090,33 @@ class SessionManager {
 
         // Keep the AI context in sync on all clients so every student's
         // next message has full context of the shared conversation.
-        if (window._inClassMode && window.context !== undefined) {
-          // Use the module-level context array in tutor-chat.js
+        if (window._inClassMode && Array.isArray(window.context)) {
           const role = data.sender === 'bot' ? 'assistant' : 'user';
           const content = data.sender === 'bot'
             ? data.message
             : `${data.userName}: ${data.message}`;
-          // Only add if this message wasn't sent by me (sender already pushed it)
-          if (data.userName !== this.userName || data.sender === 'bot') {
-            window._pendingContextUpdate = window._pendingContextUpdate || [];
-            window._pendingContextUpdate.push({ role, content });
-          }
+          // Always push to context — _addMessageInternal skips this path for
+          // in-session messages, so we maintain context manually here.
+          window.context.push({ role, content });
         }
-        // Save incoming messages from others into the shared session record.
-        // (The sender's own messages are saved by _addMessageInternal in tutor-chat.js.)
-        if (window._inClassMode && data.userName !== this.userName && window.chatHistoryManager) {
-          const role = data.sender === 'bot' ? 'bot' : 'user';
-          window.chatHistoryManager.appendMessage(role, data.message, data.userName);
+        // Persist to the in-class DB.
+        // Rules:
+        //   • User message from someone else → save it (they can't save their own).
+        //   • User message from me → save it here, because in-session mode skips
+        //     _addMessageInternal (the broadcast-only path never calls appendMessage).
+        //   • Bot message → only the client that triggered the AI request saves it
+        //     (that client calls chatHistoryManager.autoTitle in tutor-chat.js which
+        //     also triggers appendMessage via the normal autoTitle path).
+        //     All other clients skip it to prevent every student saving the same response.
+        if (window._inClassMode && window.chatHistoryManager) {
+          const isMine = data.userName === this.userName;
+          if (data.sender !== 'bot') {
+            // Save all user messages (mine and others') — mine won't be saved elsewhere
+            window.chatHistoryManager.appendMessage('user', data.message, data.userName);
+          } else if (!isMine) {
+            // Bot message: only non-senders save it; sender saves via autoTitle flow
+            window.chatHistoryManager.appendMessage('bot', data.message, data.userName);
+          }
         }
         break;
       case "participant_joined":

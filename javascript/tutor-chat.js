@@ -1521,8 +1521,10 @@ async function processUserMessage(message) {
 			window._pendingCitations.push(extractedCitation);
 			// Broadcast — citations travel in the payload so all participants see them
 			window.sessionManager.broadcastMessage(botResponse, 'bot', [], extractedCitation);
-			// Also save to in-class DB and auto-title from this client
+			// Save bot response to the in-class DB (only this client does it;
+			// other clients skip bot messages in handleSessionMessage).
 			if (window.chatHistoryManager) {
+				window.chatHistoryManager.appendMessage('bot', botResponse, 'Tutor');
 				window.chatHistoryManager.autoTitle(message, botResponse);
 			}
     } else {
@@ -2023,6 +2025,13 @@ window.showUrlRef = showUrlRef;
 window.addMessage = addMessage;
 window.formatChatText = formatChatText;
 
+// Expose the live context array so session-manager.js can push to it directly
+// for in-class multi-student context sync.
+Object.defineProperty(window, 'context', {
+  get() { return context; },
+  configurable: true,
+});
+
 window._addMessageSilent = function(text, sender) {
   _addMessageInternal(text, sender, [], null, false, true);
 };
@@ -2034,10 +2043,13 @@ window._resetChatContext = function() {
 window._rebuildContext = function(messages) {
   context = [context[0]]; // keep system prompt
   messages.forEach(msg => {
-    context.push({
-      role: msg.role === 'bot' ? 'assistant' : 'user',
-      content: msg.content,
-    });
+    const role = msg.role === 'bot' ? 'assistant' : 'user';
+    // In-class messages carry a userName — preserve attribution so the AI
+    // knows which student said what (mirrors the live-session context format).
+    const content = (role === 'user' && msg.userName)
+      ? `${msg.userName}: ${msg.content}`
+      : msg.content;
+    context.push({ role, content });
   });
 };
 
