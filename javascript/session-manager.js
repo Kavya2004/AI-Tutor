@@ -2180,8 +2180,6 @@ class SessionManager {
           </div>
         </div>
       </div>
-      <span style="opacity:0.7;">|</span>
-      <button id="inClassSignOutBtn" style="background: rgba(255,255,255,0.15);border: 1px solid rgba(255,255,255,0.3);color: white; padding: 3px 10px; border-radius: 12px;font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap;">Sign Out</button>
     `;
 
     const chatContainer = document.querySelector('.chat-container');
@@ -2205,11 +2203,6 @@ class SessionManager {
           list.style.display = 'none';
           if (arrow) arrow.textContent = '▼';
         });
-      }
-
-      const signOutBtn = document.getElementById('inClassSignOutBtn');
-      if (signOutBtn) {
-        signOutBtn.addEventListener('click', () => this.signOutInClass());
       }
     }, 0);
 

@@ -24,6 +24,18 @@
   let _sidebarVisible = false;
   let _ready = false;
 
+  // In-class state (declared early so renderConvoList can reference it)
+  let _inClassMode = false;
+  let _inClassConvoId = null;
+  let _inClassSessionId = null;
+  let _inClassSessionTitle = null;
+  let _inClassTableNumber = null;
+  let _inClassSessionNumber = null;
+  let _inClassWriting = false;
+  let _inClassQueue = [];
+  let _inClassReady = false;
+  let _inClassTitleSet = false;
+
   // ─── DOM helpers ──────────────────────────────────────────────────────────
   function getSidebar()   { return document.getElementById('chatHistorySidebar'); }
   function getConvoList() { return document.getElementById('convoList'); }
@@ -133,13 +145,13 @@
       item.dataset.id = c._id;
       const date = new Date(c.updatedAt);
       const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      const timeStr = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
       item.innerHTML = `
         <div class="ch-convo-item__body">
           <span class="ch-convo-item__title">${escapeHtml(c.title || 'Conversation')}</span>
-          <span class="ch-convo-item__date">${dateStr}</span>
-        </div>
-        ${_inClassMode ? '' : `<button class="ch-convo-item__del" data-id="${c._id}" title="Delete">🗑</button>`}
-      `;
+          <span class="ch-convo-item__date">${dateStr} · ${timeStr}</span>
+        </div>`
+      + `${_inClassMode ? '' : `<button class="ch-convo-item__del" data-id="${c._id}" title="Delete">🗑</button>`}`;
       item.querySelector('.ch-convo-item__body').addEventListener('click', () => {
         window.chatHistoryManager.loadConversation(c._id);
         closeSidebar();
@@ -315,17 +327,6 @@
   // ─── In-Class mode ────────────────────────────────────────────────────────
   // When a student is in-class, all chat history is stored in the separate
   // in-class DB under /api/in-class/chat. We switch the endpoints here.
-
-  let _inClassMode = false;
-  let _inClassConvoId = null;
-  let _inClassSessionId = null;
-  let _inClassSessionTitle = null;
-  let _inClassTableNumber = null;
-  let _inClassSessionNumber = null;
-  let _inClassWriting = false;
-  let _inClassQueue = [];
-  let _inClassReady = false;
-  let _inClassTitleSet = false;
 
   async function inClassApiPost(path, body) {
     const r = await fetch(`${BACKEND}${path}`, {
