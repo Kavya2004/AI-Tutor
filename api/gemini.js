@@ -1,13 +1,21 @@
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 
 function decodeBase64Data(dataUrl) {
+  if (typeof dataUrl !== 'string') throw new TypeError('dataUrl must be a string');
   const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+  if (!/^[A-Za-z0-9+/=]+$/.test(base64)) throw new TypeError('Invalid base64 data');
   return Buffer.from(base64, 'base64');
 }
 
 async function extractPdfText(dataUrl) {
   try {
     const buffer = decodeBase64Data(dataUrl);
+    // CWE-502: cap buffer size before deserializing to prevent DoS via oversized PDFs
+    const MAX_PDF_BYTES = 20 * 1024 * 1024; // 20 MB
+    if (buffer.length > MAX_PDF_BYTES) {
+      console.error('PDF extraction failed: file too large');
+      return null;
+    }
     const pdfData = await pdfParse(buffer);
     const cleaned = (pdfData.text || '').replace(/\s+/g, ' ').trim();
     return cleaned.slice(0, 14000) + (cleaned.length > 14000 ? '...' : '');
@@ -33,9 +41,31 @@ export default async function handler(req, res) {
 
   try {
       const { messages, files } = req.body;
-      
+
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
           return res.status(400).json({ error: 'Valid messages array is required' });
+      }
+
+      // Validate each message has expected shape (CWE-502: untrusted deserialization)
+      for (const msg of messages) {
+          if (typeof msg !== 'object' || msg === null ||
+              typeof msg.role !== 'string' || typeof msg.content !== 'string') {
+              return res.status(400).json({ error: 'Invalid message format' });
+          }
+      }
+
+      // Validate files array if present (CWE-502)
+      if (files !== undefined && !Array.isArray(files)) {
+          return res.status(400).json({ error: 'files must be an array' });
+      }
+      if (Array.isArray(files)) {
+          for (const file of files) {
+              if (typeof file !== 'object' || file === null ||
+                  typeof file.name !== 'string' || typeof file.type !== 'string' ||
+                  typeof file.data !== 'string') {
+                  return res.status(400).json({ error: 'Invalid file format' });
+              }
+          }
       }
 
       if (!process.env.GEMINI_API_KEY) {
@@ -62,7 +92,8 @@ export default async function handler(req, res) {
                   attachmentNotes.push(`- ${file.name} (${file.type})`);
 
                   if (file.type.startsWith('image/')) {
-                      const base64Data = file.data.includes(',') ? file.data.split(',')[1] : file.data;
+                      // CWE-843: ensure file.data is a string before calling .includes()
+                      const base64Data = typeof file.data === 'string' && file.data.includes(',') ? file.data.split(',')[1] : file.data;
                       if (base64Data && base64Data.length > 0) {
                           lastUserMsg.parts.push({
                               inlineData: {

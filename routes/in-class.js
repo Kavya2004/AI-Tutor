@@ -16,6 +16,8 @@ import {
   recordInClassLogout,
 } from '../config/mongodb.js';
 import { broadcastToProfessors } from '../lib/professor-ws.js';
+import { requireAuth } from '../middleware/requireAuth.js';
+import { csrfGuard } from '../middleware/csrfGuard.js';
 
 // Find the active lab session for a given sessionNumber and push a WS event
 async function notifyProfessors(sessionNumber, eventType, payload = {}) {
@@ -38,7 +40,7 @@ const router = express.Router();
 // ── Attendance / session records ───────────────────────────────────────────
 
 // POST /api/in-class/sessions  — create a new attendance record
-router.post('/sessions', async (req, res) => {
+router.post('/sessions', csrfGuard, async (req, res) => {
   try {
     const { tableNumber, sessionNumber, hostName, hostEmail } = req.body;
     if (!tableNumber || !sessionNumber) {
@@ -54,7 +56,7 @@ router.post('/sessions', async (req, res) => {
 });
 
 // POST /api/in-class/sessions/:id/join  — add a student to the attendance record
-router.post('/sessions/:id/join', async (req, res) => {
+router.post('/sessions/:id/join', csrfGuard, async (req, res) => {
   try {
     const { name, email } = req.body;
     if (!name || !email) return res.status(400).json({ error: 'name and email are required' });
@@ -72,8 +74,8 @@ router.post('/sessions/:id/join', async (req, res) => {
 
 // ── Activity (login / logout) ──────────────────────────────────────────────
 
-// POST /api/in-class/activity/login
-router.post('/activity/login', async (req, res) => {
+// POST /api/in-class/activity/login  — protected: only trusted clients may record logins
+router.post('/activity/login', csrfGuard, requireAuth, async (req, res) => {
   try {
     const { email, name, tableNumber, sessionNumber } = req.body;
     if (!email) return res.status(400).json({ error: 'email is required' });
@@ -87,8 +89,8 @@ router.post('/activity/login', async (req, res) => {
   }
 });
 
-// POST /api/in-class/activity/logout
-router.post('/activity/logout', async (req, res) => {
+// POST /api/in-class/activity/logout  — protected
+router.post('/activity/logout', csrfGuard, requireAuth, async (req, res) => {
   try {
     const { activityId, email, name, tableNumber, sessionNumber } = req.body;
     if (!activityId) return res.status(400).json({ error: 'activityId is required' });
@@ -110,7 +112,7 @@ router.post('/activity/logout', async (req, res) => {
 // ── Shared chat records ────────────────────────────────────────────────────
 
 // POST /api/in-class/chat  — create (idempotent: reuse if exists for sessionId)
-router.post('/chat', async (req, res) => {
+router.post('/chat', csrfGuard, async (req, res) => {
   try {
     const { sessionId, tableNumber, sessionNumber } = req.body;
     if (!sessionId) return res.status(400).json({ error: 'sessionId is required' });
@@ -140,14 +142,12 @@ router.post('/chat', async (req, res) => {
   }
 });
 
-
 // GET /api/in-class/chat/by-session/:sessionId
-// Find the shared session chat record by sessionId (legacy / same-day reuse).
 router.get('/chat/by-session/:sessionId', async (req, res) => {
   const { sessionId } = req.params;
   if (!sessionId) return res.status(400).json({ error: 'sessionId required' });
   try {
-    const Convo = await getChatModel();
+    const Convo = getInClassChatModel();
     const doc = await Convo.findOne({ sessionId });
     if (!doc) return res.status(404).json({ error: 'not found' });
     res.json(doc);
@@ -157,52 +157,16 @@ router.get('/chat/by-session/:sessionId', async (req, res) => {
 });
 
 // GET /api/in-class/chat/by-date/:tableNumber/:sessionNumber/:dateKey
-// Find today's shared chat record for a given table+session (dateKey = YYYY-MM-DD).
 router.get('/chat/by-date/:tableNumber/:sessionNumber/:dateKey', async (req, res) => {
   const { tableNumber, sessionNumber, dateKey } = req.params;
   try {
-    const Convo = await getChatModel();
+    const Convo = getInClassChatModel();
     const doc = await Convo.findOne({
       tableNumber: Number(tableNumber),
       sessionNumber: Number(sessionNumber),
       dateKey,
     });
     if (!doc) return res.status(404).json({ error: 'not found' });
-    res.json(doc);
-  } catch (err) {
-    res.status(503).json({ error: err.message });
-  }
-});
-
-// POST /api/in-class/chat
-// Create the shared session chat record (one per table+session+date).
-// Body: { sessionId, sessionTitle, tableNumber, sessionNumber, email, dateKey, title? }
-// Idempotent — if a record for this table+session+date already exists, returns it.
-router.post('/chat', async (req, res) => {
-  const { sessionId, sessionTitle, tableNumber, sessionNumber, email, dateKey, title } = req.body;
-  if (!sessionId || !tableNumber || !sessionNumber) {
-    return res.status(400).json({ error: 'sessionId, tableNumber, sessionNumber required' });
-  }
-  const key = dateKey || new Date().toISOString().split('T')[0];
-  try {
-    const Convo = await getChatModel();
-    // Return existing record for this table+session+date if already created
-    const existing = await Convo.findOne({
-      tableNumber: Number(tableNumber),
-      sessionNumber: Number(sessionNumber),
-      dateKey: key,
-    });
-    if (existing) return res.json(existing);
-    const doc = await Convo.create({
-      sessionId,
-      sessionTitle: sessionTitle || `Table ${tableNumber} Session ${sessionNumber}`,
-      tableNumber: Number(tableNumber),
-      sessionNumber: Number(sessionNumber),
-      dateKey: key,
-      email: (email || '').trim().toLowerCase(),
-      title: title || key,  // title = the date string e.g. "2025-07-15"
-      messages: [],
-    });
     res.json(doc);
   } catch (err) {
     res.status(503).json({ error: err.message });
@@ -248,7 +212,7 @@ router.get('/chat/:id', async (req, res) => {
 });
 
 // PATCH /api/in-class/chat/:id/messages  — append messages
-router.patch('/chat/:id/messages', async (req, res) => {
+router.patch('/chat/:id/messages', csrfGuard, async (req, res) => {
   try {
     const { messages } = req.body;
     if (!Array.isArray(messages)) return res.status(400).json({ error: 'messages must be an array' });
@@ -281,7 +245,7 @@ router.patch('/chat/:id/messages', async (req, res) => {
 });
 
 // PATCH /api/in-class/chat/:id/title  — update title
-router.patch('/chat/:id/title', async (req, res) => {
+router.patch('/chat/:id/title', csrfGuard, async (req, res) => {
   try {
     const { title } = req.body;
     if (!title) return res.status(400).json({ error: 'title is required' });
@@ -300,7 +264,7 @@ router.patch('/chat/:id/title', async (req, res) => {
 });
 
 // DELETE /api/in-class/chat/:id
-router.delete('/chat/:id', async (req, res) => {
+router.delete('/chat/:id', csrfGuard, async (req, res) => {
   try {
     const connected = await connectInClassMongo();
     if (!connected) return res.status(503).json({ error: 'In-class DB not connected' });

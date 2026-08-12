@@ -14,6 +14,7 @@ import {
   getInClassUserActivityModel,
 } from '../config/mongodb.js';
 import { broadcastToProfessors } from '../lib/professor-ws.js';
+import { csrfGuard } from '../middleware/csrfGuard.js';
 
 const router = express.Router();
 
@@ -27,7 +28,7 @@ async function requireDb(res) {
 // ── Lab Session CRUD ───────────────────────────────────────────────────────
 
 // POST /api/professor/lab-sessions
-router.post('/lab-sessions', async (req, res) => {
+router.post('/lab-sessions', csrfGuard, async (req, res) => {
   if (!await requireDb(res)) return;
   try {
     const { course, labNumber, title, sections = [], tables = [], createdBy = {} } = req.body;
@@ -66,7 +67,7 @@ router.get('/lab-sessions/:id', async (req, res) => {
 });
 
 // PATCH /api/professor/lab-sessions/:id/end
-router.patch('/lab-sessions/:id/end', async (req, res) => {
+router.patch('/lab-sessions/:id/end', csrfGuard, async (req, res) => {
   if (!await requireDb(res)) return;
   try {
     const LabSession = getLabSessionModel();
@@ -79,7 +80,7 @@ router.patch('/lab-sessions/:id/end', async (req, res) => {
 });
 
 // PATCH /api/professor/lab-sessions/:id/archive
-router.patch('/lab-sessions/:id/archive', async (req, res) => {
+router.patch('/lab-sessions/:id/archive', csrfGuard, async (req, res) => {
   if (!await requireDb(res)) return;
   try {
     const LabSession = getLabSessionModel();
@@ -92,7 +93,7 @@ router.patch('/lab-sessions/:id/archive', async (req, res) => {
 });
 
 // POST /api/professor/lab-sessions/:id/duplicate  — clone a previous session as new active
-router.post('/lab-sessions/:id/duplicate', async (req, res) => {
+router.post('/lab-sessions/:id/duplicate', csrfGuard, async (req, res) => {
   if (!await requireDb(res)) return;
   try {
     const LabSession = getLabSessionModel();
@@ -110,7 +111,7 @@ router.post('/lab-sessions/:id/duplicate', async (req, res) => {
 
 // POST /api/professor/lab-sessions/:id/assignment
 // Body: { files: [{name, mimeType, data (base64), size}], uploadedBy, extractedText }
-router.post('/lab-sessions/:id/assignment', async (req, res) => {
+router.post('/lab-sessions/:id/assignment', csrfGuard, async (req, res) => {
   if (!await requireDb(res)) return;
   try {
     const { files, uploadedBy = {}, extractedText = '' } = req.body;
@@ -279,7 +280,7 @@ router.get('/classroom/:labSessionId/student/:email', async (req, res) => {
 
 // POST /api/professor/broadcast
 // Body: { labSessionId, type: 'all'|'table'|'section', target, message }
-router.post('/broadcast', async (req, res) => {
+router.post('/broadcast', csrfGuard, async (req, res) => {
   if (!await requireDb(res)) return;
   try {
     const { labSessionId, type, target, message } = req.body;
@@ -588,7 +589,7 @@ router.get('/classroom/:labSessionId/sections', async (req, res) => {
 });
 
 // POST /api/professor/classroom/:labSessionId/table/:tableNumber/resolve-help
-router.post('/classroom/:labSessionId/table/:tableNumber/resolve-help', async (req, res) => {
+router.post('/classroom/:labSessionId/table/:tableNumber/resolve-help', csrfGuard, async (req, res) => {
   if (!await requireDb(res)) return;
   try {
     const ProfessorEvent = getProfessorEventModel();
@@ -608,7 +609,7 @@ router.post('/classroom/:labSessionId/table/:tableNumber/resolve-help', async (r
 });
 
 // POST /api/professor/classroom/:labSessionId/table/:tableNumber/follow-up
-router.post('/classroom/:labSessionId/table/:tableNumber/follow-up', async (req, res) => {
+router.post('/classroom/:labSessionId/table/:tableNumber/follow-up', csrfGuard, async (req, res) => {
   if (!await requireDb(res)) return;
   try {
     const ProfessorEvent = getProfessorEventModel();
@@ -707,7 +708,7 @@ router.get('/classroom/:labSessionId/students', async (req, res) => {
 
 // POST /api/professor/classroom/:labSessionId/student/:email/move
 // Body: { toTable: Number }
-router.post('/classroom/:labSessionId/student/:email/move', async (req, res) => {
+router.post('/classroom/:labSessionId/student/:email/move', csrfGuard, async (req, res) => {
   if (!await requireDb(res)) return;
   try {
     const InClassUserActivity = getInClassUserActivityModel();
@@ -752,7 +753,7 @@ router.post('/classroom/:labSessionId/student/:email/move', async (req, res) => 
 
 // POST /api/professor/classroom/:labSessionId/notify
 // Called by in-class routes after any state-changing write to trigger a WS push
-router.post('/classroom/:labSessionId/notify', async (req, res) => {
+router.post('/classroom/:labSessionId/notify', csrfGuard, async (req, res) => {
   if (!await requireDb(res)) return;
   await pushClassroomState(req.params.labSessionId);
   res.json({ ok: true });

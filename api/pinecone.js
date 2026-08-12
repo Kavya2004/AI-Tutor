@@ -26,7 +26,9 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     const { query } = req.body;
-    if (!query) return res.status(400).json({ error: 'query is required' });
+    if (!query || typeof query !== 'string') return res.status(400).json({ error: 'query must be a non-empty string' });
+    const sanitizedQuery = query.trim().slice(0, 500);
+    if (!sanitizedQuery) return res.status(400).json({ error: 'query must be a non-empty string' });
 
     if (!process.env.PINECONE_API_KEY || !process.env.PINECONE_INDEX_NAME) {
         console.error('[Pinecone] Missing env vars. PINECONE_API_KEY:', !!process.env.PINECONE_API_KEY, 'PINECONE_INDEX_NAME:', !!process.env.PINECONE_INDEX_NAME);
@@ -34,7 +36,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const embedding = await getEmbedding(query.trim().substring(0, 500));
+        const embedding = await getEmbedding(sanitizedQuery);
         console.log('[Pinecone] embedding ok, dim:', embedding.length, 'index:', process.env.PINECONE_INDEX_NAME);
 
         const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
@@ -43,20 +45,22 @@ export default async function handler(req, res) {
         const results = await index.query({
             vector: embedding,
             topK: 5,
-            includeMetadata: true
+            includeMetadata: true,
+            filter: { source: { $exists: true } }  // restrict to indexed course material only
         });
         console.log('[Pinecone] matches:', results.matches?.length ?? 0);
 
         const chunks = (results.matches || []).map(match => ({
             score: match.score,
-            text: match.metadata?.text || match.metadata?.content || '',
-            source: match.metadata?.source || 'Course Material',
-            page: match.metadata?.page || null,
-            url: match.metadata?.url || null,
-            embed_url: match.metadata?.embed_url || null,
-            drive_file_id: match.metadata?.drive_file_id || null,
-            file_name: match.metadata?.file_name || null,
-            type: match.metadata?.type || null
+            // Sanitize metadata strings to prevent injection via poisoned vectors
+            text:          typeof match.metadata?.text    === 'string' ? match.metadata.text.slice(0, 8000)    : '',
+            source:        typeof match.metadata?.source  === 'string' ? match.metadata.source                 : 'Course Material',
+            page:          typeof match.metadata?.page    === 'number' ? match.metadata.page                   : null,
+            url:           typeof match.metadata?.url     === 'string' ? match.metadata.url                    : null,
+            embed_url:     typeof match.metadata?.embed_url     === 'string' ? match.metadata.embed_url        : null,
+            drive_file_id: typeof match.metadata?.drive_file_id === 'string' ? match.metadata.drive_file_id   : null,
+            file_name:     typeof match.metadata?.file_name     === 'string' ? match.metadata.file_name        : null,
+            type:          typeof match.metadata?.type    === 'string' ? match.metadata.type                   : null
         })).filter(c => c.text);
 
         res.status(200).json({ chunks });

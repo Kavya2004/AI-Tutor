@@ -1,5 +1,6 @@
 import express from 'express';
 import { connectMongo, getChatConversationModel } from '../config/mongodb.js';
+import { csrfGuard } from '../middleware/csrfGuard.js';
 
 const router = express.Router();
 
@@ -26,8 +27,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/chat-history  — create a new empty conversation
-router.post('/', async (req, res) => {
+// POST /api/chat-history
+router.post('/', csrfGuard, async (req, res) => {
   try {
     const { email, activityId, loginTime } = req.body;
     if (!email) return res.status(400).json({ error: 'email is required' });
@@ -72,8 +73,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// PATCH /api/chat-history/:id/messages  — append messages in batch
-router.patch('/:id/messages', async (req, res) => {
+// PATCH /api/chat-history/:id/messages
+router.patch('/:id/messages', csrfGuard, async (req, res) => {
   try {
     const { messages } = req.body;
     if (!Array.isArray(messages)) return res.status(400).json({ error: 'messages must be an array' });
@@ -96,8 +97,8 @@ router.patch('/:id/messages', async (req, res) => {
   }
 });
 
-// PATCH /api/chat-history/:id/title  — update auto-generated title
-router.patch('/:id/title', async (req, res) => {
+// PATCH /api/chat-history/:id/title
+router.patch('/:id/title', csrfGuard, async (req, res) => {
   try {
     const { title } = req.body;
     if (!title) return res.status(400).json({ error: 'title is required' });
@@ -120,8 +121,8 @@ router.patch('/:id/title', async (req, res) => {
   }
 });
 
-// DELETE /api/chat-history/:id  — delete a conversation
-router.delete('/:id', async (req, res) => {
+// DELETE /api/chat-history/:id
+router.delete('/:id', csrfGuard, async (req, res) => {
   try {
     const connected = await connectMongo();
     if (!connected) return res.status(503).json({ error: 'DB not connected' });

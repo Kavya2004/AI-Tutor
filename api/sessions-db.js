@@ -1,11 +1,12 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { Class, Session } from '../config/mongodb.js';
+import { csrfGuard } from '../middleware/csrfGuard.js';
 
 const router = express.Router();
 
-// POST /api/db/classes  – create a class
-router.post('/classes', async (req, res) => {
+// POST /api/db/classes
+router.post('/classes', csrfGuard, async (req, res) => {
   const { className, professorName } = req.body;
   if (!className || !professorName)
     return res.status(400).json({ error: 'className and professorName are required' });
@@ -17,8 +18,8 @@ router.post('/classes', async (req, res) => {
   }
 });
 
-// POST /api/db/sessions  – professor creates a session for a class
-router.post('/sessions', async (req, res) => {
+// POST /api/db/sessions
+router.post('/sessions', csrfGuard, async (req, res) => {
   const { classId, sessionTitle, createdBy } = req.body;
   if (!classId || !sessionTitle || !createdBy?.name || !createdBy?.email)
     return res.status(400).json({ error: 'classId, sessionTitle, and createdBy {name, email} are required' });
@@ -32,8 +33,8 @@ router.post('/sessions', async (req, res) => {
   }
 });
 
-// POST /api/db/sessions/:sessionId/join  – student joins a session
-router.post('/sessions/:sessionId/join', async (req, res) => {
+// POST /api/db/sessions/:sessionId/join
+router.post('/sessions/:sessionId/join', csrfGuard, async (req, res) => {
   const { name, email, tableNumber } = req.body;
   if (!name || !email || tableNumber == null)
     return res.status(400).json({ error: 'name, email, and tableNumber are required' });

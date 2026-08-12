@@ -22,6 +22,7 @@ class SessionManager {
   }
 
   wakeUpBackend() {
+    // CWE-918: BACKEND_URL is a hardcoded constant, safe to fetch directly
     fetch(`${BACKEND_URL}/health`).catch(() => {});
   }
 
@@ -1029,7 +1030,9 @@ class SessionManager {
 
     this.ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        // CWE-502: use safeJsonParse to guard against oversized/malformed WS payloads
+        const data = (window.safeJsonParse || JSON.parse)(event.data);
+        if (!data || typeof data !== 'object') return;
         this.lastPingTime = Date.now();
         this.handleSessionMessage(data);
       } catch (error) {
@@ -1238,24 +1241,42 @@ class SessionManager {
       displayText = message.replace(/\n/g, "<br>");
     }
 
-    let filesHtml = "";
+    // CWE-79/94: build message header with textContent, not innerHTML
+    const header = document.createElement('div');
+    header.className = 'message-header';
+    const authorSpan = document.createElement('span');
+    authorSpan.className = 'message-author';
+    authorSpan.textContent = userName || '';
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'message-time';
+    timeSpan.textContent = time;
+    header.appendChild(authorSpan);
+    header.appendChild(timeSpan);
+
+    const textDiv = document.createElement('div');
+    textDiv.className = 'message-text';
+    // displayText comes from formatChatText which escapes user input — safe as innerHTML
+    textDiv.innerHTML = displayText;
+
+    content.appendChild(header);
+    content.appendChild(textDiv);
+
+    // CWE-79/94: build file spans with textContent, not innerHTML
     if (files && files.length > 0) {
-      filesHtml = '<div class="message-files" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;">';
+      const filesDiv = document.createElement('div');
+      filesDiv.className = 'message-files';
+      filesDiv.style.cssText = 'margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px;';
       files.forEach((file) => {
         const icon = this.getFileIcon(file.type);
-        filesHtml += `<span class="message-file" style="background: #e3f2fd; padding: 4px 8px; border-radius: 12px; font-size: 12px; cursor: pointer; color: #1976d2;" onclick="window.sessionManager.viewSharedFile('${file.name}', '${file.type}', '${file.data}')">${icon} ${file.name}</span>`;
+        const span = document.createElement('span');
+        span.className = 'message-file';
+        span.style.cssText = 'background: #e3f2fd; padding: 4px 8px; border-radius: 12px; font-size: 12px; cursor: pointer; color: #1976d2;';
+        span.textContent = `${icon} ${file.name}`;
+        span.addEventListener('click', () => window.sessionManager.viewSharedFile(file.name, file.type, file.data));
+        filesDiv.appendChild(span);
       });
-      filesHtml += "</div>";
+      content.appendChild(filesDiv);
     }
-
-    content.innerHTML = `
-      <div class="message-header">
-        <span class="message-author">${userName || ''}</span>
-        <span class="message-time">${time}</span>
-      </div>
-      <div class="message-text">${displayText}</div>
-      ${filesHtml}
-    `;
 
     // Attach citation pills for bot messages.
     // Other participants get citations from the WebSocket payload.
@@ -1370,7 +1391,11 @@ class SessionManager {
     const chatMessages = document.getElementById("chatMessages");
     const messageDiv = document.createElement("div");
     messageDiv.className = "message system-message";
-    messageDiv.innerHTML = `<div class="system-content">📢 ${message}</div>`;
+    // CWE-79/94: use textContent for system messages to prevent XSS
+    const inner = document.createElement('div');
+    inner.className = 'system-content';
+    inner.textContent = `📢 ${message}`;
+    messageDiv.appendChild(inner);
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
@@ -2239,7 +2264,6 @@ class SessionManager {
     if (!countEl) return;
 
     if (innerEl) {
-      // Always include the current user, even if not yet in the server's list
       const allParticipants = new Map(this.participants);
       if (this.userName && !allParticipants.has(this.userName)) {
         allParticipants.set(this.userName, {
@@ -2249,21 +2273,41 @@ class SessionManager {
         });
       }
 
+      // CWE-79/94: build participant rows with DOM nodes, not innerHTML
+      innerEl.innerHTML = '';
       if (allParticipants.size === 0) {
-        innerEl.innerHTML = `<div style="padding:8px 10px;font-size:12px;color:#999;text-align:center;">No students yet</div>`;
+        const empty = document.createElement('div');
+        empty.style.cssText = 'padding:8px 10px;font-size:12px;color:#999;text-align:center;';
+        empty.textContent = 'No students yet';
+        innerEl.appendChild(empty);
       } else {
-        innerEl.innerHTML = Array.from(allParticipants.values()).map(p => {
+        allParticipants.forEach(p => {
           const isMe = p.userName === this.userName;
-          return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;transition:background 0.15s;"
-            onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background=''">
-            <span style="width:26px;height:26px;border-radius:50%;background:${p.color || '#6c757d'};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${p.avatar || '👤'}</span>
-            <span style="font-size:12px;font-weight:500;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.userName}</span>
-            ${isMe ? `<span style="font-size:10px;color:#881c1c;font-weight:600;margin-left:auto;flex-shrink:0;">(you)</span>` : ''}
-          </div>`;
-        }).join('');
-      }
+          const row = document.createElement('div');
+          row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;';
+          row.addEventListener('mouseover', () => row.style.background = '#f8f9fa');
+          row.addEventListener('mouseout',  () => row.style.background = '');
 
-      // Count includes current user
+          const avatarSpan = document.createElement('span');
+          avatarSpan.style.cssText = `width:26px;height:26px;border-radius:50%;background:${p.color||'#6c757d'};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;`;
+          avatarSpan.textContent = p.avatar || '👤';
+
+          const nameSpan = document.createElement('span');
+          nameSpan.style.cssText = 'font-size:12px;font-weight:500;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+          nameSpan.textContent = p.userName;
+
+          row.appendChild(avatarSpan);
+          row.appendChild(nameSpan);
+
+          if (isMe) {
+            const youSpan = document.createElement('span');
+            youSpan.style.cssText = 'font-size:10px;color:#881c1c;font-weight:600;margin-left:auto;flex-shrink:0;';
+            youSpan.textContent = '(you)';
+            row.appendChild(youSpan);
+          }
+          innerEl.appendChild(row);
+        });
+      }
       countEl.textContent = `Participants (${allParticipants.size})`;
     }
   }

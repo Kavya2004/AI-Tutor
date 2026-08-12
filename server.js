@@ -20,6 +20,7 @@ import userActivityRouter from './routes/user-activity.js';
 import inClassRouter from './routes/in-class.js';
 import professorRouter from './routes/professor.js';
 import { professorConnections, broadcastToProfessors } from './lib/professor-ws.js';
+import { csrfGuard } from './middleware/csrfGuard.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,18 +30,45 @@ const server = createServer(app);
 const wss = new WebSocketServer({ server });
 const PORT = 3000;
 
-app.use(cors());
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  process.env.FRONTEND_ORIGIN,
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow server-to-server (no origin) or whitelisted origins
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'X-Requested-With'],
+  credentials: true,
+}));
+
+// CSRF protection: JSON-only API double-submit guard.
+// Browsers cannot set Content-Type: application/json cross-origin without a
+// preflight, so requiring both headers blocks forged form POSTs.
+function csrfGuard(req, res, next) {
+  const xrw = req.headers['x-requested-with'];
+  const ct  = (req.headers['content-type'] || '').split(';')[0].trim();
+  if (xrw !== 'XMLHttpRequest' || ct !== 'application/json') {
+    return res.status(403).json({ error: 'CSRF check failed' });
+  }
+  next();
+}
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('.'));
 app.use('/pages', express.static('pages'));
 
-// API routes
-app.post('/api/gemini', geminiHandler);
-app.post('/api/image-gen', imageGenHandler);
-app.post('/api/pinecone', pineconeHandler);
-app.post('/api/search', searchHandler);
-app.post('/api/pdf-content', pdfContentHandler);
-app.post('/api/pdf-page', pdfPageHandler);
+// API routes — csrfGuard applied explicitly on every mutating endpoint
+app.post('/api/gemini', csrfGuard, geminiHandler);
+app.post('/api/image-gen', csrfGuard, imageGenHandler);
+app.post('/api/pinecone', csrfGuard, pineconeHandler);
+app.post('/api/search', csrfGuard, searchHandler);
+app.post('/api/pdf-content', csrfGuard, pdfContentHandler);
+app.post('/api/pdf-page', csrfGuard, pdfPageHandler);
 app.get('/api/pdf-image', pdfImageHandler);
 app.use('/api/db', sessionDbRouter);
 app.use('/api/chat-history', chatHistoryRouter);
@@ -69,7 +97,7 @@ function broadcastToSession(sessionId, message, excludeWs = null) {
 }
 
 // Create session
-app.post('/api/sessions/create', (req, res) => {
+app.post('/api/sessions/create', csrfGuard, (req, res) => {
     const { hostName, avatar, color, isPublic = true, sessionTitle, userEmail } = req.body;
     if (!hostName || !hostName.trim()) {
         return res.status(400).json({ error: 'Host name is required' });
@@ -94,7 +122,7 @@ app.post('/api/sessions/create', (req, res) => {
 });
 
 // Join session
-app.post('/api/sessions/:sessionId/join', (req, res) => {
+app.post('/api/sessions/:sessionId/join', csrfGuard, (req, res) => {
     const { sessionId } = req.params;
     const { userName, avatar, color } = req.body;
     if (!userName || !userName.trim()) return res.status(400).json({ error: 'User name is required' });
@@ -248,9 +276,10 @@ wss.on('connection', (ws, req) => {
     });
 });
 
-// Serve the main page
+// Serve the main page — use a fixed resolved path to prevent path traversal (CWE-22)
+const TUTOR_HTML = path.resolve(__dirname, 'tutor.html');
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'tutor.html'));
+    res.sendFile(TUTOR_HTML);
 });
 
 // Health check endpoint

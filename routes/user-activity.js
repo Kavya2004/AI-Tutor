@@ -1,10 +1,12 @@
 import express from 'express';
 import { connectMongo, getUserActivityModel, recordLogin, recordLogout, updateConversationsOnLogout } from '../config/mongodb.js';
+import { requireAuth } from '../middleware/requireAuth.js';
+import { csrfGuard } from '../middleware/csrfGuard.js';
 
 const router = express.Router();
 
-// POST /api/user-activity/login
-router.post('/login', async (req, res) => {
+// POST /api/user-activity/login  — protected: only trusted clients may record logins
+router.post('/login', csrfGuard, requireAuth, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'email is required' });
@@ -22,8 +24,8 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/user-activity/logout
-router.post('/logout', async (req, res) => {
+// POST /api/user-activity/logout  — protected
+router.post('/logout', csrfGuard, requireAuth, async (req, res) => {
   try {
     const { activityId } = req.body;
     if (!activityId) return res.status(400).json({ error: 'activityId is required' });
@@ -41,8 +43,8 @@ router.post('/logout', async (req, res) => {
   }
 });
 
-// GET /api/user-activity  (admin view)
-router.get('/', async (req, res) => {
+// GET /api/user-activity  (admin view) — protected
+router.get('/', requireAuth, async (req, res) => {
   try {
     const connected = await connectMongo();
     if (!connected) return res.status(503).json({ error: 'DB not connected' });

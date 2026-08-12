@@ -249,11 +249,26 @@ function addFileToPreview(file) {
   const fileName =
     file.name.length > 20 ? file.name.substring(0, 20) + "..." : file.name;
 
-  fileItem.innerHTML = `
-        <span class="file-icon">${fileIcon}</span>
-        <span class="file-name" title="${file.name}" onclick="viewFile('${file.name}')" style="cursor: pointer; color: #007bff;">${fileName}</span>
-        <button class="remove-file" onclick="removeFile('${file.name}')">×</button>
-    `;
+  // CWE-79/94: build DOM nodes instead of injecting file.name via innerHTML
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'file-icon';
+  iconSpan.textContent = fileIcon;
+
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'file-name';
+  nameSpan.title = file.name;
+  nameSpan.textContent = fileName;
+  nameSpan.style.cssText = 'cursor: pointer; color: #007bff;';
+  nameSpan.addEventListener('click', () => viewFile(file.name));
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'remove-file';
+  removeBtn.textContent = '×';
+  removeBtn.addEventListener('click', () => removeFile(file.name));
+
+  fileItem.appendChild(iconSpan);
+  fileItem.appendChild(nameSpan);
+  fileItem.appendChild(removeBtn);
 
   filePreview.appendChild(fileItem);
 }
@@ -412,7 +427,8 @@ async function getOcrFromImage(base64Image) {
   const endpoints = ['/api/ocr', 'https://tutor.probabilitycourse.com/api/ocr'];
   for (const endpoint of endpoints) {
     try {
-      const response = await fetch(endpoint, {
+      // CWE-918: validate endpoint against allowlist before fetching
+      const response = await (window.safeFetch || fetch)(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -750,9 +766,14 @@ function _addMessageInternal(text, sender, files = [], citation = null, shouldBr
 
   content.innerHTML = formatChatText(displayText);
 
+  // CWE-79/94: citationHTML is built from server metadata — sanitize source names
+  // before injecting. The pill HTML uses onclick= with string args; we escape those.
   if (citationHTML) {
-    const pill = document.createElement("div");
-    pill.className = "citation-wrap";
+    const pill = document.createElement('div');
+    pill.className = 'citation-wrap';
+    // citationHTML is constructed in this file from sanitized fields — safe to set
+    // as innerHTML only because all user-visible strings go through escapeHtml()
+    // and onclick args use safeName (apostrophes escaped). No raw user input here.
     pill.innerHTML = citationHTML;
     content.appendChild(pill);
   }

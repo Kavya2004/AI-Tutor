@@ -2,7 +2,7 @@
 import { execFile } from 'child_process';
 import { existsSync } from 'fs';
 import { readFile, unlink } from 'fs/promises';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { tmpdir } from 'os';
 
@@ -38,9 +38,11 @@ export default async function handler(req, res) {
 
     // pdftoppm pads based on total page count (1697 = 4 digits)
     const padded = String(page).padStart(4, '0');
-    const imgPath = `${outPrefix}-${padded}.png`;
-
-    const imgBuffer = await readFile(imgPath);
+    const imgPath = resolve(`${outPrefix}-${padded}.png`);
+    const expectedDir = resolve(tmpdir());
+    if (!imgPath.startsWith(expectedDir + '/')) {
+      return res.status(400).json({ error: 'Invalid file path' });
+    }
     await unlink(imgPath).catch(() => {});
 
     res.setHeader('Content-Type', 'image/png');
