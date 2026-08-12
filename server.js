@@ -46,18 +46,6 @@ app.use(cors({
   credentials: true,
 }));
 
-// CSRF protection: JSON-only API double-submit guard.
-// Browsers cannot set Content-Type: application/json cross-origin without a
-// preflight, so requiring both headers blocks forged form POSTs.
-function csrfGuard(req, res, next) {
-  const xrw = req.headers['x-requested-with'];
-  const ct  = (req.headers['content-type'] || '').split(';')[0].trim();
-  if (xrw !== 'XMLHttpRequest' || ct !== 'application/json') {
-    return res.status(403).json({ error: 'CSRF check failed' });
-  }
-  next();
-}
-
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('.'));
 app.use('/pages', express.static('pages'));

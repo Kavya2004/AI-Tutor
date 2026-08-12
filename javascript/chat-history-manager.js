@@ -41,6 +41,15 @@
   function getConvoList() { return document.getElementById('convoList'); }
 
   // ─── API wrappers ─────────────────────────────────────────────────────────
+  // NOTE: All mutating requests (POST, PATCH, DELETE) require both
+  //   Content-Type: application/json  AND  X-Requested-With: XMLHttpRequest
+  // to satisfy the server-side csrfGuard (CWE-352).
+
+  const CSRF_HEADERS = {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+  };
+
   async function apiGet(path) {
     const r = await fetch(`${BACKEND}${path}`);
     if (!r.ok) throw new Error(`GET ${path} → ${r.status}`);
@@ -50,7 +59,7 @@
   async function apiPost(path, body) {
     const r = await fetch(`${BACKEND}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: CSRF_HEADERS,
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`POST ${path} → ${r.status}`);
@@ -60,7 +69,7 @@
   async function apiPatch(path, body) {
     const r = await fetch(`${BACKEND}${path}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: CSRF_HEADERS,
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`PATCH ${path} → ${r.status}`);
@@ -68,7 +77,11 @@
   }
 
   async function apiDelete(path) {
-    const r = await fetch(`${BACKEND}${path}`, { method: 'DELETE' });
+    const r = await fetch(`${BACKEND}${path}`, {
+      method: 'DELETE',
+      headers: CSRF_HEADERS,
+      body: JSON.stringify({}),
+    });
     if (!r.ok) throw new Error(`DELETE ${path} → ${r.status}`);
     return r.json();
   }
@@ -233,12 +246,13 @@
   // ─── Auto-title ───────────────────────────────────────────────────────────
   async function autoTitle(userMsg, botMsg) {
     if (_titleSet || !_currentId) return;
+    // Set immediately to prevent duplicate calls on concurrent messages
     _titleSet = true;
     try {
       const prompt = `Given this physics tutoring exchange, generate a short 4-7 word descriptive title (no quotes, no punctuation at end):\nStudent: ${userMsg}\nTutor: ${botMsg.substring(0, 300)}`;
       const r = await fetch('/api/gemini', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: CSRF_HEADERS,
         body: JSON.stringify({
           messages: [
             { role: 'system', content: 'Generate a very short title (4-7 words, no quotes). Return ONLY the title text.' },
@@ -249,11 +263,13 @@
       const data = await r.json();
       const title = (data.response || '').trim().replace(/^["']|["']$/g, '').substring(0, 60) || 'Physics Discussion';
       await apiPatch(`/api/chat-history/${_currentId}/title`, { title });
+      // Reload sidebar so the new title shows with correct sort order
       await loadConvoList();
       markActiveInList(_currentId);
     } catch (e) {
       console.warn('[chat-history] autoTitle failed:', e.message);
-      _titleSet = false;
+      // Do NOT reset _titleSet here — let the title remain as the default
+      // "New Conversation" rather than retrying on every subsequent message.
     }
   }
 
@@ -280,14 +296,14 @@
       // Restore the tutor-chat context array (keep only the system prompt)
       if (window._resetChatContext) window._resetChatContext();
 
-      // Replay messages in the UI
+      // Replay messages in the UI (silent = no DB persistence, no broadcast)
       doc.messages.forEach(msg => {
         if (window._addMessageSilent) {
           window._addMessageSilent(msg.content, msg.role === 'user' ? 'user' : 'bot');
         }
       });
 
-      // Rebuild context from stored messages for AI continuity
+      // Rebuild AI context from stored messages for continuity
       if (window._rebuildContext) window._rebuildContext(doc.messages);
 
       markActiveInList(id);
@@ -315,10 +331,12 @@
   // ─── Init (at-home) ───────────────────────────────────────────────────────
   async function init(email) {
     _email = email;
+    console.log('[chat-history] init started for', email);
     buildSidebar(false);
     await loadConvoList();
     await createNewConvo();
     _ready = true;
+    console.log('[chat-history] init done, _currentId:', _currentId);
     markActiveInList(_currentId);
     if (_messageQueue.length > 0) flushQueue();
   }
@@ -331,7 +349,7 @@
   async function inClassApiPost(path, body) {
     const r = await fetch(`${BACKEND}${path}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: CSRF_HEADERS,
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`POST ${path} → ${r.status}`);
@@ -341,7 +359,7 @@
   async function inClassApiPatch(path, body) {
     const r = await fetch(`${BACKEND}${path}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: CSRF_HEADERS,
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`PATCH ${path} → ${r.status}`);
@@ -444,12 +462,13 @@
 
   async function autoTitleInClass(userMsg, botMsg) {
     if (_inClassTitleSet || !_inClassConvoId) return;
+    // Set immediately to prevent duplicate calls
     _inClassTitleSet = true;
     try {
       const prompt = `Given this physics tutoring exchange, generate a short 4-7 word descriptive title (no quotes, no punctuation at end):\nStudent: ${userMsg}\nTutor: ${botMsg.substring(0, 300)}`;
       const r = await fetch('/api/gemini', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: CSRF_HEADERS,
         body: JSON.stringify({
           messages: [
             { role: 'system', content: 'Generate a very short title (4-7 words, no quotes). Return ONLY the title text.' },
@@ -460,8 +479,12 @@
       const data = await r.json();
       const title = (data.response || '').trim().replace(/^["']|["']$/g, '').substring(0, 60) || 'In-Class Discussion';
       await inClassApiPatch(`/api/in-class/chat/${_inClassConvoId}/title`, { title });
+      // Reload sidebar so the new title appears
+      await loadConvoList();
+      markActiveInList(_inClassConvoId);
     } catch (e) {
       console.warn('[in-class chat] autoTitle failed:', e.message);
+      // Do NOT reset _inClassTitleSet — avoid retry storms on failure
     }
   }
 

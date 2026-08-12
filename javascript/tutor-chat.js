@@ -159,6 +159,7 @@ async function getGeminiResponse(messages, files = []) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
       },
       body: JSON.stringify({ messages, files }),
     });
@@ -1165,17 +1166,17 @@ async function searchPhysicsTextbook(query) {
     const [webRes, pdfRes, pineconeRes] = await Promise.all([
       fetch("/api/search", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({ query }),
       }),
       fetch("/api/pdf-content", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({ query }),
       }),
       fetch("/api/pinecone", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({ query }),
       }).catch(() => null),
     ]);
@@ -1365,7 +1366,8 @@ async function processUserMessage(message) {
           content: `${window.sessionManager.userName}: ${userMessage}`,
         });
       }
-      context.push({ role: 'user', content: `${window.sessionManager.userName}: ${userMessage}` });
+      // NOTE: the per-branch context.push above already added this user message,
+      // so there is no second push here (the duplicate was removed).
     } else {
       // Not in session, just add current message
       // Use userMessage (which includes fallback text for image-only uploads)
@@ -1638,7 +1640,7 @@ async function generateAIDiagram(description, targetBoard = "teacher") {
 
     const res = await fetch("/api/image-gen", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
       body: JSON.stringify({
         prompt: `Clear educational physics diagram: ${description}. White background, labeled, simple and clean.`,
       }),
@@ -1944,7 +1946,7 @@ async function showBookRef(pageNumber) {
     try {
       const res = await fetch("/api/pdf-page", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({ page: pageNumber }),
       });
       const data = await res.json();

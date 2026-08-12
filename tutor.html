@@ -206,7 +206,7 @@
 				try {
 					const resp = await fetch(`${BACKEND}/api/user-activity/login`, {
 						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
+						headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 						body: JSON.stringify({ email }),
 					});
 					const data = await resp.json();
@@ -238,7 +238,7 @@
 						// First student at this table — create the session
 						const createRes = await fetch(`${BACKEND}/api/sessions/create`, {
 							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
+							headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 							body: JSON.stringify({
 								hostName: name,
 								avatar: '🎓',
@@ -254,7 +254,7 @@
 						// Persist attendance record to in-class DB (fire-and-forget)
 						fetch(`${BACKEND}/api/in-class/sessions`, {
 							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
+							headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 							body: JSON.stringify({
 								sessionId, sessionTitle,
 								tableNumber: Number(tableNumber),
@@ -275,7 +275,7 @@
 					// Record in-class login (non-blocking)
 					fetch(`${BACKEND}/api/in-class/activity/login`, {
 						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
+						headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 						body: JSON.stringify({
 							email, tableNumber: Number(tableNumber),
 							sessionNumber: Number(sessionNumber), sessionId,
@@ -287,7 +287,7 @@
 					// Record student attendance (non-blocking)
 					fetch(`${BACKEND}/api/in-class/sessions/${sessionId}/join`, {
 						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
+						headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 						body: JSON.stringify({
 							name, email,
 							tableNumber: Number(tableNumber),
@@ -381,7 +381,7 @@
 					try {
 						await fetch('https://ai-tutor-53f1.onrender.com/api/user-activity/logout', {
 							method: 'POST',
-							headers: { 'Content-Type': 'application/json' },
+							headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 							body: JSON.stringify({ activityId: window._activityId }),
 						});
 					} catch (_) { }
@@ -496,13 +496,13 @@
 						if (window._inClassMode && window._inClassActivityId) {
 							await fetch(`${BACKEND}/api/in-class/activity/logout`, {
 								method: 'POST',
-								headers: { 'Content-Type': 'application/json' },
+								headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 								body: JSON.stringify({ activityId: window._inClassActivityId }),
 							});
 						} else if (window._activityId) {
 							await fetch(`${BACKEND}/api/user-activity/logout`, {
 								method: 'POST',
-								headers: { 'Content-Type': 'application/json' },
+								headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 								body: JSON.stringify({ activityId: window._activityId }),
 							});
 						}

@@ -628,7 +628,7 @@ class SessionManager {
 
       const response = await fetch(`${BACKEND_URL}/api/sessions/create`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({
           hostName: this.userName,
           avatar: this.selectedAvatar,
@@ -667,7 +667,7 @@ class SessionManager {
     try {
       const response = await fetch(`${BACKEND_URL}/api/sessions/create`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({
           hostName: this.userName,
           avatar: this.selectedAvatar,
@@ -926,7 +926,7 @@ class SessionManager {
         `${BACKEND_URL}/api/sessions/${sessionId}/join`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
           body: JSON.stringify({
             userName: this.userName.trim(),
             avatar: this.selectedAvatar || "👤",
@@ -1886,7 +1886,7 @@ class SessionManager {
 
       const response = await fetch("/api/gemini", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
         body: JSON.stringify({
           messages: [
             {
@@ -2216,7 +2216,7 @@ class SessionManager {
       try {
         await fetch(`${BACKEND_URL}/api/in-class/activity/logout`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
           body: JSON.stringify({ activityId: window._inClassActivityId }),
         });
       } catch (_) {}
