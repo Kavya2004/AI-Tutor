@@ -114,7 +114,7 @@ router.post('/activity/logout', csrfGuard, requireAuth, async (req, res) => {
 // POST /api/in-class/chat  — create (idempotent: reuse if exists for sessionId)
 router.post('/chat', csrfGuard, async (req, res) => {
   try {
-    const { sessionId, tableNumber, sessionNumber } = req.body;
+    const { sessionId, sessionTitle, tableNumber, sessionNumber, dateKey, email, title } = req.body;
     if (!sessionId) return res.status(400).json({ error: 'sessionId is required' });
 
     const connected = await connectInClassMongo();
@@ -122,17 +122,34 @@ router.post('/chat', csrfGuard, async (req, res) => {
 
     const InClassChat = getInClassChatModel();
 
-    // Idempotent — return existing if already created
-    const existing = await InClassChat.findOne({ sessionId });
-    if (existing) {
-      return res.json({ _id: existing._id.toString(), sessionId: existing.sessionId, title: existing.title });
+    // Idempotent: if a record for this table+session+day already exists, reuse it
+    if (dateKey && tableNumber && sessionNumber) {
+      const existing = await InClassChat.findOne({
+        tableNumber: Number(tableNumber),
+        sessionNumber: Number(sessionNumber),
+        dateKey,
+      });
+      if (existing) {
+        return res.json({ _id: existing._id.toString(), sessionId: existing.sessionId, title: existing.title });
+      }
+    } else {
+      // Legacy fallback: dedup by sessionId
+      const existing = await InClassChat.findOne({ sessionId });
+      if (existing) {
+        return res.json({ _id: existing._id.toString(), sessionId: existing.sessionId, title: existing.title });
+      }
     }
 
     const convo = await InClassChat.create({
       sessionId,
-      tableNumber: tableNumber || null,
-      sessionNumber: sessionNumber || null,
-      title: `Table ${tableNumber || '?'} Session ${sessionNumber || '?'}`,
+      sessionTitle: sessionTitle || `Table ${tableNumber || '?'} Session ${sessionNumber || '?'}`,
+      tableNumber:   Number(tableNumber)   || 0,
+      sessionNumber: Number(sessionNumber) || 0,
+      dateKey:       dateKey  || new Date().toISOString().slice(0, 10),
+      email:         (email || '').trim().toLowerCase(),
+      title:         title || (dateKey
+        ? new Date(dateKey).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
+        : `Table ${tableNumber || '?'} Session ${sessionNumber || '?'}`),
       messages: [],
     });
     res.json({ _id: convo._id.toString(), sessionId: convo.sessionId, title: convo.title });
@@ -185,7 +202,16 @@ router.get('/chat', async (req, res) => {
     const InClassChat = getInClassChatModel();
     const filter = {};
     if (sessionId) filter.sessionId = sessionId;
-    if (email) filter['messages.userName'] = email; // messages attributed by email/name
+    // Filter by the top-level email field (set at creation time).
+    // Fallback: also match documents where any message's userName equals the email,
+    // so old records without the email field still appear for the right student.
+    if (email) {
+      const normalised = email.trim().toLowerCase();
+      filter.$or = [
+        { email: normalised },
+        { 'messages.userName': email },
+      ];
+    }
 
     const convos = await InClassChat.find(filter, { messages: 0 }).sort({ updatedAt: -1 }).limit(100).lean();
     res.json(convos);

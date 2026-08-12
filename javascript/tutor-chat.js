@@ -624,6 +624,8 @@ function formatChatText(text) {
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/_(.+?)_/g, '<em>$1</em>')
     .replace(/&lt;u&gt;(.+?)&lt;\/u&gt;/g, '<u>$1</u>')
+    .replace(/&lt;strong&gt;([\s\S]+?)&lt;\/strong&gt;/g, '<strong>$1</strong>')
+    .replace(/&lt;em&gt;([\s\S]+?)&lt;\/em&gt;/g, '<em>$1</em>')
     .replace(/\n/g, '<br>')
     .replace(/&lt;(https?:\/\/[^&]+)&gt;/g, (match, url) => {
       return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
