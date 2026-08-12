@@ -98,7 +98,7 @@
         <span class="ch-sidebar__title">${inClassMode ? '🏫 Class Sessions' : '💬 Conversations'}</span>
         <button class="ch-sidebar__close" id="chSidebarClose" title="Close">✕</button>
       </div>
-      ${inClassMode ? '' : '<button class="ch-new-btn" id="chNewBtn">＋ New Chat</button>'}
+      <button class="ch-new-btn" id="chNewBtn">＋ New Chat</button>
       <div class="ch-convo-list" id="convoList"></div>
     `;
     document.body.appendChild(sidebar);
@@ -163,19 +163,17 @@
         <div class="ch-convo-item__body">
           <span class="ch-convo-item__title">${escapeHtml(c.title || 'Conversation')}</span>
           <span class="ch-convo-item__date">${dateStr} · ${timeStr}</span>
-        </div>`
-      + `${_inClassMode ? '' : `<button class="ch-convo-item__del" data-id="${c._id}" title="Delete">🗑</button>`}`;
+        </div>
+        <button class="ch-convo-item__del" data-id="${c._id}" title="Delete">🗑</button>`;
       item.querySelector('.ch-convo-item__body').addEventListener('click', () => {
         window.chatHistoryManager.loadConversation(c._id);
         closeSidebar();
       });
-      if (!_inClassMode) {
-        item.querySelector('.ch-convo-item__del').addEventListener('click', async (e) => {
-          e.stopPropagation();
-          if (!confirm('Delete this conversation?')) return;
-          await deleteConversation(c._id);
-        });
-      }
+      item.querySelector('.ch-convo-item__del').addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm('Delete this conversation?')) return;
+        await deleteConversation(c._id);
+      });
       list.appendChild(item);
     });
   }
@@ -222,8 +220,10 @@
 
   async function deleteConversation(id) {
     try {
-      await apiDelete(`/api/chat-history/${id}`);
-      if (_currentId === id) { await startNewConversation(); }
+      const path = _inClassMode ? `/api/in-class/chat/${id}` : `/api/chat-history/${id}`;
+      await apiDelete(path);
+      const activeId = _inClassMode ? _inClassConvoId : _currentId;
+      if (activeId === id) { await startNewConversation(); }
       else { await loadConvoList(); }
     } catch (e) { console.warn('[chat-history] delete failed:', e.message); }
   }
@@ -284,6 +284,7 @@
 
       if (_inClassMode) {
         _inClassConvoId = id;
+        _inClassTitleSet = true; // existing convo already has a title
       } else {
         _currentId = id;
         _titleSet = true; // existing convo already has a title
@@ -312,6 +313,27 @@
     }
   }
 
+  async function createNewInClassConvo() {
+    try {
+      const doc = await apiPost('/api/in-class/chat', {
+        sessionId:     _inClassSessionId,
+        sessionTitle:  _inClassSessionTitle,
+        tableNumber:   _inClassTableNumber,
+        sessionNumber: _inClassSessionNumber,
+        dateKey:       (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
+        email:         (_email || '').trim().toLowerCase(),
+        title:         new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
+      });
+      _inClassConvoId = doc._id;
+      _inClassTitleSet = false;
+      return doc;
+    } catch (e) {
+      console.warn('[in-class chat] createNewInClassConvo failed:', e.message);
+      _inClassConvoId = null;
+      return null;
+    }
+  }
+
   // ─── Start a brand-new conversation ───────────────────────────────────────
   async function startNewConversation() {
     const chatMessages = document.getElementById('chatMessages');
@@ -320,12 +342,21 @@
     if (window.addMessage) {
       window.addMessage("Hi there! I'm your physics tutor! Ask me anything about physics!", 'bot');
     }
-    _ready = false;
-    await createNewConvo();
-    await loadConvoList();
-    _ready = true;
-    markActiveInList(_currentId);
-    if (_messageQueue.length > 0) flushQueue();
+    if (_inClassMode) {
+      _inClassReady = false;
+      await createNewInClassConvo();
+      await loadConvoList();
+      _inClassReady = true;
+      markActiveInList(_inClassConvoId);
+      if (_inClassQueue.length > 0) flushInClassQueue();
+    } else {
+      _ready = false;
+      await createNewConvo();
+      await loadConvoList();
+      _ready = true;
+      markActiveInList(_currentId);
+      if (_messageQueue.length > 0) flushQueue();
+    }
   }
 
   // ─── Init (at-home) ───────────────────────────────────────────────────────
@@ -388,70 +419,21 @@
     _inClassTableNumber   = Number(window._inClassTableNumber  || 0);
     _inClassSessionNumber = Number(window._inClassSessionNumber || 0);
 
-    // Build the history sidebar (in-class variant — no "New Chat" button)
-    buildSidebar(true);
-
-    // Date key: YYYY-MM-DD in local time — one channel per class day
-    const today = new Date();
-    const dateKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-    const dateTitle = today.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
-
     console.log('[in-class chat] init for', email, _inClassSessionTitle);
 
+    // Build the history sidebar (in-class variant — same as Home Mode)
+    buildSidebar(true);
+
     try {
-      // Look up today's record for this table+session (date-keyed channel)
-      const findRes = await fetch(
-        `${BACKEND}/api/in-class/chat/by-date/${_inClassTableNumber}/${_inClassSessionNumber}/${dateKey}`
-      );
+      // Load past conversations into the sidebar first
+      await loadConvoList();
 
-      if (findRes.ok) {
-        // Today's record already exists — reuse it and replay messages in UI
-        const existing = await findRes.json();
-        _inClassConvoId = existing._id;
-        console.log('[in-class chat] joined existing daily record:', _inClassConvoId);
-
-        // Fetch full record with messages and replay them
-        try {
-          const fullRes = await fetch(`${BACKEND}/api/in-class/chat/${existing._id}`);
-          if (fullRes.ok) {
-            const full = await fullRes.json();
-            const msgs = full.messages || [];
-            if (msgs.length > 0) {
-              const chatMessages = document.getElementById('chatMessages');
-              if (chatMessages) chatMessages.innerHTML = '';
-              if (window._resetChatContext) window._resetChatContext();
-              msgs.forEach(m => {
-                if (window._addMessageSilent) {
-                  window._addMessageSilent(m.content, m.role === 'user' ? 'user' : 'bot');
-                }
-              });
-              if (window._rebuildContext) window._rebuildContext(msgs);
-              _inClassTitleSet = true;
-            }
-          }
-        } catch (e) {
-          console.warn('[in-class chat] failed to replay history:', e.message);
-        }
-      } else {
-        // First student today — create the daily record with date as title
-        const doc = await inClassApiPost('/api/in-class/chat', {
-          sessionId:     _inClassSessionId,
-          sessionTitle:  _inClassSessionTitle,
-          tableNumber:   _inClassTableNumber,
-          sessionNumber: _inClassSessionNumber,
-          dateKey,
-          email:         email.trim().toLowerCase(),
-          title:         dateTitle,
-        });
-        _inClassConvoId = doc._id;
-        _inClassTitleSet = true;  // title is the date, no need for AI-generated title
-        console.log('[in-class chat] created shared session record:', _inClassConvoId);
-      }
-
+      // Always create a fresh conversation on login — previous ones stay in History.
+      // This mirrors Home Mode init() exactly.
+      await createNewInClassConvo();
       _inClassReady = true;
 
-      // Populate the history sidebar with all past in-class sessions for this student
-      await loadConvoList();
+      console.log('[in-class chat] init done, _inClassConvoId:', _inClassConvoId);
       markActiveInList(_inClassConvoId);
 
       if (_inClassQueue.length > 0) flushInClassQueue();

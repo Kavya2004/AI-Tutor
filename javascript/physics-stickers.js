@@ -293,8 +293,10 @@
     el.appendChild(del);
     overlay.appendChild(el);
 
-    // Select/deselect on click — capture:true fires BEFORE canvas listeners
+    // Select/deselect on click — capture:true fires BEFORE canvas listeners.
+    // Bail out if the pointer landed on the delete button so it can fire normally.
     el.addEventListener('pointerdown', e => {
+      if (e.target === del) return;          // let the del button handle itself
       window._stickerActive = true;          // tell canvas to stand down
       e.stopPropagation();
       selectSticker(el);
