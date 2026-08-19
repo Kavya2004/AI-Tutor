@@ -330,11 +330,15 @@ class QuizIntegration {
     async generateAIQuiz(topic, difficulty = 'easy') {
         const loadingIndicator = document.getElementById('loadingIndicator');
         try {
-            // Check if we have a sample quiz for this topic first
-            const chapterKey = window.getChapterKey ? window.getChapterKey(topic) : topic.toLowerCase();
-            if (window.sampleQuizzes && window.sampleQuizzes[chapterKey]) {
-                quizSystem.startQuiz(window.sampleQuizzes[chapterKey]);
-                return;
+            // Only fall back to sample quizzes for 'easy' difficulty and only when
+            // no difficulty was explicitly requested. For 'medium' or 'hard' we always
+            // generate via AI so the difficulty instructions are properly applied.
+            if (difficulty === 'easy') {
+                const chapterKey = window.getChapterKey ? window.getChapterKey(topic) : topic.toLowerCase();
+                if (window.sampleQuizzes && window.sampleQuizzes[chapterKey]) {
+                    quizSystem.startQuiz(window.sampleQuizzes[chapterKey]);
+                    return;
+                }
             }
             
             if (window.showLoadingForQuiz) {

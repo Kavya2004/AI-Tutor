@@ -241,10 +241,15 @@ class NotebookManager {
         const pageHeight = doc.internal.pageSize.height;
         const margin = 20;
         
-        // Title
+        // Title — use current chat topic if available, otherwise a generic label
+        const topicTitle = (window.currentTopic && window.currentTopic.trim())
+            ? `${window.currentTopic.trim()} Notes`
+            : (window.currentChapter && window.currentChapter.trim())
+                ? `${window.currentChapter.trim()} Notes`
+                : 'Physics Notes';
         doc.setFontSize(16);
         doc.setFont(undefined, 'bold');
-        doc.text('Probability & Stats Notes', margin, yPosition);
+        doc.text(topicTitle, margin, yPosition);
         yPosition += 10;
         
         // Date
@@ -309,14 +314,21 @@ class NotebookManager {
             }
         }
         
-        // Save PDF
-        const filename = `probability-notes-${new Date().toISOString().split('T')[0]}.pdf`;
+        // Save PDF — derive filename from topic
+        const safeTitle = topicTitle.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+        const filename = `${safeTitle}-${new Date().toISOString().split('T')[0]}.pdf`;
         doc.save(filename);
     }
 
     expandNotes() {
         const notesPanel = document.getElementById('notesPanel');
-        if (notesPanel) notesPanel.classList.toggle('expanded');
+        const expandBtn = document.getElementById('expandNotesButton');
+        if (notesPanel) {
+            const isExpanded = notesPanel.classList.toggle('expanded');
+            if (expandBtn) {
+                expandBtn.textContent = isExpanded ? '⬆ Shrink' : '⬇ Expand';
+            }
+        }
     }
 }
 

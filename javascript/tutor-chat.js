@@ -2032,8 +2032,8 @@ Object.defineProperty(window, 'context', {
   configurable: true,
 });
 
-window._addMessageSilent = function(text, sender) {
-  _addMessageInternal(text, sender, [], null, false, true);
+window._addMessageSilent = function(text, sender, files = []) {
+  _addMessageInternal(text, sender, files || [], null, false, true);
 };
 
 window._resetChatContext = function() {

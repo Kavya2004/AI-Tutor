@@ -209,9 +209,18 @@ wss.on('connection', (ws, req) => {
                         p.color = msg.color || p.color;
                     }
                     sessionConnections.get(sessionId).push({ ws, userName });
+                    // Notify all OTHER clients that someone joined (system message)
                     broadcastToSession(sessionId, { type: 'participant_joined', userName, timestamp: new Date().toISOString() }, ws);
+                    // Send session info (title, public flag) to the joiner only
                     ws.send(JSON.stringify({ type: 'session_info', sessionTitle: session.sessionTitle, isPublic: session.isPublic, participants: Array.from(session.participants.values()) }));
-                    ws.send(JSON.stringify({ type: 'participants_update', participants: Array.from(session.participants.values()) }));
+                    // Broadcast participants_update to ALL clients (including joiner) so
+                    // every participant's count updates immediately — fixes the bug where
+                    // the first participant's count stayed at 1 after others joined.
+                    broadcastToSession(sessionId, { type: 'participants_update', participants: Array.from(session.participants.values()) });
+                    // Send the full message history to the joiner so they see all prior chat
+                    if (session.messages.length > 0) {
+                        ws.send(JSON.stringify({ type: 'session_history', messages: session.messages }));
+                    }
                     break;
                 case 'message':
                     if (userName) {

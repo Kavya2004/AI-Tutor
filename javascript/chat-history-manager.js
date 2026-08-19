@@ -300,7 +300,7 @@
       // Replay messages in the UI (silent = no DB persistence, no broadcast)
       doc.messages.forEach(msg => {
         if (window._addMessageSilent) {
-          window._addMessageSilent(msg.content, msg.role === 'user' ? 'user' : 'bot');
+          window._addMessageSilent(msg.content, msg.role === 'user' ? 'user' : 'bot', msg.files || []);
         }
       });
 
