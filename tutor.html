@@ -247,11 +247,25 @@
 					const sessionId = `T${tableNumber}-S${sessionNumber}-${dateKey}`;
 
 					// Tell the server to ensure this room exists (idempotent).
-					// The server will return the same sessionId we computed.
-					const lookupRes = await fetch(
-						`${BACKEND}/api/sessions/by-table-session/${tableNumber}/${sessionNumber}?date=${dateKey}`
-					);
-					if (!lookupRes.ok) throw new Error('Could not verify session on server');
+					// Retry up to 3 times to handle Render cold-start delays (free tier
+					// can take 30–60 s to spin up after inactivity).
+					let lookupRes = null;
+					const maxAttempts = 3;
+					for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+						try {
+							lookupRes = await fetch(
+								`${BACKEND}/api/sessions/by-table-session/${tableNumber}/${sessionNumber}?date=${dateKey}`
+							);
+							if (lookupRes.ok) break; // success — exit retry loop
+						} catch (_fetchErr) {
+							// Network error (server sleeping / no connection)
+							if (attempt < maxAttempts) {
+								joinBtn.textContent = `Connecting… (${attempt}/${maxAttempts})`;
+								await new Promise(r => setTimeout(r, 3000 * attempt)); // 3s, 6s backoff
+							}
+						}
+					}
+					if (!lookupRes || !lookupRes.ok) throw new Error('Could not verify session on server');
 
 					// Stash globals for session-manager + chat-history-manager
 					window._inClassSessionId      = sessionId;
@@ -280,7 +294,7 @@
 
 				} catch (e) {
 					console.error('[in-class join]', e);
-					inClassErr.textContent = 'Could not connect to session. Please try again.';
+					inClassErr.textContent = 'Could not reach the server. The server may be waking up — please wait 30 seconds and try again.';
 					joinBtn.disabled = false;
 					joinBtn.textContent = 'Join Session';
 				}
