@@ -2157,68 +2157,10 @@ class SessionManager {
   // It was intentionally kept there and this duplicate section has been removed
   // to avoid silent JavaScript method overwriting.
 
-  /**
-   * Renders the red in-class banner at the top of the chat.
-   */
-  showInClassBanner(sessionTitle) {
-    // Remove existing banner if any
-    const existing = document.getElementById('inClassBanner');
-    if (existing) existing.remove();
-
-    const banner = document.createElement('div');
-    banner.id = 'inClassBanner';
-    banner.style.cssText = `
-      display: flex; align-items: center; justify-content: center; gap: 10px;
-      padding: 8px 16px; background: #881c1c; color: white;
-      font-size: 13px; font-weight: 600; text-align: center;
-      position: sticky; top: 0; z-index: 100; flex-shrink: 0;
-    `;
-    banner.innerHTML = `
-      <span>🏫 In-Class Mode</span>
-      <span style="opacity:0.7;">|</span>
-      <span>${sessionTitle || window._inClassSessionTitle || ''}</span>
-      <span style="opacity:0.7;">|</span>
-      <div id="inClassParticipantsDropdown" style="position:relative; display:inline-block;">
-        <button id="inClassParticipantsBtn" style="background: rgba(255,255,255,0.15);border: 1px solid rgba(255,255,255,0.3);color: white; padding: 3px 10px; border-radius: 12px;font-size: 12px; font-weight: 500; cursor: pointer;display: flex; align-items: center; gap: 5px; white-space: nowrap;">
-          <span id="inClassParticipantCount">Participants</span>
-          <span id="inClassParticipantsArrow" style="font-size:9px; opacity:0.8;">▼</span>
-        </button>
-        <div id="inClassParticipantsList" style="display: none; position: absolute; top: calc(100% + 6px);left: 50%; transform: translateX(-50%);background: white; color: #333; border-radius: 10px;box-shadow: 0 6px 24px rgba(0,0,0,0.18);min-width: 180px; max-height: 260px; overflow-y: auto;z-index: 9999; padding: 6px 0;">
-          <div style="padding: 6px 14px 4px; font-size: 11px; font-weight: 700;color: #881c1c; text-transform: uppercase; letter-spacing: 0.05em;border-bottom: 1px solid #f0f0f0; margin-bottom: 4px;">Students in session</div>
-          <div id="inClassParticipantsInner" style="padding: 0 4px;">
-            <div style="padding: 8px 10px; font-size: 12px; color: #999; text-align:center;">Loading...</div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const chatContainer = document.querySelector('.chat-container');
-    if (chatContainer) {
-      chatContainer.insertBefore(banner, chatContainer.firstChild);
-    }
-
-    // Toggle dropdown
-    setTimeout(() => {
-      const btn   = document.getElementById('inClassParticipantsBtn');
-      const list  = document.getElementById('inClassParticipantsList');
-      const arrow = document.getElementById('inClassParticipantsArrow');
-      if (btn && list) {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const isOpen = list.style.display === 'block';
-          list.style.display = isOpen ? 'none' : 'block';
-          if (arrow) arrow.textContent = isOpen ? '▼' : '▲';
-        });
-        document.addEventListener('click', () => {
-          list.style.display = 'none';
-          if (arrow) arrow.textContent = '▼';
-        });
-      }
-    }, 0);
-
-    // Populate immediately in case participants are already known
-    this.updateInClassBanner();
-  }
+  // NOTE: showInClassBanner() is defined at the TOP of this class (around line 74).
+  // The duplicate that appeared here has been removed to prevent silent overwriting.
+  // JavaScript class bodies always use the LAST definition, so any method defined
+  // twice results in the first being silently discarded.
 
   async signOutInClass() {
     // 1. Record logout in the in-class activity DB
