@@ -6,7 +6,7 @@
  *   .init(email)                        — at-home login; loads sidebar + starts fresh convo
  *   .initInClass(email)                 — in-class login; finds/creates shared session record
  *   .getCurrentConvoId()                — active conversation _id
- *   .appendMessage(role, txt, userName) — saves one message to the active convo
+ *   .appendMessage(role, txt, userName, files) — saves one message to the active convo
  *   .autoTitle(userMsg, botMsg)         — generates + saves title after first exchange
  *   .loadConversation(id)               — switches to a past conversation
  *   .startNewConversation()             — creates a new blank conversation
@@ -93,12 +93,16 @@
     const sidebar = document.createElement('div');
     sidebar.id = 'chatHistorySidebar';
     sidebar.className = 'ch-sidebar ch-sidebar--closed';
+    // In-class mode: no "New Chat" button — one record per day is enforced
+    const newChatBtn = inClassMode
+      ? ''
+      : '<button class="ch-new-btn" id="chNewBtn">＋ New Chat</button>';
     sidebar.innerHTML = `
       <div class="ch-sidebar__header">
         <span class="ch-sidebar__title">${inClassMode ? '🏫 Class Sessions' : '💬 Conversations'}</span>
         <button class="ch-sidebar__close" id="chSidebarClose" title="Close">✕</button>
       </div>
-      <button class="ch-new-btn" id="chNewBtn">＋ New Chat</button>
+      ${newChatBtn}
       <div class="ch-convo-list" id="convoList"></div>
     `;
     document.body.appendChild(sidebar);
@@ -144,6 +148,12 @@
     _sidebarVisible = false;
   }
 
+  // Returns today's dateKey string ('YYYY-MM-DD') in local time
+  function todayDateKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
   function renderConvoList(convos) {
     const list = getConvoList(); if (!list) return;
     list.innerHTML = '';
@@ -151,29 +161,62 @@
       list.innerHTML = '<p class="ch-empty">No conversations yet.</p>';
       return;
     }
+    const today = todayDateKey();
     convos.forEach(c => {
       const activeId = _inClassMode ? _inClassConvoId : _currentId;
+      // In-class: a conversation is "live" only if its dateKey matches today
+      const isLiveToday = _inClassMode && c.dateKey === today;
+      // Older in-class records are read-only history
+      const isReadOnly  = _inClassMode && !isLiveToday;
+
       const item = document.createElement('div');
       item.className = 'ch-convo-item' + (c._id === activeId ? ' ch-convo-item--active' : '');
+      if (isReadOnly) item.classList.add('ch-convo-item--readonly');
       item.dataset.id = c._id;
       const date = new Date(c.updatedAt);
       const dateStr = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       const timeStr = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-      item.innerHTML = `
-        <div class="ch-convo-item__body">
-          <span class="ch-convo-item__title">${escapeHtml(c.title || 'Conversation')}</span>
-          <span class="ch-convo-item__date">${dateStr} · ${timeStr}</span>
-        </div>
-        <button class="ch-convo-item__del" data-id="${c._id}" title="Delete">🗑</button>`;
-      item.querySelector('.ch-convo-item__body').addEventListener('click', () => {
+
+      // Build body span
+      const body = document.createElement('div');
+      body.className = 'ch-convo-item__body';
+      const titleSpan = document.createElement('span');
+      titleSpan.className = 'ch-convo-item__title';
+      titleSpan.textContent = c.title || 'Conversation';
+      const dateSpan = document.createElement('span');
+      dateSpan.className = 'ch-convo-item__date';
+      dateSpan.textContent = `${dateStr} · ${timeStr}`;
+      if (isReadOnly) {
+        const lockSpan = document.createElement('span');
+        lockSpan.className = 'ch-convo-item__lock';
+        lockSpan.textContent = ' 🔒';
+        lockSpan.title = 'Past session — read-only';
+        dateSpan.appendChild(lockSpan);
+      }
+      body.appendChild(titleSpan);
+      body.appendChild(dateSpan);
+
+      body.addEventListener('click', () => {
         window.chatHistoryManager.loadConversation(c._id);
         closeSidebar();
       });
-      item.querySelector('.ch-convo-item__del').addEventListener('click', async (e) => {
-        e.stopPropagation();
-        if (!confirm('Delete this conversation?')) return;
-        await deleteConversation(c._id);
-      });
+      item.appendChild(body);
+
+      // Delete button — hidden in in-class mode entirely
+      if (!_inClassMode) {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'ch-convo-item__del';
+        delBtn.dataset.id = c._id;
+        delBtn.title = 'Delete';
+        delBtn.textContent = '🗑';
+        delBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('Delete this conversation?')) return;
+          await deleteConversation(c._id);
+        });
+        item.appendChild(delBtn);
+      }
+
       list.appendChild(item);
     });
   }
@@ -285,6 +328,34 @@
       if (_inClassMode) {
         _inClassConvoId = id;
         _inClassTitleSet = true; // existing convo already has a title
+
+        // Determine whether this is today's live session or a past read-only record.
+        const today = todayDateKey();
+        const isReadOnly = doc.dateKey !== today;
+        window._inClassConvoReadOnly = isReadOnly;
+
+        // Show/hide the chat input based on whether the conversation is live
+        const inputArea = document.getElementById('chatInputArea') || document.querySelector('.chat-input-container') || document.querySelector('.input-area');
+        if (inputArea) {
+          inputArea.style.display = isReadOnly ? 'none' : '';
+        }
+        if (isReadOnly) {
+          // Insert a read-only banner above the messages if not already present
+          const chatMessages = document.getElementById('chatMessages');
+          if (chatMessages) {
+            const existing = document.getElementById('chReadOnlyBanner');
+            if (existing) existing.remove();
+            const banner = document.createElement('div');
+            banner.id = 'chReadOnlyBanner';
+            banner.style.cssText = 'background:#f8d7da;color:#721c24;padding:8px 14px;font-size:12px;font-weight:600;text-align:center;border-bottom:1px solid #f5c6cb;flex-shrink:0;';
+            banner.textContent = '🔒 Past class session — read-only';
+            chatMessages.parentElement.insertBefore(banner, chatMessages);
+          }
+        } else {
+          // Remove the banner if switching back to the live session
+          const banner = document.getElementById('chReadOnlyBanner');
+          if (banner) banner.remove();
+        }
       } else {
         _currentId = id;
         _titleSet = true; // existing convo already has a title
@@ -421,16 +492,18 @@
 
     console.log('[in-class chat] init for', email, _inClassSessionTitle);
 
-    // Build the history sidebar (in-class variant — same as Home Mode)
+    // Build the history sidebar (in-class variant — no New Chat button)
     buildSidebar(true);
 
     try {
       // Load past conversations into the sidebar first
       await loadConvoList();
 
-      // Always create a fresh conversation on login — previous ones stay in History.
-      // This mirrors Home Mode init() exactly.
-      await createNewInClassConvo();
+      // Try to find an existing record for today's session before creating one.
+      // The server POST is idempotent on (tableNumber, sessionNumber, dateKey) so
+      // calling it always either returns the existing record or creates a new one.
+      // This means every student who logs in on the same day joins the same record.
+      const doc = await createNewInClassConvo();  // idempotent — reuses today's if present
       _inClassReady = true;
 
       console.log('[in-class chat] init done, _inClassConvoId:', _inClassConvoId);
@@ -477,14 +550,34 @@
     initInClass,
     getCurrentConvoId: () => _inClassMode ? _inClassConvoId : _currentId,
     isInClassMode: () => _inClassMode,
-    appendMessage(role, content, userName) {
+    appendMessage(role, content, userName, files) {
+      // Sanitise files: keep only lightweight metadata + data for images so
+      // documents don't grow unbounded. Large image data (> 500 KB base64) is
+      // stored as metadata-only (name + type, no data) so the pill still renders
+      // but the preview is unavailable for oversized images in history.
+      const MAX_IMG_DATA_CHARS = 500 * 1024; // ~375 KB raw
+      const safeFiles = Array.isArray(files) && files.length > 0
+        ? files.map(f => {
+            const entry = { name: f.name || '', type: f.type || '' };
+            if (f.data && f.data.length <= MAX_IMG_DATA_CHARS) {
+              entry.data = f.data;
+            }
+            if (f.ocrText) entry.ocrText = f.ocrText;
+            return entry;
+          })
+        : undefined;
+
       if (_inClassMode) {
         // For in-class, every message goes into the shared session record.
         // userName identifies who said it in the shared transcript.
-        _inClassQueue.push({ role, content, userName: userName || _email || '', timestamp: new Date() });
+        const entry = { role, content, userName: userName || _email || '', timestamp: new Date() };
+        if (safeFiles) entry.files = safeFiles;
+        _inClassQueue.push(entry);
         setTimeout(flushInClassQueue, 800);
       } else {
-        _messageQueue.push({ role, content, timestamp: new Date() });
+        const entry = { role, content, timestamp: new Date() };
+        if (safeFiles) entry.files = safeFiles;
+        _messageQueue.push(entry);
         setTimeout(flushQueue, 800);
       }
     },

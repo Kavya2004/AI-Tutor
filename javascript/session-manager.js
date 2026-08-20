@@ -1112,7 +1112,7 @@ class SessionManager {
           const isMine = data.userName === this.userName;
           if (data.sender !== 'bot') {
             // Save all user messages (mine and others') — mine won't be saved elsewhere
-            window.chatHistoryManager.appendMessage('user', data.message, data.userName);
+            window.chatHistoryManager.appendMessage('user', data.message, data.userName, data.files);
           } else if (!isMine) {
             // Bot message: only non-senders save it; sender saves via autoTitle flow
             window.chatHistoryManager.appendMessage('bot', data.message, data.userName);

@@ -606,7 +606,7 @@ function escapeHtml(text) {
 }
 
 function formatChatText(text) {
-  // Extract and protect $...$ and $$...$$ blocks so they aren't mangled
+  // ── Step 1: Protect math blocks so they aren't touched by any other rule ──
   const mathBlocks = [];
   let protected_text = text
     .replace(/\$\$[\s\S]+?\$\$/g, (match) => {
@@ -618,20 +618,45 @@ function formatChatText(text) {
       return `\x00MATH${mathBlocks.length - 1}\x00`;
     });
 
+  // ── Step 2: Extract fenced code blocks BEFORE escaping ────────────────────
+  // Handles ```lang\n...\n``` and plain ```.
+  const codeBlocks = [];
+  protected_text = protected_text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+    const safeCode = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    const langAttr = lang ? ` class="language-${lang}"` : '';
+    codeBlocks.push(`<pre><code${langAttr}>${safeCode}</code></pre>`);
+    return `\x00CODE${codeBlocks.length - 1}\x00`;
+  });
+
+  // ── Step 3: Escape everything else ────────────────────────────────────────
   const escaped = escapeHtml(protected_text);
+
+  // ── Step 4: Apply markdown / HTML tag rules on the escaped text ───────────
   let formatted = escaped
+    // Inline backtick code — must run before bold/italic to avoid ` inside * `
+    .replace(/`([^`\n]+?)`/g, '<code>$1</code>')
+    // Restore <code>...</code> that Gemini emitted directly (now HTML-escaped)
+    .replace(/&lt;code&gt;([\s\S]+?)&lt;\/code&gt;/g, '<code>$1</code>')
+    // Bold / italic markdown
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/_(.+?)_/g, '<em>$1</em>')
+    // Restore other common HTML tags Gemini may emit
     .replace(/&lt;u&gt;(.+?)&lt;\/u&gt;/g, '<u>$1</u>')
     .replace(/&lt;strong&gt;([\s\S]+?)&lt;\/strong&gt;/g, '<strong>$1</strong>')
     .replace(/&lt;em&gt;([\s\S]+?)&lt;\/em&gt;/g, '<em>$1</em>')
+    // Newlines → <br> (after code extraction so pre blocks aren't broken)
     .replace(/\n/g, '<br>')
+    // Bare URLs in angle brackets
     .replace(/&lt;(https?:\/\/[^&]+)&gt;/g, (match, url) => {
       return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
     });
 
-  // Restore math blocks (unescaped, so KaTeX can parse them)
+  // ── Step 5: Restore fenced code blocks and math ───────────────────────────
+  formatted = formatted.replace(/\x00CODE(\d+)\x00/g, (_, i) => codeBlocks[parseInt(i)]);
   formatted = formatted.replace(/\x00MATH(\d+)\x00/g, (_, i) => mathBlocks[parseInt(i)]);
 
   return formatted;
@@ -837,7 +862,7 @@ function _addMessageInternal(text, sender, files = [], citation = null, shouldBr
   // Persist to MongoDB (skip when replaying history to avoid double-saving)
   if (!silent && window.chatHistoryManager) {
     const userName = (window.sessionManager && window.sessionManager.userName) || '';
-    window.chatHistoryManager.appendMessage(sender === 'bot' ? 'bot' : 'user', text, userName);
+    window.chatHistoryManager.appendMessage(sender === 'bot' ? 'bot' : 'user', text, userName, files);
   }
 }
 
@@ -1235,6 +1260,11 @@ async function searchPhysicsTextbook(query) {
 
 async function processUserMessage(message) {
   if (isProcessing || (!message.trim() && uploadedFiles.length === 0)) return;
+
+  // Block sending in read-only mode (past in-class sessions)
+  if (window._inClassConvoReadOnly) {
+    return;
+  }
 
   // Check if this is a quiz request before processing
   if (

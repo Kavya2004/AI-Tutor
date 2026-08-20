@@ -27,6 +27,17 @@ const messageSchema = new mongoose.Schema({
   role:      { type: String, enum: ['user', 'bot'], required: true },
   content:   { type: String, required: true },
   timestamp: { type: Date, default: Date.now },
+  // Attached files — stored as lightweight metadata + base64 data for images.
+  // Large files (> ~1 MB each) are truncated at write time to avoid bloating
+  // the document. If data is omitted the file pill still renders but can't be
+  // previewed from history.
+  files: [{
+    name:    { type: String },
+    type:    { type: String },
+    data:    { type: String },   // base64 data-URL (may be absent for large files)
+    ocrText: { type: String },
+    _id:     false,
+  }],
 }, { _id: false });
 
 const chatConversationSchema = new mongoose.Schema({
@@ -279,6 +290,13 @@ const inClassMessageSchema = new mongoose.Schema({
   content:   { type: String, required: true },
   userName:  { type: String, default: '' },  // attributed sender name
   timestamp: { type: Date, default: Date.now },
+  files: [{
+    name:    { type: String },
+    type:    { type: String },
+    data:    { type: String },   // base64 data-URL
+    ocrText: { type: String },
+    _id:     false,
+  }],
 }, { _id: false });
 
 const inClassChatConversationSchema = new mongoose.Schema({
