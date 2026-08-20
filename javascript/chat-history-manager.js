@@ -386,14 +386,23 @@
 
   async function createNewInClassConvo() {
     try {
+      // FIX: Use window._inClassDateKey (set in tutor.html by joinOrCreate) so the
+      // dateKey here matches the one used to build the WS room key.  This ensures the
+      // MongoDB chat record and the WS room are always keyed to the same date even if
+      // the clock crosses midnight between the two operations.
+      const d   = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const defaultDateKey = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const dateKey = window._inClassDateKey || defaultDateKey;
+
       const doc = await apiPost('/api/in-class/chat', {
         sessionId:     _inClassSessionId,
         sessionTitle:  _inClassSessionTitle,
         tableNumber:   _inClassTableNumber,
         sessionNumber: _inClassSessionNumber,
-        dateKey:       (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
+        dateKey,
         email:         (_email || '').trim().toLowerCase(),
-        title:         new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
+        title:         new Date(dateKey).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }),
       });
       _inClassConvoId = doc._id;
       _inClassTitleSet = false;

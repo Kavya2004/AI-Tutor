@@ -44,12 +44,16 @@ class SessionManager {
 
   // Called directly from tutor.html after the student finishes the in-class modal.
   // All window._inClass* vars are guaranteed to be set at this point.
+  // FIX: This is the SINGLE authoritative definition.  The duplicate that appeared
+  // later in this file (around line 2138) has been removed — JavaScript class bodies
+  // silently overwrite earlier method definitions with later ones, so having two
+  // `joinInClassSession` definitions caused unpredictable behaviour.
   async joinInClassSession() {
-    const sessionId     = window._inClassSessionId;
-    const sessionTitle  = window._inClassSessionTitle  || '';
-    const tableNumber   = window._inClassTableNumber   || 0;
-    const email         = window.studentEmail          || '';
-    const name          = window._inClassStudentName   || email.split('@')[0] || 'Student';
+    const sessionId    = window._inClassSessionId;
+    const sessionTitle = window._inClassSessionTitle || '';
+    const tableNumber  = window._inClassTableNumber  || 0;
+    const email        = window.studentEmail         || '';
+    const name         = window._inClassStudentName  || email.split('@')[0] || 'Student';
 
     if (!sessionId) {
       console.warn('[in-class] joinInClassSession called but _inClassSessionId is not set');
@@ -62,6 +66,7 @@ class SessionManager {
     // Reset history flag so the AI context loader runs fresh
     window._inClassHistoryLoaded = false;
 
+    // FIX: Show banner AFTER joining so the WS-derived participant list populates it.
     await this.joinSession(sessionId, tableNumber);
     this.showInClassBanner(sessionTitle);
   }
@@ -947,22 +952,26 @@ class SessionManager {
       this.isHost = false;
       this.sessionMessages = data.session?.messages || data.messages || [];
       this.currentSessionTitle = data.session?.sessionTitle || null;
+
+      // FIX: The server may have resolved a name collision by appending "(2)" etc.
+      // Accept the server's authoritative resolvedName so our WS join message uses it.
+      if (data.resolvedName && data.resolvedName !== this.userName) {
+        console.log(`[in-class] Name collision resolved: "${this.userName}" → "${data.resolvedName}"`);
+        this.userName = data.resolvedName;
+        // Also update the global so other subsystems (chat-history-manager etc.) see it
+        if (window._inClassStudentName !== undefined) {
+          window._inClassStudentName = data.resolvedName;
+        }
+      }
+
       // Pre-populate participants from the HTTP response so the banner
-      // shows names immediately without waiting for a WebSocket message
+      // shows names immediately without waiting for a WebSocket message.
       if (data.session?.participants) {
         this.participants.clear();
         data.session.participants.forEach(p => this.participants.set(p.userName, p));
         this.updateInClassBanner();
       }
       this.joinedTableNumber = tableNumber;
-
-      // Pre-populate participants from the HTTP response so the banner
-      // shows names immediately without waiting for a WebSocket message
-      if (data.session?.participants) {
-        this.participants.clear();
-        data.session.participants.forEach(p => this.participants.set(p.userName, p));
-        this.updateInClassBanner();
-      }
 
       this.connectToSession();
       this.updateSessionUI();
@@ -1012,15 +1021,18 @@ class SessionManager {
     this.lastPingTime = Date.now();
 
     this.ws.onopen = () => {
+      // FIX: Send resolvedName so the server uses the correct (de-duplicated) name.
+      // The server-side 'join' handler checks msg.resolvedName before msg.userName.
       this.ws.send(
         JSON.stringify({
-          type: "join",
-          userName: this.userName,
-          avatar: this.selectedAvatar,
-          color: this.selectedColor,
-          isHost: this.isHost,
-          userEmail: this.userEmail,
-          tableNumber: this.joinedTableNumber || null,
+          type:         "join",
+          userName:     this.userName,
+          resolvedName: this.userName,  // same value — server authoritative name
+          avatar:       this.selectedAvatar,
+          color:        this.selectedColor,
+          isHost:       this.isHost,
+          userEmail:    this.userEmail,
+          tableNumber:  this.joinedTableNumber || null,
         }),
       );
 
@@ -1101,21 +1113,27 @@ class SessionManager {
         }
         // Persist to the in-class DB.
         // Rules:
-        //   • User message from someone else → save it (they can't save their own).
-        //   • User message from me → save it here, because in-session mode skips
-        //     _addMessageInternal (the broadcast-only path never calls appendMessage).
-        //   • Bot message → only the client that triggered the AI request saves it
-        //     (that client calls chatHistoryManager.autoTitle in tutor-chat.js which
-        //     also triggers appendMessage via the normal autoTitle path).
-        //     All other clients skip it to prevent every student saving the same response.
+        //   • User message from someone else → save it.
+        //   • User message from me → save it (in-session mode bypasses _addMessageInternal,
+        //     so the normal DB path never runs; we must save here).
+        //   • Bot message → only clients that did NOT originate the AI request save it.
+        //     The originating client already saves in tutor-chat.js (chatHistoryManager.appendMessage).
+        //     We detect the originator via window._myBotBroadcastPending: tutor-chat.js sets
+        //     it to `true` before broadcastMessage and the first handleSessionMessage bot echo
+        //     consumes (clears) it, skipping the save to avoid a duplicate.
         if (window._inClassMode && window.chatHistoryManager) {
-          const isMine = data.userName === this.userName;
           if (data.sender !== 'bot') {
-            // Save all user messages (mine and others') — mine won't be saved elsewhere
+            // All user messages — mine and others'
             window.chatHistoryManager.appendMessage('user', data.message, data.userName, data.files);
-          } else if (!isMine) {
-            // Bot message: only non-senders save it; sender saves via autoTitle flow
-            window.chatHistoryManager.appendMessage('bot', data.message, data.userName);
+          } else {
+            // Bot message: skip if THIS client triggered it (already saved in tutor-chat.js)
+            if (window._myBotBroadcastPending) {
+              window._myBotBroadcastPending = false; // consume the flag
+              // Do NOT save here — tutor-chat.js already called appendMessage
+            } else {
+              // Another student triggered this bot response; save it for this client
+              window.chatHistoryManager.appendMessage('bot', data.message, 'Tutor');
+            }
           }
         }
         break;
@@ -1174,12 +1192,16 @@ class SessionManager {
         this.currentSessionTitle = data.sessionTitle;
         this.updateSessionUI();
         this.updateParticipants(data.participants);
+        // FIX: Show the joiner their own join notification (requirement 1: joiner
+        // must also see the notification that they joined).
+        this.addSystemMessage(`You joined the session${data.sessionTitle ? ' — ' + data.sessionTitle : ''}`);
         break;
       case "session_history":
-        // Replay all previous messages for a newly joined participant
+        // Replay all previous messages for a newly joined participant.
+        // FIX: This is the authoritative way a late-joining student gets prior history.
         if (data.messages && data.messages.length > 0) {
           const chatMessages = document.getElementById("chatMessages");
-          // Clear any welcome message that was shown before history loaded
+          // Clear any welcome/join messages that were added before history arrived
           if (chatMessages) chatMessages.innerHTML = '';
           data.messages.forEach(msg => {
             this.addSharedMessage(
@@ -1191,7 +1213,7 @@ class SessionManager {
               msg.citations || [],
             );
           });
-          // Also rebuild AI context from history so the new participant's
+          // Rebuild AI context from history so the new participant's
           // next message has full context of what was already discussed.
           if (window._rebuildContext) {
             window._rebuildContext(data.messages.map(m => ({
@@ -1199,6 +1221,9 @@ class SessionManager {
               content: m.sender === 'bot' ? m.message : `${m.userName}: ${m.message}`,
             })));
           }
+          // Mark the in-class history as already loaded so loadInClassHistory()
+          // in tutor-chat.js doesn't re-fetch the same data via HTTP.
+          window._inClassHistoryLoaded = true;
         }
         break;
     }
@@ -2128,34 +2153,9 @@ class SessionManager {
   }
 
   // ── In-Class Mode ──────────────────────────────────────────────────────────
-
-  /**
-   * Called by tutor.html after revealTutor() when the student selected "In Class".
-   * Sets identity, joins the WebSocket session, and shows the banner.
-   */
-  // Called directly from tutor.html after the student finishes the in-class modal.
-  // All window._inClass* vars are guaranteed set at this point.
-  async joinInClassSession() {
-    const sessionId     = window._inClassSessionId;
-    const sessionTitle  = window._inClassSessionTitle  || '';
-    const tableNumber   = window._inClassTableNumber   || 0;
-    const email         = window.studentEmail          || '';
-    const name          = window._inClassStudentName   || email.split('@')[0] || 'Student';
-
-    if (!sessionId) {
-      console.warn('[in-class] joinInClassSession called but _inClassSessionId is not set');
-      return;
-    }
-
-    this.userName  = name;
-    this.userEmail = email;
-
-    // Reset history flag so the AI context loader runs fresh
-    window._inClassHistoryLoaded = false;
-
-    this.showInClassBanner(sessionTitle);
-    await this.joinSession(sessionId, tableNumber);
-  }
+  // NOTE: joinInClassSession() is defined at the TOP of this class (around line 47).
+  // It was intentionally kept there and this duplicate section has been removed
+  // to avoid silent JavaScript method overwriting.
 
   /**
    * Renders the red in-class banner at the top of the chat.

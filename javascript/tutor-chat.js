@@ -1546,13 +1546,19 @@ async function processUserMessage(message) {
     // Handle bot response display/broadcasting
     if (window.sessionManager && window.sessionManager.sessionId) {
       // Stash citations so addSharedMessage can pick them up when the
-			// WebSocket echo arrives. Keyed by a hash of the message content.
+			// WebSocket echo arrives.
 			window._pendingCitations = window._pendingCitations || [];
 			window._pendingCitations.push(extractedCitation);
+
+			// FIX: Set a flag so handleSessionMessage knows this client triggered
+			// this bot broadcast and should NOT double-save it to the DB.
+			window._myBotBroadcastPending = true;
+
 			// Broadcast — citations travel in the payload so all participants see them
 			window.sessionManager.broadcastMessage(botResponse, 'bot', [], extractedCitation);
+
 			// Save bot response to the in-class DB (only this client does it;
-			// other clients skip bot messages in handleSessionMessage).
+			// the flag above prevents handleSessionMessage from saving it again).
 			if (window.chatHistoryManager) {
 				window.chatHistoryManager.appendMessage('bot', botResponse, 'Tutor');
 				window.chatHistoryManager.autoTitle(message, botResponse);

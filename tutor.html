@@ -216,6 +216,16 @@
 				}
 			}
 
+			/**
+			 * FIX: joinOrCreate now uses a DETERMINISTIC session ID based on
+			 * (tableNumber, sessionNumber, dateKey).  All students who pick the same
+			 * table + session on the same calendar day will compute the exact same
+			 * sessionId string ("T{table}-S{session}-{YYYY-MM-DD}") so they always
+			 * land in the same WS room — even after a server restart.
+			 *
+			 * The old approach (HTTP lookup → 404 → random create) was the PRIMARY
+			 * root cause of students ending up in different rooms.
+			 */
 			async function joinOrCreate(email, name, tableNumber, sessionNumber) {
 				const sessionTitle = `Table ${tableNumber} Session ${sessionNumber}`;
 				const joinBtn = document.getElementById('inClassJoinBtn');
@@ -226,74 +236,45 @@
 				inClassErr.textContent = '';
 
 				try {
-					// Look for an existing in-memory session for this table+session combo
+					// Compute today's date key in LOCAL time (not UTC) so students in
+					// the same timezone share the same key regardless of UTC offset.
+					const d   = new Date();
+					const pad = n => String(n).padStart(2, '0');
+					const dateKey = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+					// Derive the deterministic session ID — same formula as server.js
+					// inClassSessionId() so both sides always agree.
+					const sessionId = `T${tableNumber}-S${sessionNumber}-${dateKey}`;
+
+					// Tell the server to ensure this room exists (idempotent).
+					// The server will return the same sessionId we computed.
 					const lookupRes = await fetch(
-						`${BACKEND}/api/sessions/by-table-session/${tableNumber}/${sessionNumber}`
+						`${BACKEND}/api/sessions/by-table-session/${tableNumber}/${sessionNumber}?date=${dateKey}`
 					);
-
-					let sessionId;
-					if (lookupRes.ok) {
-						sessionId = (await lookupRes.json()).sessionId;
-					} else {
-						// First student at this table — create the session
-						const createRes = await fetch(`${BACKEND}/api/sessions/create`, {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-							body: JSON.stringify({
-								hostName: name,
-								avatar: '🎓',
-								color: '#881c1c',
-								isPublic: true,
-								sessionTitle,
-								userEmail: email,
-							}),
-						});
-						if (!createRes.ok) throw new Error('Failed to create session');
-						sessionId = (await createRes.json()).sessionId;
-
-						// Persist attendance record to in-class DB (fire-and-forget)
-						fetch(`${BACKEND}/api/in-class/sessions`, {
-							method: 'POST',
-							headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-							body: JSON.stringify({
-								sessionId, sessionTitle,
-								tableNumber: Number(tableNumber),
-								sessionNumber: Number(sessionNumber),
-								hostName: name, hostEmail: email,
-							}),
-						}).catch(() => { });
-					}
+					if (!lookupRes.ok) throw new Error('Could not verify session on server');
 
 					// Stash globals for session-manager + chat-history-manager
-					window._inClassSessionId = sessionId;
-					window._inClassSessionTitle = sessionTitle;
-					window._inClassTableNumber = tableNumber;
-					window._inClassSessionNumber = sessionNumber;
-					window._inClassStudentName = name;
-					window._inClassMode = true;
+					window._inClassSessionId      = sessionId;
+					window._inClassSessionTitle   = sessionTitle;
+					window._inClassTableNumber    = tableNumber;
+					window._inClassSessionNumber  = sessionNumber;
+					window._inClassStudentName    = name;
+					window._inClassMode           = true;
+					window._inClassDateKey        = dateKey;
 
 					// Record in-class login (non-blocking)
 					fetch(`${BACKEND}/api/in-class/activity/login`, {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 						body: JSON.stringify({
-							email, tableNumber: Number(tableNumber),
-							sessionNumber: Number(sessionNumber), sessionId,
+							email, name,
+							tableNumber: Number(tableNumber),
+							sessionNumber: Number(sessionNumber),
+							sessionId,
 						}),
 					}).then(r => r.json())
 						.then(d => { window._inClassActivityId = d.activityId || null; })
 						.catch(() => { window._inClassActivityId = null; });
-
-					// Record student attendance (non-blocking)
-					fetch(`${BACKEND}/api/in-class/sessions/${sessionId}/join`, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-						body: JSON.stringify({
-							name, email,
-							tableNumber: Number(tableNumber),
-							sessionNumber: Number(sessionNumber),
-						}),
-					}).catch(() => { });
 
 					revealTutor(email);
 
