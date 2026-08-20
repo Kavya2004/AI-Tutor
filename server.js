@@ -310,8 +310,22 @@ wss.on('connection', (ws, req) => {
           userName = msg.resolvedName || msg.userName;
           if (!userName) break;
 
-          // Update participant record if it exists, otherwise create it
-          if (!session.participants.has(userName)) {
+          // Cancel any pending disconnect grace-period timer for this user
+          // (e.g., they refreshed and are reconnecting within 15 s).
+          if (session._disconnectTimers) {
+            const timerKey = `${sessionId}:${userName}`;
+            if (session._disconnectTimers.has(timerKey)) {
+              clearTimeout(session._disconnectTimers.get(timerKey));
+              session._disconnectTimers.delete(timerKey);
+            }
+          }
+
+          // Update participant record if it exists, otherwise create it.
+          // Track whether this is a genuine new join (vs. reconnect) so we
+          // only fire participant_joined for real arrivals.
+          const isNewJoin = !session.participants.has(userName);
+
+          if (isNewJoin) {
             session.participants.set(userName, {
               userName,
               avatar: msg.avatar || '👤',
@@ -328,19 +342,24 @@ wss.on('connection', (ws, req) => {
           // Register WS connection
           sessionConnections.get(sessionId).push({ ws, userName });
 
-          // FIX: Broadcast join notification to ALL OTHER participants (not joiner)
-          broadcastToSession(sessionId, {
-            type: 'participant_joined',
-            userName,
-            timestamp: new Date().toISOString(),
-          }, ws); // excludeWs = ws → everyone except the joiner
+          // Only notify others of a join if this is NOT a reconnect.
+          // Reconnects (within the 15 s grace period) are transparent to other participants.
+          if (isNewJoin) {
+            broadcastToSession(sessionId, {
+              type: 'participant_joined',
+              userName,
+              timestamp: new Date().toISOString(),
+            }, ws); // excludeWs = ws → everyone except the joiner
+          }
 
-          // FIX: Send session_info (title, public flag, full participant list) to joiner only
+          // Send session_info to the joiner — includes isReconnect flag so
+          // the client can skip adding a "You joined" system message on reconnect.
           ws.send(JSON.stringify({
-            type: 'session_info',
+            type:        'session_info',
             sessionTitle: session.sessionTitle,
             isPublic:     session.isPublic,
             participants: Array.from(session.participants.values()),
+            isReconnect:  !isNewJoin,
           }));
 
           // FIX: Broadcast participants_update to ALL (including joiner) so
@@ -397,6 +416,14 @@ wss.on('connection', (ws, req) => {
 
         case 'leave': {
           if (!userName) break;
+          // Cancel any pending grace-period disconnect timer
+          if (session._disconnectTimers) {
+            const timerKey = `${sessionId}:${userName}`;
+            if (session._disconnectTimers.has(timerKey)) {
+              clearTimeout(session._disconnectTimers.get(timerKey));
+              session._disconnectTimers.delete(timerKey);
+            }
+          }
           session.participants.delete(userName);
           const conns = sessionConnections.get(sessionId) || [];
           const idx = conns.findIndex(c => c.ws === ws);
@@ -451,31 +478,56 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => {
     if (!userName) return;
 
-    // Remove from connections list
+    // Remove this WS connection from the connections list
     const conns = sessionConnections.get(sessionId) || [];
     const idx = conns.findIndex(c => c.ws === ws);
     if (idx > -1) conns.splice(idx, 1);
 
-    session.participants.delete(userName);
+    // Check if the user still has another active connection (e.g., multiple tabs).
+    const stillConnected = conns.some(c => c.userName === userName && c.ws.readyState === 1 /* OPEN */);
+    if (stillConnected) return; // don't remove participant — another tab is still live
 
-    // FIX: Broadcast BOTH participant_left AND participants_update on disconnect
-    // so all remaining clients immediately see the updated count.
-    broadcastToSession(sessionId, {
-      type:      'participant_left',
-      userName,
-      timestamp: new Date().toISOString(),
-    });
-    broadcastToSession(sessionId, {
-      type:         'participants_update',
-      participants: Array.from(session.participants.values()),
-    });
+    // FIX: Grace period (15 s) before removing participant.
+    // This prevents "X left / X joined" spam when a student refreshes the page
+    // or when a transient network hiccup drops the WS for a few seconds.
+    // Mirrors the physics_ai_tutor implementation.
+    if (!session._disconnectTimers) session._disconnectTimers = new Map();
+    const timerKey = `${sessionId}:${userName}`;
 
-    // Only delete non-in-class rooms when empty (in-class rooms are auto-recreated)
-    const isInClassRoom = /^T\d+-S\d+-\d{4}-\d{2}-\d{2}$/.test(sessionId);
-    if (session.participants.size === 0 && !isInClassRoom) {
-      sessions.delete(sessionId);
-      sessionConnections.delete(sessionId);
+    // Clear any previous timer for this user (e.g., rapid reconnect)
+    if (session._disconnectTimers.has(timerKey)) {
+      clearTimeout(session._disconnectTimers.get(timerKey));
     }
+
+    session._disconnectTimers.set(timerKey, setTimeout(() => {
+      session._disconnectTimers.delete(timerKey);
+
+      // Re-check: maybe the user reconnected during the grace period
+      const activeConns = (sessionConnections.get(sessionId) || [])
+        .filter(c => c.userName === userName && c.ws.readyState === 1 /* OPEN */);
+      if (activeConns.length > 0) return; // reconnected — don't remove
+
+      session.participants.delete(userName);
+
+      // Broadcast BOTH participant_left AND participants_update so remaining
+      // clients immediately see the updated count.
+      broadcastToSession(sessionId, {
+        type:      'participant_left',
+        userName,
+        timestamp: new Date().toISOString(),
+      });
+      broadcastToSession(sessionId, {
+        type:         'participants_update',
+        participants: Array.from(session.participants.values()),
+      });
+
+      // Only delete non-in-class rooms when empty (in-class rooms are auto-recreated)
+      const isInClassRoom = /^T\d+-S\d+-\d{4}-\d{2}-\d{2}$/.test(sessionId);
+      if (session.participants.size === 0 && !isInClassRoom) {
+        sessions.delete(sessionId);
+        sessionConnections.delete(sessionId);
+      }
+    }, 15000)); // 15-second grace period
   });
 });
 

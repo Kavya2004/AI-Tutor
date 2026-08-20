@@ -16,7 +16,6 @@ import {
   recordInClassLogout,
 } from '../config/mongodb.js';
 import { broadcastToProfessors } from '../lib/professor-ws.js';
-import { requireAuth } from '../middleware/requireAuth.js';
 import { csrfGuard } from '../middleware/csrfGuard.js';
 
 // Find the active lab session for a given sessionNumber and push a WS event
@@ -74,8 +73,8 @@ router.post('/sessions/:id/join', csrfGuard, async (req, res) => {
 
 // ── Activity (login / logout) ──────────────────────────────────────────────
 
-// POST /api/in-class/activity/login  — protected: only trusted clients may record logins
-router.post('/activity/login', csrfGuard, requireAuth, async (req, res) => {
+// POST /api/in-class/activity/login  — records student login time
+router.post('/activity/login', csrfGuard, async (req, res) => {
   try {
     const { email, name, tableNumber, sessionNumber } = req.body;
     if (!email) return res.status(400).json({ error: 'email is required' });
@@ -89,8 +88,8 @@ router.post('/activity/login', csrfGuard, requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/in-class/activity/logout  — protected
-router.post('/activity/logout', csrfGuard, requireAuth, async (req, res) => {
+// POST /api/in-class/activity/logout
+router.post('/activity/logout', csrfGuard, async (req, res) => {
   try {
     const { activityId, email, name, tableNumber, sessionNumber } = req.body;
     if (!activityId) return res.status(400).json({ error: 'activityId is required' });

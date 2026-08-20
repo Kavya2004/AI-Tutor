@@ -1113,27 +1113,30 @@ class SessionManager {
         }
         // Persist to the in-class DB.
         // Rules:
-        //   • User message from someone else → save it.
-        //   • User message from me → save it (in-session mode bypasses _addMessageInternal,
-        //     so the normal DB path never runs; we must save here).
-        //   • Bot message → only clients that did NOT originate the AI request save it.
-        //     The originating client already saves in tutor-chat.js (chatHistoryManager.appendMessage).
-        //     We detect the originator via window._myBotBroadcastPending: tutor-chat.js sets
-        //     it to `true` before broadcastMessage and the first handleSessionMessage bot echo
-        //     consumes (clears) it, skipping the save to avoid a duplicate.
+        //   • User message: ONLY the message sender (originator) saves it.
+        //     All participants render it via addSharedMessage, but only the
+        //     sender writes it to the shared MongoDB record.
+        //     This prevents N copies of every message when N students are in the session.
+        //   • Bot message: ONLY the client that triggered the AI request saves it.
+        //     The originating client saves in tutor-chat.js (chatHistoryManager.appendMessage)
+        //     AND sets _myBotBroadcastPending=true before broadcasting.
+        //     The WS echo arrives here: if the flag is set, we're the originator — skip saving
+        //     (already saved). Otherwise, we're a non-originator — also skip saving (we don't
+        //     save other students' bot responses; the originator already wrote it for everyone).
         if (window._inClassMode && window.chatHistoryManager) {
           if (data.sender !== 'bot') {
-            // All user messages — mine and others'
-            window.chatHistoryManager.appendMessage('user', data.message, data.userName, data.files);
-          } else {
-            // Bot message: skip if THIS client triggered it (already saved in tutor-chat.js)
-            if (window._myBotBroadcastPending) {
-              window._myBotBroadcastPending = false; // consume the flag
-              // Do NOT save here — tutor-chat.js already called appendMessage
-            } else {
-              // Another student triggered this bot response; save it for this client
-              window.chatHistoryManager.appendMessage('bot', data.message, 'Tutor');
+            // User message: only the sender saves their own message
+            if (data.userName === this.userName) {
+              window.chatHistoryManager.appendMessage('user', data.message, data.userName, data.files);
             }
+            // Other students' user messages: render-only, no DB write from this client
+          } else {
+            // Bot message: only the originator client saves (already done in tutor-chat.js).
+            // Consume the flag regardless — then skip the save.
+            if (window._myBotBroadcastPending) {
+              window._myBotBroadcastPending = false; // consume the flag — we already saved in processUserMessage
+            }
+            // Non-originators: do NOT save — the originator already wrote this to the shared record.
           }
         }
         break;
@@ -1192,9 +1195,12 @@ class SessionManager {
         this.currentSessionTitle = data.sessionTitle;
         this.updateSessionUI();
         this.updateParticipants(data.participants);
-        // FIX: Show the joiner their own join notification (requirement 1: joiner
-        // must also see the notification that they joined).
-        this.addSystemMessage(`You joined the session${data.sessionTitle ? ' — ' + data.sessionTitle : ''}`);
+        // Only show "You joined" for genuine new joins, not reconnects
+        // (isReconnect=true is set by the server when the user was already
+        // in the participant list, e.g. after a page refresh within the grace period).
+        if (!data.isReconnect) {
+          this.addSystemMessage(`You joined the session${data.sessionTitle ? ' — ' + data.sessionTitle : ''}`);
+        }
         break;
       case "session_history":
         // Replay all previous messages for a newly joined participant.
@@ -2076,7 +2082,14 @@ class SessionManager {
     chatMessages.innerHTML = "";
 
     this.sessionMessages.forEach((msg) => {
-      this.addSharedMessage(msg.message, msg.sender, msg.timestamp);
+      this.addSharedMessage(
+        msg.message,
+        msg.sender,
+        msg.timestamp,
+        msg.userName,
+        msg.files || [],
+        msg.citations || [],
+      );
     });
   }
 
