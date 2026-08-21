@@ -64,8 +64,9 @@ app.use(cors({
   credentials: true,
 }));
 
-// Handle preflight for all routes
-app.options('*', cors());
+// Handle preflight for all routes.
+// Express 5 / path-to-regexp v8 rejects bare '*' — use a regex instead.
+app.options(/.*/, cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static('.'));
 
