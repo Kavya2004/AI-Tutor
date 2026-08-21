@@ -959,14 +959,18 @@ body {
 	background: url(//www.probabilitycourse.com/images/Template/newbackground.png);
 	font-family: 'Myriad Pro', Verdana, Geneva, Arial, sans-serif;
 	color: #333;
-	height: 100vh;
+	/* 100dvh (dynamic) recalculates on resize/minimize so flex children
+	   never get stuck with a stale viewport height */
+	height: 100dvh;
+	height: 100vh; /* fallback for older browsers */
 	overflow: hidden;
 }
 
 .tutor-container {
 	display: flex;
 	flex-direction: column;
-	height: 100vh;
+	height: 100dvh;
+	height: 100vh; /* fallback */
 	background-color: #ffffff;
 	position: relative;
 }
@@ -1017,6 +1021,7 @@ body {
 	display: flex;
 	flex: 1;
 	overflow: hidden;
+	min-height: 0;
 }
 
 .chat-section {
@@ -1062,6 +1067,7 @@ body {
 .chat-messages {
 	flex: 1;
 	overflow-y: auto;
+	-webkit-overflow-scrolling: touch; /* keeps scroll active after minimize/restore on macOS */
 	padding: 20px;
 	background: #fafbfc;
 	min-height: 0;
@@ -2106,6 +2112,7 @@ body {
 	display: flex;
 	flex: 1;
 	overflow: hidden;
+	min-height: 0;
 }
 
 .chat-section {
