@@ -1591,7 +1591,62 @@ async function processGraphRequest(message, boardType = 'teacher') {
 	return null;
 }
 
+// Save whiteboard canvas (plus any sticker overlay) as a PNG download
+function saveWhiteboardAsImage(boardType = 'student') {
+	const canvasId = boardType === 'teacher' ? 'teacherWhiteboard' : 'studentWhiteboard';
+	const sourceCanvas = document.getElementById(canvasId);
+	if (!sourceCanvas) {
+		console.error('Whiteboard canvas not found:', canvasId);
+		return;
+	}
+
+	// Create an offscreen canvas with a white background
+	const offscreen = document.createElement('canvas');
+	offscreen.width = sourceCanvas.width;
+	offscreen.height = sourceCanvas.height;
+	const offCtx = offscreen.getContext('2d');
+
+	// Fill white background so the PNG isn't transparent
+	offCtx.fillStyle = '#ffffff';
+	offCtx.fillRect(0, 0, offscreen.width, offscreen.height);
+
+	// Draw the whiteboard strokes
+	offCtx.drawImage(sourceCanvas, 0, 0);
+
+	// Composite sticker overlay (student board only)
+	if (boardType === 'student') {
+		const overlay = document.getElementById('stickerOverlay');
+		if (overlay) {
+			const rect = sourceCanvas.getBoundingClientRect();
+			const stickers = overlay.querySelectorAll('.placed-sticker, .whiteboard-sticker');
+			stickers.forEach(sticker => {
+				const stickerRect = sticker.getBoundingClientRect();
+				const x = stickerRect.left - rect.left;
+				const y = stickerRect.top - rect.top;
+				offCtx.font = `${stickerRect.height}px serif`;
+				offCtx.textBaseline = 'top';
+				offCtx.fillText(sticker.textContent.trim(), x, y);
+			});
+		}
+	}
+
+	// Trigger download
+	const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+	offscreen.toBlob(blob => {
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `whiteboard-${timestamp}.png`;
+		a.style.display = 'none';
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}, 'image/png');
+}
+
 // Make functions globally available
+window.saveWhiteboardAsImage = saveWhiteboardAsImage;
 window.switchWhiteboard = switchWhiteboard;
 window.insertPlus = insertPlus;
 window.insertMinus = insertMinus;
