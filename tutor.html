@@ -15,7 +15,7 @@
 	<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
 	<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
 		crossorigin="anonymous"></script>
-			<!-- KaTeX for LaTeX math rendering -->
+	<!-- KaTeX for LaTeX math rendering -->
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 	<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 	<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
@@ -238,7 +238,7 @@
 				try {
 					// Compute today's date key in LOCAL time (not UTC) so students in
 					// the same timezone share the same key regardless of UTC offset.
-					const d   = new Date();
+					const d = new Date();
 					const pad = n => String(n).padStart(2, '0');
 					const dateKey = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
@@ -268,13 +268,13 @@
 					if (!lookupRes || !lookupRes.ok) throw new Error('Could not verify session on server');
 
 					// Stash globals for session-manager + chat-history-manager
-					window._inClassSessionId      = sessionId;
-					window._inClassSessionTitle   = sessionTitle;
-					window._inClassTableNumber    = tableNumber;
-					window._inClassSessionNumber  = sessionNumber;
-					window._inClassStudentName    = name;
-					window._inClassMode           = true;
-					window._inClassDateKey        = dateKey;
+					window._inClassSessionId = sessionId;
+					window._inClassSessionTitle = sessionTitle;
+					window._inClassTableNumber = tableNumber;
+					window._inClassSessionNumber = sessionNumber;
+					window._inClassStudentName = name;
+					window._inClassMode = true;
+					window._inClassDateKey = dateKey;
 
 					// Record in-class login (non-blocking)
 					fetch(`${BACKEND}/api/in-class/activity/login`, {
@@ -361,7 +361,9 @@
 	──────────────────────────────────────────────────────────────────────── -->
 	<script>
 		(function () {
+			// At-home idle timeout: 15 min. In-class idle timeout: 1 hr 15 min.
 			const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+			const IDLE_TIMEOUT_INCLASS_MS = 75 * 60 * 1000;
 			const WARNING_BEFORE_MS = 1 * 60 * 1000;
 
 			let _warningTimer = null;
@@ -369,10 +371,22 @@
 			let _countdownInterval = null;
 			let _started = false;
 
+			function getIdleTimeout() {
+				return window._inClassMode ? IDLE_TIMEOUT_INCLASS_MS : IDLE_TIMEOUT_MS;
+			}
+
 			async function doAutoLogout() {
 				clearAll();
 				removeWarningBanner();
-				if (window._activityId) {
+				if (window._inClassMode && window._inClassActivityId) {
+					try {
+						await fetch('https://ai-tutor-53f1.onrender.com/api/in-class/activity/logout', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+							body: JSON.stringify({ activityId: window._inClassActivityId }),
+						});
+					} catch (_) { }
+				} else if (window._activityId) {
 					try {
 						await fetch('https://ai-tutor-53f1.onrender.com/api/user-activity/logout', {
 							method: 'POST',
@@ -385,7 +399,7 @@
 			}
 
 			function showWarning() {
-				if (!window._activityId && !window.studentEmail) {
+				if (!window._activityId && !window.studentEmail && !window._inClassActivityId) {
 					return;
 				}
 
@@ -448,14 +462,15 @@
 				if (!_started) return;
 				clearAll();
 				removeWarningBanner();
-				_warningTimer = setTimeout(showWarning, IDLE_TIMEOUT_MS - WARNING_BEFORE_MS);
-				_logoutTimer = setTimeout(doAutoLogout, IDLE_TIMEOUT_MS);
+				const timeout = getIdleTimeout();
+				_warningTimer = setTimeout(showWarning, timeout - WARNING_BEFORE_MS);
+				_logoutTimer = setTimeout(doAutoLogout, timeout);
 			}
 
 			window.resetIdleChatTimer = resetIdleTimer;
 
 			const _startPoller = setInterval(() => {
-				if (window._activityId || window.studentEmail) {
+				if (window._activityId || window.studentEmail || window._inClassActivityId) {
 					clearInterval(_startPoller);
 					_started = true;
 					resetIdleTimer();
@@ -559,7 +574,8 @@
 								<button id="sendWhiteboardBtn" onclick="sendWhiteboardToTutor()"
 									title="Send whiteboard screenshot to tutor" style="display:none;">📸 Send to
 									Tutor</button>
-								<button id="saveWhiteboardBtn" onclick="saveWhiteboardAsImage('student')" title="Save whiteboard as PNG image">💾 Save</button>
+								<button id="saveWhiteboardBtn" onclick="saveWhiteboardAsImage('student')"
+									title="Save whiteboard as PNG image">💾 Save</button>
 								<button id="expandStudentButton">⛶ Expand</button>
 							</div>
 							<div class="math-buttons">
