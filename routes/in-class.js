@@ -199,18 +199,21 @@ router.get('/chat', async (req, res) => {
     if (!connected) return res.status(503).json({ error: 'In-class DB not connected' });
 
     const InClassChat = getInClassChatModel();
-    const filter = {};
-    if (sessionId) filter.sessionId = sessionId;
-    // Filter by the top-level email field (set at creation time).
-    // Fallback: also match documents where any message's userName equals the email,
-    // so old records without the email field still appear for the right student.
+    // Build an $or so that a record matches if EITHER:
+    //   (a) the sessionId matches — covers all students at the same table/session,
+    //       regardless of whose email is stored as the document's top-level "email"
+    //   (b) the top-level email matches — covers a student's own past sessions
+    //   (c) a message's userName matches the email — legacy fallback for old records
+    // Using $or at the top level means non-initiating students can always find the
+    // shared record as long as they pass their sessionId.
+    const conditions = [];
+    if (sessionId) conditions.push({ sessionId });
     if (email) {
       const normalised = email.trim().toLowerCase();
-      filter.$or = [
-        { email: normalised },
-        { 'messages.userName': email },
-      ];
+      conditions.push({ email: normalised });
+      conditions.push({ 'messages.userName': normalised });
     }
+    const filter = conditions.length ? { $or: conditions } : {};
 
     const convos = await InClassChat.find(filter, { messages: 0 }).sort({ updatedAt: -1 }).limit(100).lean();
     res.json(convos);

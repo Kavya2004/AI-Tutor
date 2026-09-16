@@ -235,7 +235,13 @@
   async function loadConvoList() {
     try {
       if (_inClassMode) {
-        const list = await apiGet(`/api/in-class/chat?email=${encodeURIComponent(_email)}`);
+        // Pass sessionId alongside email so non-initiating students (whose email
+        // isn't stored as the top-level "email" field on the shared record) can
+        // still find the shared session document.
+        const sessionParam = _inClassSessionId
+          ? `&sessionId=${encodeURIComponent(_inClassSessionId)}`
+          : '';
+        const list = await apiGet(`/api/in-class/chat?email=${encodeURIComponent(_email)}${sessionParam}`);
         // Sort newest first
         list.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
         renderConvoList(list);
@@ -514,6 +520,10 @@
       // This means every student who logs in on the same day joins the same record.
       const doc = await createNewInClassConvo();  // idempotent — reuses today's if present
       _inClassReady = true;
+
+      // Refresh sidebar now that the record is guaranteed to exist — this ensures
+      // the shared convo appears even for students who didn't initiate it.
+      await loadConvoList();
 
       console.log('[in-class chat] init done, _inClassConvoId:', _inClassConvoId);
       markActiveInList(_inClassConvoId);
