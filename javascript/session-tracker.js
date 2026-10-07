@@ -62,14 +62,9 @@ window.sessionTracker = (() => {
 
     if (window.va) {
       window.va('event', {
-        name:             'session_ended',
-        duration_seconds: duration,
-        features_used:    features.join(','),
-        feature_count:    features.length,
+        name:          'session_ended',
         modality,
-        co_usage_pairs:   coPairs.join(','),
-        sequence_pairs:   buildSequencePairs(),
-        context:          window._inClassMode ? 'in_class' : 'at_home',
+        feature_count: features.length,
       });
     }
   }
