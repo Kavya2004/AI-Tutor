@@ -62,9 +62,11 @@ window.sessionTracker = (() => {
 
     if (window.va) {
       window.va('event', {
-        name:          'session_ended',
-        modality,
-        feature_count: features.length,
+        name: 'session_ended',
+        data: {
+          modality,
+          feature_count: features.length,
+        }
       });
     }
   }
