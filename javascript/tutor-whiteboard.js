@@ -110,6 +110,7 @@ function setupWhiteboardControls() {
 		drawStudentButton.addEventListener('click', (e) => {
 			e.preventDefault();
 			e.stopPropagation();
+			track('whiteboard_draw_toggled');
 			toggleDrawing('student');
 		});
 		
@@ -301,6 +302,11 @@ function setupCanvas(canvas, ctx, boardType) {
 }
 
 function switchWhiteboard(boardType) {
+	if (boardType === 'student') {
+		track('whiteboard_tab_opened');
+	} else if (boardType === 'notes') {
+		track('notes_tab_opened');
+	}
 	// Save current board state before switching
 	if (activeWhiteboard === 'teacher' || activeWhiteboard === 'student') {
 		saveDrawingState(activeWhiteboard);
@@ -1593,6 +1599,7 @@ async function processGraphRequest(message, boardType = 'teacher') {
 
 // Save whiteboard canvas (plus any sticker overlay) as a PNG download
 function saveWhiteboardAsImage(boardType = 'student') {
+	track('whiteboard_saved');
 	const canvasId = boardType === 'teacher' ? 'teacherWhiteboard' : 'studentWhiteboard';
 	const sourceCanvas = document.getElementById(canvasId);
 	if (!sourceCanvas) {
