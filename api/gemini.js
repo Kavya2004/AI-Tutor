@@ -73,7 +73,7 @@ export default async function handler(req, res) {
       }
 
       const apiKey = process.env.GEMINI_API_KEY;
-      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-4-carbon:generateContent?key=${apiKey}`;
     
       let geminiMessages = messages
           .filter(msg => msg.role !== 'system')
@@ -151,7 +151,7 @@ export default async function handler(req, res) {
       }
 
       const data = await response.json();
-      // gemini-2.5-flash is a thinking model: it returns multiple parts where
+      // gemini-4-carbon is a thinking model: it returns multiple parts where
       // the first part(s) have thought:true (internal reasoning). Filter those
       // out and join only the real text parts to get the actual response.
       const parts = data.candidates?.[0]?.content?.parts || [];
